@@ -52,7 +52,8 @@ export default async function HomePage() {
             <span className="hero-cross" aria-hidden="true">✝</span>
             <span className="hero-eyebrow">Formation certifiante en apologétique</span>
             <h1 className="font-display hero-title">
-              Rendre compte de la<br /> crédibilité de la <span>foi catholique</span>
+              <span className="hero-title-desktop">Rendre compte de la<br /> crédibilité de la <span>foi catholique</span></span>
+              <span className="hero-title-mobile">Rendre<br />compte de la<br />crédibilité<br />de la foi<br /><span>catholique</span></span>
             </h1>
             <div className="hero-separator" aria-hidden="true" />
             <p className="hero-lead">
@@ -149,7 +150,7 @@ export default async function HomePage() {
               ["Heaven Radio", "100% Louange et Adoration", "https://lebaptemecatholique.fr/assets/heavenradio.png", "https://heavenradio.fr/"],
               ["La Mission Catholique", "Évangélisation et mission", "https://lebaptemecatholique.fr/assets/missioncatho.png", "https://lamissioncatholique.fr/"],
               ["Ultreia Event", "Événements catholiques", "/images/ultreia.png", "https://ultreiaevent.com/"],
-              ["SOS Chrétiens d'Orient", "Aide aux chrétiens persécutés", "/images/soscatho.png", "https://soschretiensdorient.netlify.app/"]
+              ["SOS Chrétiens d'Occident", "Aide aux chrétiens persécutés", "/images/soscatho.png", "https://soschretiensdoccident.fr/"]
             ].map(([name, desc, src, href]) => (
               <a className="partner-card soft-card" key={name} href={href} target="_blank" rel="noreferrer">
                 <Image src={src} alt={name} width={180} height={92} style={{ objectFit: "contain", maxWidth: "100%" }} />
