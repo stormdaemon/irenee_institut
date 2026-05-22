@@ -1,0 +1,9 @@
+.next
+node_modules
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+!.env.example
+.codex-screenshots/
+old_build/
