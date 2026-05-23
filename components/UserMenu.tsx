@@ -41,9 +41,14 @@ export function UserMenu() {
     if (!client) return;
 
     async function loadProfile(supabase: SupabaseBrowserClient) {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) {
+      const resetProfile = async () => {
+        await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
         setProfile(null);
+      };
+
+      const { data, error } = await supabase.auth.getUser().catch(() => ({ data: { user: null }, error: new Error("Session invalide") }));
+      if (error || !data.user) {
+        await resetProfile();
         return;
       }
 
