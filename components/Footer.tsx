@@ -15,6 +15,7 @@ export function Footer() {
           <div>
             <h3>Formation</h3>
             <p><Link href="/formations">Nos formations</Link></p>
+            <p><Link href="/blog">Blog apologétique</Link></p>
             <p><Link href="/formateurs">Nos formateurs</Link></p>
             <p><Link href="/formations">Tarifs</Link></p>
             <p><Link href="/espace-etudiant">Espace étudiant</Link></p>
