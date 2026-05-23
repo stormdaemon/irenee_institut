@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const networkLinks = [
   {
@@ -59,6 +59,37 @@ const mobileLinks = [...networkLinks, ...contactLinks];
 
 export function FloatingNetworkMenu() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileClosing, setMobileClosing] = useState(false);
+  const closingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (closingTimerRef.current) clearTimeout(closingTimerRef.current);
+    };
+  }, []);
+
+  const openMobileHub = () => {
+    if (closingTimerRef.current) clearTimeout(closingTimerRef.current);
+    closingTimerRef.current = null;
+    setMobileClosing(false);
+    setMobileOpen(true);
+  };
+
+  const closeMobileHub = () => {
+    if (!mobileOpen) return;
+    if (closingTimerRef.current) clearTimeout(closingTimerRef.current);
+    setMobileOpen(false);
+    setMobileClosing(true);
+    closingTimerRef.current = setTimeout(() => {
+      setMobileClosing(false);
+      closingTimerRef.current = null;
+    }, 520);
+  };
+
+  const toggleMobileHub = () => {
+    if (mobileOpen) closeMobileHub();
+    else openMobileHub();
+  };
 
   return (
     <>
@@ -88,42 +119,40 @@ export function FloatingNetworkMenu() {
         </div>
       </aside>
 
-      <div className={`mobile-float-hub ${mobileOpen ? "is-open" : ""}`}>
-        {mobileOpen && (
-          <button
-            className="mobile-float-scrim"
-            type="button"
-            aria-label="Fermer les raccourcis"
-            onClick={() => setMobileOpen(false)}
-          />
-        )}
-        {mobileOpen && (
-          <div className="mobile-hub-panel" role="dialog" aria-label="Raccourcis rapides">
-            <div className="mobile-hub-grid">
-              {mobileLinks.map(link => (
-                <a
-                  className="mobile-hub-link"
-                  href={link.href}
-                  target={"external" in link && link.external ? "_blank" : undefined}
-                  rel={"external" in link && link.external ? "noreferrer" : undefined}
-                  key={link.href}
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <span className="mobile-hub-icon">
-                    <Image src={link.icon} alt="" width={56} height={56} />
-                  </span>
-                  <span>{link.label}</span>
-                </a>
-              ))}
-            </div>
+      <div className={`mobile-float-hub ${mobileOpen ? "is-open" : ""} ${mobileClosing ? "is-closing" : ""}`}>
+        <button
+          className="mobile-float-scrim"
+          type="button"
+          aria-label="Fermer le panneau"
+          tabIndex={mobileOpen ? 0 : -1}
+          onClick={closeMobileHub}
+        />
+        <div className="mobile-hub-panel" role="dialog" aria-label="Raccourcis rapides" aria-hidden={!mobileOpen && !mobileClosing}>
+          <div className="mobile-hub-grid">
+            {mobileLinks.map(link => (
+              <a
+                className="mobile-hub-link"
+                href={link.href}
+                target={"external" in link && link.external ? "_blank" : undefined}
+                rel={"external" in link && link.external ? "noreferrer" : undefined}
+                key={link.href}
+                tabIndex={mobileOpen ? 0 : -1}
+                onClick={closeMobileHub}
+              >
+                <span className="mobile-hub-icon">
+                  <Image src={link.icon} alt="" width={56} height={56} />
+                </span>
+                <span>{link.label}</span>
+              </a>
+            ))}
           </div>
-        )}
+        </div>
         <button
           className="mobile-hub-trigger"
           type="button"
           aria-label={mobileOpen ? "Fermer les raccourcis" : "Ouvrir les raccourcis"}
           aria-expanded={mobileOpen}
-          onClick={() => setMobileOpen(open => !open)}
+          onClick={toggleMobileHub}
         >
           <Image src="/images/logo_without_text.png" alt="" width={36} height={36} priority={false} />
         </button>
