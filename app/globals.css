@@ -2156,7 +2156,7 @@ label {
   }
 }
 
-@media (max-width: 1320px) {
+@media (max-width: 1500px) {
   .container {
     width: min(100% - 34px, 1390px);
   }

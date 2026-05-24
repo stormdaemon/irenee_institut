@@ -89,7 +89,7 @@ export default async function BlogArticlePage({ params }: BlogArticlePageProps) 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <article>
         <section className="blog-article-hero">
-          <Image src={article.image} alt={article.imageAlt} fill sizes="100vw" priority />
+          <Image src={article.image} alt={article.imageAlt} fill sizes="100vw" priority loading="eager" />
           <div className="blog-article-hero-overlay" />
           <div className="container">
             <Link className="blog-back-link" href="/blog">

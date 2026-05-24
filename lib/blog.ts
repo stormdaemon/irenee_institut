@@ -210,8 +210,6 @@ function sources(ids: string[]) {
 }
 
 function makeArticle(seed: ArticleSeed): BlogArticle {
-  const image = imageLibrary[seed.image];
-
   return {
     slug: seed.slug,
     title: seed.title,
@@ -219,8 +217,8 @@ function makeArticle(seed: ArticleSeed): BlogArticle {
     category: seed.category,
     date: seed.date,
     readingMinutes: seed.readingMinutes,
-    image: image.src,
-    imageAlt: image.alt,
+    image: `/images/blog/articles/${seed.slug}.webp`,
+    imageAlt: `Illustration éditoriale de l'article « ${seed.title} »`,
     tags: seed.tags,
     featured: seed.featured,
     intro: [...seed.intro],
