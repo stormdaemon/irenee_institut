@@ -1,3 +1,5 @@
+import { schoolArticles } from "./blog-school";
+
 export type BlogSource = {
   id: string;
   label: string;
@@ -141,7 +143,7 @@ const sourceCatalog: Record<string, BlogSource> = {
   saintIrenee: {
     id: "saintIrenee",
     label: "Vatican, saint Irénée de Lyon docteur de l'unité",
-    url: "https://www.vatican.va/content/francesco/fr/apost_letters/documents/20220121-santireneo.html"
+    url: "https://www.vatican.va/content/francesco/fr/apost_letters/documents/20220121-santireneo-dottoredellachiesa.html"
   },
   justin: {
     id: "justin",
@@ -1267,7 +1269,7 @@ const seeds: ArticleSeed[] = [
   }
 ];
 
-export const blogArticles: BlogArticle[] = seeds.map(makeArticle);
+export const blogArticles: BlogArticle[] = [...schoolArticles, ...seeds.map(makeArticle)];
 
 export const blogCategories = Array.from(new Set(blogArticles.map(article => article.category)));
 
