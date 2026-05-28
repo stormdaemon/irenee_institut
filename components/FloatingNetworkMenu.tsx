@@ -1,9 +1,22 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
+import { HandHeart } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
-const networkLinks = [
+type FloatingLink = {
+  label: string;
+  href: string;
+  icon?: string;
+  Icon?: LucideIcon;
+  external?: boolean;
+  featured?: boolean;
+};
+
+const donationUrl = "https://www.paypal.com/ncp/payment/4TJJK3C697B9A";
+
+const networkLinks: FloatingLink[] = [
   {
     label: "WikiBible",
     href: "https://wikibible.fr/",
@@ -42,7 +55,14 @@ const networkLinks = [
   }
 ];
 
-const contactLinks = [
+const contactLinks: FloatingLink[] = [
+  {
+    label: "Faire un don",
+    href: donationUrl,
+    Icon: HandHeart,
+    external: true,
+    featured: true
+  },
   {
     label: "Appeler",
     href: "tel:+33171681538",
@@ -56,6 +76,15 @@ const contactLinks = [
 ];
 
 const mobileLinks = [...networkLinks, ...contactLinks];
+
+function FloatingIcon({ link, size }: { link: FloatingLink; size: number }) {
+  if (link.icon) return <Image src={link.icon} alt="" width={size} height={size} />;
+  if (link.Icon) {
+    const Icon = link.Icon;
+    return <Icon aria-hidden="true" size={Math.round(size * .54)} strokeWidth={1.8} />;
+  }
+  return null;
+}
 
 export function FloatingNetworkMenu() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -98,7 +127,7 @@ export function FloatingNetworkMenu() {
           {networkLinks.map(link => (
             <a className="network-link" href={link.href} target="_blank" rel="noreferrer" key={link.href}>
               <span className="network-icon">
-                <Image src={link.icon} alt="" width={64} height={64} />
+                <FloatingIcon link={link} size={64} />
               </span>
               <span>{link.label}</span>
             </a>
@@ -109,9 +138,15 @@ export function FloatingNetworkMenu() {
       <aside className="floating-contact" aria-label="Contact rapide">
         <div className="floating-contact-inner">
           {contactLinks.map(link => (
-            <a className="contact-float-link" href={link.href} key={link.href}>
+            <a
+              className={`contact-float-link ${link.featured ? "is-featured" : ""}`}
+              href={link.href}
+              target={link.external ? "_blank" : undefined}
+              rel={link.external ? "noreferrer" : undefined}
+              key={link.href}
+            >
               <span className="contact-float-icon">
-                <Image src={link.icon} alt="" width={64} height={64} />
+                <FloatingIcon link={link} size={64} />
               </span>
               <span>{link.label}</span>
             </a>
@@ -131,16 +166,16 @@ export function FloatingNetworkMenu() {
           <div className="mobile-hub-grid">
             {mobileLinks.map(link => (
               <a
-                className="mobile-hub-link"
+                className={`mobile-hub-link ${link.featured ? "is-featured" : ""}`}
                 href={link.href}
-                target={"external" in link && link.external ? "_blank" : undefined}
-                rel={"external" in link && link.external ? "noreferrer" : undefined}
+                target={link.external ? "_blank" : undefined}
+                rel={link.external ? "noreferrer" : undefined}
                 key={link.href}
                 tabIndex={mobileOpen ? 0 : -1}
                 onClick={closeMobileHub}
               >
                 <span className="mobile-hub-icon">
-                  <Image src={link.icon} alt="" width={56} height={56} />
+                  <FloatingIcon link={link} size={56} />
                 </span>
                 <span>{link.label}</span>
               </a>

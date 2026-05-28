@@ -3,6 +3,7 @@ import "./globals.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { FloatingNetworkMenu } from "@/components/FloatingNetworkMenu";
+import { DonationPrompt } from "@/components/DonationPrompt";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://irenee-institut.org"),
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Header />
         <FloatingNetworkMenu />
+        <DonationPrompt />
         <main>{children}</main>
         <Footer />
       </body>
