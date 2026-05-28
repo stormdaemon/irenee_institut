@@ -50,7 +50,7 @@ const contactLinks = [
   },
   {
     label: "Écrire",
-    href: "mailto:catholicloungemousic@gmail.com",
+    href: "mailto:oeuvrecatholiquefrance@gmail.com",
     icon: "/images/network-icons/contact-mail.png"
   }
 ];

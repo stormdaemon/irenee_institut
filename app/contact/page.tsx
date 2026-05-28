@@ -59,30 +59,31 @@ export default function ContactPage() {
       </section>
       <section className="section" style={{ background: "white" }}>
         <div className="container grid-2">
-          <form className="soft-card" style={{ padding: 30 }} onSubmit={(e) => e.preventDefault()}>
+          <form className="soft-card" style={{ padding: 30 }} action="https://formspree.io/f/mjgzlojl" method="POST">
+            <input type="hidden" name="_subject" value="Nouveau message depuis le site Institut Irenee" />
             <h2 className="font-display" style={{ color: "var(--navy)" }}>Envoyez-nous un message</h2>
             <div className="grid-2">
-              <div><label>Prénom *</label><input className="input" required /></div>
-              <div><label>Nom *</label><input className="input" required /></div>
+              <div><label>Prénom *</label><input className="input" name="prenom" required /></div>
+              <div><label>Nom *</label><input className="input" name="nom" required /></div>
             </div>
-            <p><label>Email *</label><input className="input" type="email" required /></p>
-            <p><label>Téléphone</label><input className="input" /></p>
+            <p><label>Email *</label><input className="input" type="email" name="email" required /></p>
+            <p><label>Téléphone</label><input className="input" name="telephone" /></p>
             <p>
               <label>Sujet *</label>
-              <select className="input" required defaultValue="">
+              <select className="input" name="sujet" required defaultValue="">
                 <option value="" disabled>Sélectionnez un sujet</option>
                 <option>Formation</option>
                 <option>Paiement</option>
                 <option>Technique</option>
               </select>
             </p>
-            <p><label>Message *</label><textarea className="input" rows={7} required placeholder="Décrivez votre demande..." /></p>
-            <button className="btn btn-primary" style={{ width: "100%" }}>Envoyer le message</button>
+            <p><label>Message *</label><textarea className="input" name="message" rows={7} required placeholder="Décrivez votre demande..." /></p>
+            <button className="btn btn-primary" type="submit" style={{ width: "100%" }}>Envoyer le message</button>
           </form>
           <div>
             <h2 className="font-display" style={{ color: "var(--navy)" }}>Nos coordonnées</h2>
             {([
-              [Mail, "Email", "catholicloungemousic@gmail.com"],
+              [Mail, "Email", "oeuvrecatholiquefrance@gmail.com"],
               [Phone, "Téléphone", "01.71.68.15.38"],
               [MapPin, "Adresse", "1 rue de Stockholm, 75008 Paris"],
               [Clock, "Horaires", "Lun-Ven : 9h-18h"],
@@ -134,7 +135,7 @@ export default function ContactPage() {
           <div className="soft-card center" style={{ padding: 26, marginTop: 40, background: "#eaf3ff" }}>
             <h3>Vous ne trouvez pas la réponse ?</h3>
             <p>N'hésitez pas à nous contacter directement.</p>
-            <p><Mail size={16} aria-hidden="true" /> catholicloungemousic@gmail.com</p>
+            <p><Mail size={16} aria-hidden="true" /> oeuvrecatholiquefrance@gmail.com</p>
           </div>
         </div>
       </section>

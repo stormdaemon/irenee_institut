@@ -28,7 +28,7 @@ export function Footer() {
           </div>
           <div>
             <h3>Contact</h3>
-            <p><Mail size={16} /> catholicloungemousic@gmail.com</p>
+            <p><Mail size={16} /> oeuvrecatholiquefrance@gmail.com</p>
             <p><Phone size={16} /> 01.71.68.15.38</p>
             <p><MapPin size={16} /> 1 rue de Stockholm, 75008 Paris</p>
           </div>

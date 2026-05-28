@@ -8,7 +8,7 @@ const defaults = {
   iban: "",
   bic: "",
   beneficiary: "Association Parole et Partage",
-  adminEmail: "catholicloungemousic@gmail.com",
+  adminEmail: "oeuvrecatholiquefrance@gmail.com",
   paypalUrl: "",
   lemonApiKey: "",
   lemonApiKeyConfigured: false,

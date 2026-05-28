@@ -9,7 +9,7 @@ export const legalPages: Record<LegalPageKey, { title: string; intro: string; co
 Institut Irénée est une initiative de l'association Parole et Partage.
 SIREN : 841 890 692
 Siège : Paris, France
-Email : catholicloungemousic@gmail.com
+Email : oeuvrecatholiquefrance@gmail.com
 Téléphone : 01.71.68.15.38
 
 Responsable de publication
@@ -53,7 +53,7 @@ Le site peut utiliser des prestataires d'hébergement, d'authentification, de m�
 
 Droits des personnes
 
-Vous pouvez demander l'accès, la rectification, l'opposition, la limitation ou la suppression de vos données en écrivant à catholicloungemousic@gmail.com.`
+Vous pouvez demander l'accès, la rectification, l'opposition, la limitation ou la suppression de vos données en écrivant à oeuvrecatholiquefrance@gmail.com.`
   },
   cgv: {
     title: "Conditions générales de vente",
