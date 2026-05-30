@@ -3,7 +3,6 @@
 import { CheckCircle2, Save, ShieldCheck, TestTube2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ActionNotice } from "@/components/ActionNotice";
-import type { Course } from "@/lib/types";
 
 type Settings = {
   rib: string;
@@ -11,26 +10,25 @@ type Settings = {
   bic: string;
   beneficiary: string;
   adminEmail: string;
-  paypalUrl: string;
-  lemonApiKey: string;
-  lemonApiKeyConfigured?: boolean;
-  lemonApiKeyPreview?: string;
-  lemonSigningSecret: string;
-  lemonSigningSecretConfigured?: boolean;
-  lemonSigningSecretPreview?: string;
-  lemonWebhookUrl: string;
-  lemonStoreId: string;
-  lemonDefaultVariantId: string;
-  lemonVariantMap: Record<string, string>;
+  paypalAppName: string;
+  paypalClientId: string;
+  paypalClientIdConfigured?: boolean;
+  paypalClientSecret: string;
+  paypalClientSecretConfigured?: boolean;
+  paypalWebhookUrl: string;
+  paypalWebhookId: string;
+  paypalWebhookIdConfigured?: boolean;
+  paypalEnvironment: "live" | "sandbox";
+  paypalDefaultAmountCents: number;
 };
 
-type LemonTestResult = {
+type PayPalTestResult = {
   ok: boolean;
+  appName?: string;
+  environment?: string;
   error?: string;
-  storeCount?: number;
-  variantCount?: number;
-  suggestedStoreId?: string;
-  variants?: { id?: string; name?: string; status?: string; price?: string | number }[];
+  webhookConfigured?: boolean;
+  webhookUrl?: string;
 };
 
 const emptySettings: Settings = {
@@ -39,37 +37,35 @@ const emptySettings: Settings = {
   bic: "",
   beneficiary: "",
   adminEmail: "",
-  paypalUrl: "",
-  lemonApiKey: "",
-  lemonSigningSecret: "",
-  lemonWebhookUrl: "https://irenee-institut.org/lemonpay",
-  lemonStoreId: "",
-  lemonDefaultVariantId: "",
-  lemonVariantMap: {}
+  paypalAppName: "irenee_institut",
+  paypalClientId: "",
+  paypalClientSecret: "",
+  paypalWebhookUrl: "https://irenee-institut.org/paypal_checkout_valid",
+  paypalWebhookId: "",
+  paypalEnvironment: "live",
+  paypalDefaultAmountCents: 9900
 };
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Settings>(emptySettings);
-  const [courses, setCourses] = useState<Course[]>([]);
   const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [testStatus, setTestStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
-  const [testResult, setTestResult] = useState<LemonTestResult | null>(null);
+  const [testResult, setTestResult] = useState<PayPalTestResult | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/settings").then(response => response.json()),
-      fetch("/api/courses").then(response => response.json()).catch(() => [])
-    ])
-      .then(([data, courseRows]) => {
+    fetch("/api/settings")
+      .then(response => response.json())
+      .then(data => {
         setSettings(current => ({
           ...current,
           ...data,
-          lemonApiKey: "",
-          lemonSigningSecret: "",
-          lemonVariantMap: data.lemonVariantMap && typeof data.lemonVariantMap === "object" ? data.lemonVariantMap : {}
+          paypalClientId: "",
+          paypalClientSecret: "",
+          paypalWebhookId: "",
+          paypalEnvironment: data.paypalEnvironment === "sandbox" ? "sandbox" : "live",
+          paypalDefaultAmountCents: Number(data.paypalDefaultAmountCents || 9900)
         }));
-        setCourses(Array.isArray(courseRows) ? courseRows : []);
       })
       .catch(() => undefined);
   }, []);
@@ -85,13 +81,13 @@ export default function AdminSettingsPage() {
       bic: settings.bic,
       beneficiary: settings.beneficiary,
       adminEmail: settings.adminEmail,
-      paypalUrl: settings.paypalUrl,
-      lemonApiKey: settings.lemonApiKey,
-      lemonSigningSecret: settings.lemonSigningSecret,
-      lemonWebhookUrl: settings.lemonWebhookUrl,
-      lemonStoreId: settings.lemonStoreId,
-      lemonDefaultVariantId: settings.lemonDefaultVariantId,
-      lemonVariantMap: settings.lemonVariantMap
+      paypalAppName: settings.paypalAppName,
+      paypalClientId: settings.paypalClientId,
+      paypalClientSecret: settings.paypalClientSecret,
+      paypalWebhookUrl: settings.paypalWebhookUrl,
+      paypalWebhookId: settings.paypalWebhookId,
+      paypalEnvironment: settings.paypalEnvironment,
+      paypalDefaultAmountCents: settings.paypalDefaultAmountCents
     };
 
     const response = await fetch("/api/settings", {
@@ -107,137 +103,128 @@ export default function AdminSettingsPage() {
         setSettings(current => ({
           ...current,
           ...refreshed,
-          lemonApiKey: "",
-          lemonSigningSecret: "",
-          lemonVariantMap: refreshed.lemonVariantMap && typeof refreshed.lemonVariantMap === "object" ? refreshed.lemonVariantMap : current.lemonVariantMap
+          paypalClientId: "",
+          paypalClientSecret: "",
+          paypalWebhookId: "",
+          paypalEnvironment: refreshed.paypalEnvironment === "sandbox" ? "sandbox" : "live"
         }));
       }
     } else {
-      setError(data.error || "Les paramètres n'ont pas pu être enregistrés.");
+      setError(data.error || "Les parametres n'ont pas pu etre enregistres.");
       setStatus("error");
     }
   }
 
-  async function testLemon() {
+  async function testPayPal() {
     setTestStatus("saving");
     setTestResult(null);
-    const response = await fetch("/api/payments/lemon/test");
+    const response = await fetch("/api/payments/paypal/test");
     const data = await response.json().catch(() => null);
     setTestResult(data);
-    if (response.ok && data?.ok) {
-      setTestStatus("success");
-      if (!settings.lemonStoreId && data.suggestedStoreId) {
-        update("lemonStoreId", data.suggestedStoreId);
-      }
-    } else {
-      setTestStatus("error");
-    }
+    setTestStatus(response.ok && data?.ok ? "success" : "error");
   }
 
   function update<K extends keyof Settings>(key: K, value: Settings[K]) {
     setSettings(current => ({ ...current, [key]: value }));
   }
 
-  function updateVariant(course: Course, value: string) {
-    setSettings(current => ({
-      ...current,
-      lemonVariantMap: {
-        ...current.lemonVariantMap,
-        [course.id]: value.trim()
-      }
-    }));
-  }
-
   return (
     <section className="section">
       <div className="container" style={{ maxWidth: 980 }}>
-        <a href="/admin">← Retour au tableau de bord</a>
-        <h1 className="title" style={{ marginTop: 28 }}>Paramètres</h1>
+        <a href="/admin">Retour au tableau de bord</a>
+        <h1 className="title" style={{ marginTop: 28 }}>Parametres</h1>
         <form className="card" style={{ padding: 30, marginTop: 30 }} onSubmit={submit}>
           <h2 className="font-display" style={{ color: "var(--navy)" }}>Informations de paiement</h2>
-          <p><label>RIB affiché aux étudiants</label><input className="input" name="rib" value={settings.rib} onChange={event => update("rib", event.target.value)} placeholder="FR76..." /></p>
+          <p><label>RIB affiche aux etudiants</label><input className="input" name="rib" value={settings.rib} onChange={event => update("rib", event.target.value)} placeholder="FR76..." /></p>
           <p><label>IBAN</label><input className="input" name="iban" value={settings.iban} onChange={event => update("iban", event.target.value)} placeholder="FR76..." /></p>
           <p><label>BIC</label><input className="input" name="bic" value={settings.bic} onChange={event => update("bic", event.target.value)} /></p>
-          <p><label>Nom du bénéficiaire</label><input className="input" name="beneficiary" value={settings.beneficiary} onChange={event => update("beneficiary", event.target.value)} /></p>
+          <p><label>Nom du beneficiaire</label><input className="input" name="beneficiary" value={settings.beneficiary} onChange={event => update("beneficiary", event.target.value)} /></p>
           <p><label>Email administratif</label><input className="input" name="adminEmail" value={settings.adminEmail} onChange={event => update("adminEmail", event.target.value)} /></p>
-          <p><label>URL PayPal par défaut</label><input className="input" name="paypalUrl" value={settings.paypalUrl} onChange={event => update("paypalUrl", event.target.value)} placeholder="https://paypal.me/..." /></p>
 
           <div className="settings-panel">
             <div className="course-editor-head">
               <div>
-                <span className="badge"><ShieldCheck size={14} /> Paiement</span>
-                <h2 className="font-display">Paiement en ligne</h2>
+                <span className="badge"><ShieldCheck size={14} /> PayPal</span>
+                <h2 className="font-display">Paiement en ligne a montant libre</h2>
               </div>
-              <button className="btn btn-outline" type="button" onClick={testLemon} disabled={testStatus === "saving"}>
-                <TestTube2 size={18} /> {testStatus === "saving" ? "Vérification..." : "Vérifier"}
+              <button className="btn btn-outline" type="button" onClick={testPayPal} disabled={testStatus === "saving"}>
+                <TestTube2 size={18} /> {testStatus === "saving" ? "Verification..." : "Verifier"}
               </button>
+            </div>
+
+            <div className="paypal-settings-note">
+              <CheckCircle2 size={18} />
+              <p>Prix conseille par defaut : <strong>99 euros</strong>. L'etudiant peut modifier librement le montant dans la fenetre PayPal, puis la formation est attribuee automatiquement apres capture.</p>
             </div>
 
             <div className="grid-2">
               <p>
-                <label>Clé de connexion au paiement</label>
-                <input
-                  className="input"
-                  type="password"
-                  value={settings.lemonApiKey}
-                  onChange={event => update("lemonApiKey", event.target.value)}
-                  placeholder={settings.lemonApiKeyConfigured ? "Clé déjà enregistrée" : "Coller la clé fournie"}
-                  autoComplete="off"
-                />
-                {settings.lemonApiKeyConfigured && <small className="auth-help">Clé déjà enregistrée. Laissez vide pour la conserver.</small>}
+                <label>Nom de l'application PayPal</label>
+                <input className="input" value={settings.paypalAppName} onChange={event => update("paypalAppName", event.target.value)} />
               </p>
               <p>
-                <label>Secret de validation</label>
-                <input
-                  className="input"
-                  type="password"
-                  value={settings.lemonSigningSecret}
-                  onChange={event => update("lemonSigningSecret", event.target.value)}
-                  placeholder={settings.lemonSigningSecretConfigured ? "Secret déjà enregistré" : "Coller le secret fourni"}
-                  autoComplete="off"
-                />
-                {settings.lemonSigningSecretConfigured && <small className="auth-help">Secret déjà enregistré. Laissez vide pour le conserver.</small>}
+                <label>Environnement</label>
+                <select className="input" value={settings.paypalEnvironment} onChange={event => update("paypalEnvironment", event.target.value as Settings["paypalEnvironment"])}>
+                  <option value="live">Production</option>
+                  <option value="sandbox">Sandbox</option>
+                </select>
               </p>
             </div>
 
-            <div className="grid-3">
-              <p><label>Adresse de confirmation</label><input className="input" value={settings.lemonWebhookUrl} onChange={event => update("lemonWebhookUrl", event.target.value)} /></p>
-              <p><label>Compte vendeur</label><input className="input" value={settings.lemonStoreId} onChange={event => update("lemonStoreId", event.target.value)} placeholder="Ex: 12345" /></p>
-              <p><label>Produit par défaut</label><input className="input" value={settings.lemonDefaultVariantId} onChange={event => update("lemonDefaultVariantId", event.target.value)} placeholder="Optionnel" /></p>
+            <div className="grid-2">
+              <p>
+                <label>Client ID</label>
+                <input
+                  className="input"
+                  type="password"
+                  value={settings.paypalClientId}
+                  onChange={event => update("paypalClientId", event.target.value)}
+                  placeholder={settings.paypalClientIdConfigured ? "Client ID deja enregistre" : "Coller le Client ID PayPal"}
+                  autoComplete="off"
+                />
+                {settings.paypalClientIdConfigured && <small className="auth-help">Client ID deja enregistre. Laissez vide pour le conserver.</small>}
+              </p>
+              <p>
+                <label>Secret PayPal</label>
+                <input
+                  className="input"
+                  type="password"
+                  value={settings.paypalClientSecret}
+                  onChange={event => update("paypalClientSecret", event.target.value)}
+                  placeholder={settings.paypalClientSecretConfigured ? "Secret deja enregistre" : "Coller le secret PayPal"}
+                  autoComplete="off"
+                />
+                {settings.paypalClientSecretConfigured && <small className="auth-help">Secret deja enregistre. Laissez vide pour le conserver.</small>}
+              </p>
             </div>
 
-            <div className="variant-grid">
-              {courses.map(course => (
-                <label className="variant-row" key={course.id}>
-                  <span>
-                    <strong>{course.titre}</strong>
-                    <small>{course.slug}</small>
-                  </span>
-                  <input className="input" value={settings.lemonVariantMap[course.id] || ""} onChange={event => updateVariant(course, event.target.value)} placeholder="Référence produit" />
-                </label>
-              ))}
-              {!courses.length && <p className="muted">Aucune formation trouvée pour associer les produits.</p>}
+            <div className="grid-2">
+              <p>
+                <label>Adresse webhook PayPal</label>
+                <input className="input" value={settings.paypalWebhookUrl} onChange={event => update("paypalWebhookUrl", event.target.value)} />
+              </p>
+              <p>
+                <label>ID webhook PayPal</label>
+                <input
+                  className="input"
+                  type="password"
+                  value={settings.paypalWebhookId}
+                  onChange={event => update("paypalWebhookId", event.target.value)}
+                  placeholder={settings.paypalWebhookIdConfigured ? "Webhook ID deja enregistre" : "Renseigne automatiquement apres creation"}
+                  autoComplete="off"
+                />
+                {settings.paypalWebhookIdConfigured && <small className="auth-help">Webhook ID deja enregistre. Laissez vide pour le conserver.</small>}
+              </p>
             </div>
 
             <ActionNotice
               status={testStatus}
-              success={`Connexion au service de paiement validée${testResult?.variantCount !== undefined ? ` · ${testResult.variantCount} produit(s) détecté(s)` : ""}.`}
-              error={testResult?.error || "La vérification du paiement a échoué."}
+              success={`Connexion PayPal validee${testResult?.webhookConfigured ? " avec webhook configure" : ""}.`}
+              error={testResult?.error || "La verification PayPal a echoue."}
             />
-
-            {testResult?.variants?.length ? (
-              <div className="soft-card lemon-variant-list">
-                <h3>Produits détectés</h3>
-                {testResult.variants.map(variant => (
-                  <p key={variant.id}>
-                    <CheckCircle2 size={15} /> <strong>{variant.id}</strong> · {variant.name || "Sans nom"} · {variant.price || "prix indisponible"}
-                  </p>
-                ))}
-              </div>
-            ) : null}
           </div>
 
-          <ActionNotice status={status} success="Paramètres enregistrés." error={error} />
+          <ActionNotice status={status} success="Parametres enregistres." error={error} />
           <p><button className="btn btn-primary"><Save size={18} /> Enregistrer</button></p>
         </form>
       </div>

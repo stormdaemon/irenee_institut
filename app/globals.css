@@ -304,6 +304,85 @@ label { display: block; font-weight: 700; font-size: .9rem; margin-bottom: 8px; 
 .buy-course .field-error {
   max-width: 320px;
 }
+.paypal-checkout-backdrop {
+  padding: 18px;
+}
+.paypal-checkout-modal {
+  position: relative;
+  display: grid;
+  gap: 16px;
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+}
+.paypal-checkout-modal h2 {
+  margin: 0;
+  color: #fff7e7;
+}
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(220, 180, 107, .36);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .06);
+  color: #fff7e7;
+  cursor: pointer;
+}
+.modal-close:hover {
+  background: rgba(220, 180, 107, .14);
+}
+.paypal-amount-field,
+.paypal-book-request {
+  display: grid;
+  gap: 8px;
+}
+.paypal-amount-field span {
+  font-weight: 800;
+  color: #fff7e7;
+}
+.paypal-book-request {
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: flex-start;
+  padding: 14px;
+  border: 1px solid rgba(220, 180, 107, .28);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .04);
+}
+.paypal-book-request input {
+  margin-top: 3px;
+}
+.paypal-book-request strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff7e7;
+}
+.paypal-book-request small {
+  display: block;
+  margin-top: 5px;
+  color: #d8c9ad;
+}
+.paypal-buttons-frame {
+  min-height: 48px;
+}
+.paypal-settings-note {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 18px 0 24px;
+  padding: 14px 16px;
+  border: 1px solid rgba(220, 180, 107, .24);
+  border-radius: 8px;
+  background: rgba(220, 180, 107, .08);
+}
+.paypal-settings-note p {
+  margin: 0;
+}
 .settings-panel {
   margin: 34px 0 24px;
   padding-top: 26px;
@@ -332,16 +411,6 @@ label { display: block; font-weight: 700; font-size: .9rem; margin-bottom: 8px; 
   margin-top: 3px;
   color: #d8c9ad;
   font-weight: 500;
-}
-.lemon-variant-list {
-  display: grid;
-  gap: 8px;
-  margin: 16px 0;
-  padding: 18px;
-}
-.lemon-variant-list h3,
-.lemon-variant-list p {
-  margin: 0;
 }
 .icon-button {
   width: 42px;

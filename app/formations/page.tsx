@@ -25,7 +25,10 @@ export default async function FormationsPage() {
             <div className="card" key={course.id} style={{ padding: 30 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
                 <h2 className="font-display" style={{ color: "var(--navy)", marginTop: 0 }}>{course.titre}</h2>
-                <strong style={{ color: "var(--navy)", fontSize: "1.6rem" }}>{formatPrice(course.prix)}</strong>
+                <strong style={{ color: "var(--navy)", fontSize: "1.35rem", textAlign: "right" }}>
+                  {formatPrice(course.prix || 9900)}
+                  <small style={{ display: "block", fontSize: ".82rem", color: "var(--muted)", fontWeight: 700 }}>montant libre</small>
+                </strong>
               </div>
               <p className="muted">{course.description}</p>
               <p style={{ display: "flex", gap: 14, flexWrap: "wrap", color: "var(--muted)" }}>
@@ -36,7 +39,7 @@ export default async function FormationsPage() {
               </p>
               <div className="course-card-actions">
                 <Link className="btn btn-outline" href={`/cours/${course.slug}`}>Voir le cours <ArrowRight size={16} /></Link>
-                <BuyCourseButton courseId={course.id} label="Acheter" />
+                <BuyCourseButton courseId={course.id} courseTitle={course.titre} defaultAmountCents={course.prix || 9900} label="Payer librement" />
               </div>
             </div>
           ))}

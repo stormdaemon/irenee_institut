@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
-import { createLemonCheckout } from "@/lib/lemon-squeezy";
+import { createPayPalOrder, getPayPalConfig, parseEuroAmountToCents, PAYPAL_CURRENCY, PAYPAL_DEFAULT_AMOUNT_CENTS } from "@/lib/paypal";
 import { getSystemSettings } from "@/lib/settings";
 import { createServerClient } from "@/lib/supabase";
 import type { Course, Profile } from "@/lib/types";
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
 
 function normalizeCourse(course: Record<string, unknown>): Course {
   return {
@@ -16,7 +20,7 @@ function normalizeCourse(course: Record<string, unknown>): Course {
     duree_totale_minutes: Number(course.duree_totale_minutes || course.duree_totale || course.duree || 0),
     nb_modules: Number(course.nb_modules || 0),
     nb_etudiants: Number(course.nb_etudiants || 0),
-    prix: Number(course.prix || 0),
+    prix: Number(course.prix || PAYPAL_DEFAULT_AMOUNT_CENTS),
     prix_reduit: Number(course.prix_reduit || 0),
     url_paiement_paypal: course.url_paiement_paypal ? String(course.url_paiement_paypal) : null,
     auteur_nom: course.auteur_nom ? String(course.auteur_nom) : undefined,
@@ -32,7 +36,7 @@ function normalizeCourse(course: Record<string, unknown>): Course {
 
 export async function POST(request: Request) {
   const supabase = createServerClient();
-  if (!supabase) return NextResponse.json({ ok: false, error: "Le paiement est momentanément indisponible." }, { status: 501 });
+  if (!supabase) return NextResponse.json({ ok: false, error: "Le paiement est momentanement indisponible." }, { status: 501 });
 
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
   if (!token) {
@@ -41,7 +45,7 @@ export async function POST(request: Request) {
 
   const { data: authData, error: authError } = await supabase.auth.getUser(token);
   if (authError || !authData.user) {
-    return NextResponse.json({ ok: false, error: authError?.message || "Session invalide ou expirée." }, { status: 401 });
+    return NextResponse.json({ ok: false, error: authError?.message || "Session invalide ou expiree." }, { status: 401 });
   }
 
   const body = await request.json().catch(() => ({}));
@@ -50,11 +54,11 @@ export async function POST(request: Request) {
 
   const { data: profile, error: profileError } = await supabase.from("profiles").select("*").eq("id", authData.user.id).maybeSingle();
   if (profileError) return NextResponse.json({ ok: false, error: profileError.message }, { status: 400 });
-  if (!profile) return NextResponse.json({ ok: false, error: "Votre compte n'est pas prêt pour l'achat. Reconnectez-vous puis réessayez." }, { status: 403 });
+  if (!profile) return NextResponse.json({ ok: false, error: "Votre compte n'est pas pret pour l'achat. Reconnectez-vous puis reessayez." }, { status: 403 });
 
-  const courseQuery = courseId.includes("-") && courseId.length !== 36
-    ? supabase.from("courses").select("*").eq("slug", courseId).maybeSingle()
-    : supabase.from("courses").select("*").eq("id", courseId).maybeSingle();
+  const courseQuery = isUuid(courseId)
+    ? supabase.from("courses").select("*").eq("id", courseId).maybeSingle()
+    : supabase.from("courses").select("*").eq("slug", courseId).maybeSingle();
   const { data: course, error: courseError } = await courseQuery;
 
   if (courseError) return NextResponse.json({ ok: false, error: courseError.message }, { status: 400 });
@@ -72,16 +76,36 @@ export async function POST(request: Request) {
   }
 
   try {
+    const amountCents = parseEuroAmountToCents(body.amount);
     const settings = await getSystemSettings(supabase);
     const origin = new URL(request.url).origin;
-    const checkout = await createLemonCheckout({
-      settings,
-      course: normalizeCourse(course),
-      profile: profile as Profile,
-      origin
+    const order = await createPayPalOrder({
+      config: getPayPalConfig(settings),
+      input: {
+        amountCents,
+        bookRequested: Boolean(body.bookRequested),
+        course: normalizeCourse(course),
+        origin,
+        profile: profile as Profile
+      }
     });
 
-    return NextResponse.json({ ok: true, provider: "lemon_squeezy", ...checkout });
+    const { error: orderError } = await supabase.from("paypal_orders").upsert({
+      order_id: String(order.id),
+      user_id: authData.user.id,
+      course_id: course.id,
+      amount_total: amountCents,
+      currency: PAYPAL_CURRENCY,
+      status: String(order.status || "CREATED").toLowerCase(),
+      book_requested: Boolean(body.bookRequested),
+      book_request_status: body.bookRequested ? "en_attente_direction" : "none",
+      raw_order: order,
+      updated_at: new Date().toISOString()
+    }, { onConflict: "order_id" });
+
+    if (orderError) throw new Error(orderError.message);
+
+    return NextResponse.json({ ok: true, provider: "paypal", orderId: String(order.id) });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Paiement indisponible." }, { status: 400 });
   }

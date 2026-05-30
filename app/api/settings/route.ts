@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase";
 import { legalPages } from "@/lib/legal";
 import { parseSettingValue, secretSettingKeys, stringifySettingValue } from "@/lib/settings";
+import { PAYPAL_DEFAULT_AMOUNT_CENTS, PAYPAL_WEBHOOK_URL } from "@/lib/paypal";
 
 const defaults = {
   rib: "",
@@ -9,17 +10,18 @@ const defaults = {
   bic: "",
   beneficiary: "Association Parole et Partage",
   adminEmail: "oeuvrecatholiquefrance@gmail.com",
-  paypalUrl: "",
-  lemonApiKey: "",
-  lemonApiKeyConfigured: false,
-  lemonApiKeyPreview: "",
-  lemonSigningSecret: "",
-  lemonSigningSecretConfigured: false,
-  lemonSigningSecretPreview: "",
-  lemonWebhookUrl: "https://irenee-institut.org/lemonpay",
-  lemonStoreId: "",
-  lemonDefaultVariantId: "",
-  lemonVariantMap: {}
+  paypalAppName: "irenee_institut",
+  paypalClientId: "",
+  paypalClientIdConfigured: false,
+  paypalClientIdPreview: "",
+  paypalClientSecret: "",
+  paypalClientSecretConfigured: false,
+  paypalClientSecretPreview: "",
+  paypalWebhookUrl: PAYPAL_WEBHOOK_URL,
+  paypalWebhookId: "",
+  paypalWebhookIdConfigured: false,
+  paypalEnvironment: "live",
+  paypalDefaultAmountCents: PAYPAL_DEFAULT_AMOUNT_CENTS
 };
 
 async function upsertSystemSetting(supabase: NonNullable<ReturnType<typeof createServerClient>>, key: string, value: unknown) {
@@ -62,12 +64,14 @@ export async function GET() {
     rib,
     iban: String(settingsObject.iban || rib),
     legalPages: legalObject,
-    lemonApiKey: "",
-    lemonApiKeyConfigured: Boolean(rawSettingsObject.lemonApiKey),
-    lemonApiKeyPreview: "",
-    lemonSigningSecret: "",
-    lemonSigningSecretConfigured: Boolean(rawSettingsObject.lemonSigningSecret),
-    lemonSigningSecretPreview: ""
+    paypalClientId: "",
+    paypalClientIdConfigured: Boolean(rawSettingsObject.paypalClientId),
+    paypalClientIdPreview: "",
+    paypalClientSecret: "",
+    paypalClientSecretConfigured: Boolean(rawSettingsObject.paypalClientSecret),
+    paypalClientSecretPreview: "",
+    paypalWebhookId: "",
+    paypalWebhookIdConfigured: Boolean(rawSettingsObject.paypalWebhookId)
   });
 }
 

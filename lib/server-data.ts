@@ -2,7 +2,7 @@ import { courses as fallbackCourses, fallbackProfile, homework as fallbackHomewo
 import { legalPages, type LegalPageKey } from "./legal";
 import { createServerClient } from "./supabase";
 import { cloudinaryAvatarUrl } from "./cloudinary";
-import type { Course, CourseModule, Homework, Profile } from "./types";
+import type { BookRequest, Course, CourseModule, Homework, Profile } from "./types";
 
 type RawCourse = Omit<Course, "modules" | "objectifs" | "competences" | "prerequis"> & {
   objectifs?: string[] | null;
@@ -119,6 +119,16 @@ export async function getPaymentRequests(): Promise<Profile[]> {
     const hasRegistration = Boolean(profile.formation_choisie || profile.tarif_applicable || profile.modalite_paiement || profile.moyen_paiement);
     return hasRegistration || profile.statut_inscription === "en_attente";
   });
+}
+
+export async function getBookRequests(): Promise<BookRequest[]> {
+  const supabase = createServerClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("book_requests")
+    .select("*, profiles(prenom, nom, email), courses(titre, slug)")
+    .order("requested_at", { ascending: false });
+  return error || !data ? [] : data as BookRequest[];
 }
 
 export async function getStats() {

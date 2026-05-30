@@ -10,8 +10,8 @@ export const courses: Course[] = [
     niveau: "debutant",
     duree_totale: 750,
     nb_modules: 5,
-    prix: 25000,
-    prix_reduit: 17500,
+    prix: 9900,
+    prix_reduit: 9900,
     auteur_nom: "Institut Irénée",
     objectifs: [
       "Maîtriser les fondements bibliques et historiques de l'apologétique chrétienne",
@@ -69,8 +69,8 @@ export const courses: Course[] = [
     niveau: "avance",
     duree_totale: 750,
     nb_modules: 5,
-    prix: 25000,
-    prix_reduit: 17500,
+    prix: 9900,
+    prix_reduit: 9900,
     objectifs: ["Argumenter avec rigueur", "Répondre aux objections contemporaines", "Construire une présence publique chrétienne"],
     modules: []
   },
@@ -82,8 +82,8 @@ export const courses: Course[] = [
     niveau: "avance",
     duree_totale: 750,
     nb_modules: 5,
-    prix: 25000,
-    prix_reduit: 17500,
+    prix: 9900,
+    prix_reduit: 9900,
     objectifs: ["Maîtriser les arguments classiques", "Identifier les sophismes", "Dialoguer avec la philosophie contemporaine"],
     modules: []
   },
@@ -95,8 +95,8 @@ export const courses: Course[] = [
     niveau: "intermediaire",
     duree_totale: 750,
     nb_modules: 5,
-    prix: 25000,
-    prix_reduit: 17500,
+    prix: 9900,
+    prix_reduit: 9900,
     objectifs: ["Comparer les doctrines", "Dialoguer sans relativisme", "Expliquer l'unicité du Christ"],
     modules: []
   },
@@ -108,8 +108,8 @@ export const courses: Course[] = [
     niveau: "intermediaire",
     duree_totale: 750,
     nb_modules: 5,
-    prix: 25000,
-    prix_reduit: 17500,
+    prix: 9900,
+    prix_reduit: 9900,
     objectifs: ["Distinguer science et scientisme", "Répondre aux objections courantes", "Articuler foi et raison"],
     modules: []
   }

@@ -92,3 +92,16 @@ export type ModuleProgress = {
   progression?: number;
   complete?: boolean;
 };
+
+export type BookRequest = {
+  id: string;
+  user_id: string;
+  course_id: string;
+  paypal_order_id?: string | null;
+  status: "en_attente_direction" | "approuve" | "refuse";
+  requested_at?: string;
+  reviewed_at?: string | null;
+  notes?: string | null;
+  profiles?: Pick<Profile, "email" | "nom" | "prenom"> | null;
+  courses?: Pick<Course, "titre" | "slug"> | null;
+};

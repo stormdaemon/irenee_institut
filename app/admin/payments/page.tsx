@@ -1,11 +1,11 @@
 import { CheckCircle2, CreditCard, XCircle } from "lucide-react";
-import { getPaymentRequests } from "@/lib/server-data";
+import { getBookRequests, getPaymentRequests } from "@/lib/server-data";
 import { PaymentsClient } from "./PaymentsClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPaymentsPage() {
-  const requests = await getPaymentRequests();
+  const [requests, bookRequests] = await Promise.all([getPaymentRequests(), getBookRequests()]);
 
   return (
     <section className="section">
@@ -18,7 +18,7 @@ export default async function AdminPaymentsPage() {
           <div className="soft-card" style={{ padding: 24 }}><CheckCircle2 color="#22c55e" /> <strong>{requests.filter(item => item.statut_inscription === "validee").length}</strong><p>Validées</p></div>
           <div className="soft-card" style={{ padding: 24 }}><XCircle color="#eab308" /> <strong>{requests.filter(item => item.statut_inscription !== "validee").length}</strong><p>En attente</p></div>
         </div>
-        <PaymentsClient initialRequests={requests} />
+        <PaymentsClient initialRequests={requests} initialBookRequests={bookRequests} />
       </div>
     </section>
   );

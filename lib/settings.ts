@@ -1,7 +1,10 @@
-import type { Course } from "@/lib/types";
 import type { createServerClient } from "@/lib/supabase";
 
-export const secretSettingKeys = new Set(["lemonApiKey", "lemonSigningSecret"]);
+export const secretSettingKeys = new Set([
+  "paypalClientId",
+  "paypalClientSecret",
+  "paypalWebhookId"
+]);
 
 export type SystemSettings = Record<string, unknown>;
 
@@ -29,21 +32,6 @@ export function maskSecret(value: unknown) {
   if (!secret) return "";
   if (secret.length <= 12) return "••••••••";
   return `${secret.slice(0, 6)}••••••${secret.slice(-6)}`;
-}
-
-export function normalizeVariantMap(value: unknown): Record<string, string> {
-  const parsed = typeof value === "string" ? parseSettingValue(value) : value;
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
-  return Object.fromEntries(
-    Object.entries(parsed)
-      .map(([key, raw]) => [key, String(raw || "").trim()])
-      .filter(([, raw]) => Boolean(raw))
-  );
-}
-
-export function getCourseVariantId(settings: SystemSettings, course: Pick<Course, "id" | "slug">) {
-  const variantMap = normalizeVariantMap(settings.lemonVariantMap);
-  return variantMap[course.id] || variantMap[course.slug] || String(settings.lemonDefaultVariantId || "").trim();
 }
 
 export async function getSystemSettings(supabase: NonNullable<ReturnType<typeof createServerClient>>): Promise<SystemSettings> {

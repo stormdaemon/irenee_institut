@@ -56,8 +56,8 @@ create table if not exists public.courses (
   nb_modules integer not null default 0,
   duree_totale_minutes integer not null default 0,
   note_moyenne numeric,
-  prix integer not null default 0,
-  prix_reduit integer not null default 0,
+  prix integer not null default 9900,
+  prix_reduit integer not null default 9900,
   duree_totale integer,
   url_paiement_paypal text,
   created_at timestamptz not null default now(),
@@ -165,7 +165,7 @@ create table if not exists public.system_settings (
 
 create table if not exists public.payment_events (
   id uuid primary key default gen_random_uuid(),
-  provider text not null default 'lemon_squeezy',
+  provider text not null default 'paypal',
   provider_event_id text not null,
   event_name text not null,
   user_id uuid references public.profiles(id) on delete set null,
@@ -179,6 +179,41 @@ create table if not exists public.payment_events (
   unique(provider, provider_event_id)
 );
 
+create table if not exists public.paypal_orders (
+  id uuid primary key default gen_random_uuid(),
+  order_id text not null unique,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  course_id uuid not null references public.courses(id) on delete cascade,
+  amount_total integer not null,
+  currency text not null default 'EUR',
+  status text not null default 'created',
+  book_requested boolean not null default false,
+  book_request_status text not null default 'none' check (book_request_status in ('none', 'en_attente_direction', 'approuve', 'refuse')),
+  capture_id text,
+  raw_order jsonb,
+  raw_capture jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.book_requests (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  course_id uuid not null references public.courses(id) on delete cascade,
+  paypal_order_id text references public.paypal_orders(order_id) on delete set null,
+  status text not null default 'en_attente_direction' check (status in ('en_attente_direction', 'approuve', 'refuse')),
+  requested_at timestamptz not null default now(),
+  reviewed_at timestamptz,
+  reviewed_by uuid references public.profiles(id) on delete set null,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique(paypal_order_id)
+);
+
+alter table if exists public.courses alter column prix set default 9900;
+alter table if exists public.courses alter column prix_reduit set default 9900;
+
 alter table public.profiles enable row level security;
 alter table public.courses enable row level security;
 alter table public.course_modules enable row level security;
@@ -190,3 +225,166 @@ alter table public.homework_assignments enable row level security;
 alter table public.homework_submissions enable row level security;
 alter table public.system_settings enable row level security;
 alter table public.payment_events enable row level security;
+alter table public.paypal_orders enable row level security;
+alter table public.book_requests enable row level security;
+
+create or replace function public.validate_paypal_payment(
+  p_order_id text,
+  p_capture_id text,
+  p_user_id uuid,
+  p_course_id uuid,
+  p_amount_total integer,
+  p_currency text,
+  p_event_name text default 'paypal_capture_completed',
+  p_raw_payload jsonb default '{}'::jsonb,
+  p_book_requested boolean default false
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_course_id uuid;
+  v_profile_id uuid;
+  v_event_id text;
+begin
+  if nullif(btrim(coalesce(p_order_id, '')), '') is null then
+    raise exception 'paypal order id is required';
+  end if;
+
+  if nullif(btrim(coalesce(p_capture_id, '')), '') is null then
+    raise exception 'paypal capture id is required';
+  end if;
+
+  select id into v_profile_id from public.profiles where id = p_user_id;
+  if v_profile_id is null then
+    raise exception 'profile % not found', p_user_id;
+  end if;
+
+  select id into v_course_id from public.courses where id = p_course_id;
+  if v_course_id is null then
+    raise exception 'course % not found', p_course_id;
+  end if;
+
+  insert into public.paypal_orders (
+    order_id,
+    user_id,
+    course_id,
+    amount_total,
+    currency,
+    status,
+    book_requested,
+    book_request_status,
+    capture_id,
+    raw_capture,
+    updated_at
+  )
+  values (
+    p_order_id,
+    p_user_id,
+    p_course_id,
+    greatest(coalesce(p_amount_total, 0), 0),
+    upper(coalesce(nullif(p_currency, ''), 'EUR')),
+    'completed',
+    coalesce(p_book_requested, false),
+    case when coalesce(p_book_requested, false) then 'en_attente_direction' else 'none' end,
+    p_capture_id,
+    coalesce(p_raw_payload, '{}'::jsonb),
+    now()
+  )
+  on conflict (order_id) do update set
+    amount_total = excluded.amount_total,
+    currency = excluded.currency,
+    status = 'completed',
+    book_requested = public.paypal_orders.book_requested or excluded.book_requested,
+    book_request_status = case
+      when public.paypal_orders.book_request_status in ('approuve', 'refuse') then public.paypal_orders.book_request_status
+      when public.paypal_orders.book_requested or excluded.book_requested then 'en_attente_direction'
+      else 'none'
+    end,
+    capture_id = excluded.capture_id,
+    raw_capture = excluded.raw_capture,
+    updated_at = now();
+
+  insert into public.course_enrollments (course_id, etudiant_id, statut)
+  values (p_course_id, p_user_id, 'actif')
+  on conflict (course_id, etudiant_id) do update set statut = 'actif';
+
+  update public.profiles
+  set
+    statut_inscription = 'validee',
+    moyen_paiement = 'paypal',
+    modalite_paiement = 'paiement_libre_paypal',
+    formation_choisie = jsonb_build_array(p_course_id::text),
+    updated_at = now()
+  where id = p_user_id;
+
+  update public.courses
+  set nb_etudiants = (
+    select count(*)::integer
+    from public.course_enrollments
+    where course_id = p_course_id and statut = 'actif'
+  )
+  where id = p_course_id;
+
+  v_event_id := coalesce(nullif(p_capture_id, ''), p_order_id);
+
+  insert into public.payment_events (
+    provider,
+    provider_event_id,
+    event_name,
+    user_id,
+    course_id,
+    order_id,
+    amount_total,
+    currency,
+    status,
+    raw_payload
+  )
+  values (
+    'paypal',
+    v_event_id,
+    coalesce(nullif(p_event_name, ''), 'paypal_capture_completed'),
+    p_user_id,
+    p_course_id,
+    p_order_id,
+    greatest(coalesce(p_amount_total, 0), 0),
+    upper(coalesce(nullif(p_currency, ''), 'EUR')),
+    'validated',
+    coalesce(p_raw_payload, '{}'::jsonb)
+  )
+  on conflict (provider, provider_event_id) do update set
+    user_id = excluded.user_id,
+    course_id = excluded.course_id,
+    order_id = excluded.order_id,
+    amount_total = excluded.amount_total,
+    currency = excluded.currency,
+    status = excluded.status,
+    raw_payload = excluded.raw_payload;
+
+  if coalesce(p_book_requested, false) then
+    insert into public.book_requests (user_id, course_id, paypal_order_id, status, updated_at)
+    values (p_user_id, p_course_id, p_order_id, 'en_attente_direction', now())
+    on conflict (paypal_order_id) do update set
+      user_id = excluded.user_id,
+      course_id = excluded.course_id,
+      status = case
+        when public.book_requests.status in ('approuve', 'refuse') then public.book_requests.status
+        else 'en_attente_direction'
+      end,
+      updated_at = now();
+  end if;
+
+  return jsonb_build_object(
+    'ok', true,
+    'enrolled', true,
+    'provider', 'paypal',
+    'order_id', p_order_id,
+    'capture_id', p_capture_id,
+    'book_requested', coalesce(p_book_requested, false)
+  );
+end;
+$$;
+
+grant execute on function public.validate_paypal_payment(text, text, uuid, uuid, integer, text, text, jsonb, boolean) to service_role;

@@ -31,6 +31,6 @@ bun run build
 ## À compléter ensuite
 
 - Brancher les vraies politiques RLS Supabase selon les rôles.
-- Remettre LemonSqueezy quand la clé sera disponible.
+- Paiement PayPal actif avec montant libre et attribution automatique des formations.
 - Remplacer les contenus de secours par les vrais contenus DB si la base les contient.
 - Recréer l'éditeur riche complet si TinyMCE/Cloudinary doit être conservé tel quel.
