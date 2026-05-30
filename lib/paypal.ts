@@ -4,6 +4,7 @@ import type { SystemSettings } from "@/lib/settings";
 export const PAYPAL_CURRENCY = "EUR";
 export const PAYPAL_DEFAULT_AMOUNT_CENTS = 9900;
 export const PAYPAL_MIN_AMOUNT_CENTS = 100;
+export const PAYPAL_BOOK_TITLE_MAX_LENGTH = 180;
 export const PAYPAL_WEBHOOK_URL = "https://irenee-institut.org/paypal_checkout_valid";
 
 export const PAYPAL_CHECKOUT_WEBHOOK_EVENTS = [
@@ -79,6 +80,14 @@ export function parsePayPalValueToCents(value: unknown) {
 
 export function centsToPayPalValue(cents: number) {
   return (Math.round(cents) / 100).toFixed(2);
+}
+
+export function normalizeBookTitle(value: unknown, required = false) {
+  const title = stringFrom(value).replace(/\s+/g, " ");
+  if (required && !title) {
+    throw new Error("Indiquez le titre du livre souhaite.");
+  }
+  return trimForPayPal(title, PAYPAL_BOOK_TITLE_MAX_LENGTH);
 }
 
 export function buildPayPalOrderPayload({ amountCents, bookRequested, course, origin, profile }: PayPalOrderPayloadInput) {

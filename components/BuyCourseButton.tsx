@@ -1,7 +1,8 @@
 "use client";
 
 import { BookOpen, CreditCard, Loader2, X } from "lucide-react";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { capturePayPalOrderAction, createPayPalOrderAction, getPayPalCheckoutConfigAction } from "@/app/actions/payments";
 import { createBrowserClient } from "@/lib/supabase";
 
@@ -59,6 +60,10 @@ export function BuyCourseButton({
   const [sdkReady, setSdkReady] = useState(false);
   const [amount, setAmount] = useState(() => (defaultAmountCents / 100).toFixed(0));
   const [bookRequested, setBookRequested] = useState(false);
+  const [bookTitle, setBookTitle] = useState("");
+  const amountRef = useRef(amount);
+  const bookRequestedRef = useRef(bookRequested);
+  const bookTitleRef = useRef(bookTitle);
 
   async function startCheckout() {
     setStatus("checking");
@@ -141,6 +146,15 @@ export function BuyCourseButton({
   }, [config?.clientId, config?.currency, open]);
 
   useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
+  useEffect(() => {
     if (!open || !sdkReady || !token || !config?.clientId) return;
     const container = document.getElementById(paypalContainerId);
     if (!container || !window.paypal) return;
@@ -159,9 +173,14 @@ export function BuyCourseButton({
         createOrder: async () => {
           setStatus("loading");
           setError("");
+          if (bookRequestedRef.current && !bookTitleRef.current.trim()) {
+            setStatus("ready");
+            throw new Error("Indiquez le titre du livre souhaite.");
+          }
           const result = await createPayPalOrderAction({
-            amount,
-            bookRequested,
+            amount: amountRef.current,
+            bookRequested: bookRequestedRef.current,
+            bookTitle: bookTitleRef.current,
             courseId,
             origin: window.location.origin,
             token
@@ -217,7 +236,7 @@ export function BuyCourseButton({
       container.innerHTML = "";
       buttons?.close?.();
     };
-  }, [amount, bookRequested, config?.clientId, courseId, open, paypalContainerId, sdkReady, token]);
+  }, [config?.clientId, courseId, open, paypalContainerId, sdkReady, token]);
 
   return (
     <span className="buy-course">
@@ -226,15 +245,19 @@ export function BuyCourseButton({
         {status === "checking" ? "Preparation..." : status === "capturing" ? "Validation..." : label}
       </button>
       {error && !open && <small className="field-error" role="alert">{error}</small>}
-      {open && (
+      {open && createPortal((
         <div className="modal-backdrop paypal-checkout-backdrop" role="presentation">
           <div className="modal-card paypal-checkout-modal" role="dialog" aria-modal="true" aria-labelledby={`${paypalContainerId}-title`}>
-            <button className="modal-close" type="button" onClick={closeModal} aria-label="Fermer le paiement">
-              <X size={18} />
-            </button>
-            <span className="badge"><CreditCard size={14} /> PayPal</span>
-            <h2 id={`${paypalContainerId}-title`} className="font-display">Paiement libre</h2>
-            <p className="muted">
+            <div className="paypal-modal-header">
+              <div>
+                <span className="badge"><CreditCard size={14} /> PayPal</span>
+                <h2 id={`${paypalContainerId}-title`} className="font-display">Paiement libre</h2>
+              </div>
+              <button className="modal-close" type="button" onClick={closeModal} aria-label="Fermer le paiement">
+                <X size={18} />
+              </button>
+            </div>
+            <p className="paypal-checkout-intro">
               Le prix conseille est de 99 euros, mais vous choisissez librement le montant verse pour {courseTitle}.
               La formation est attribuee automatiquement des que PayPal confirme le paiement.
             </p>
@@ -246,7 +269,10 @@ export function BuyCourseButton({
                 min="1"
                 step="0.01"
                 value={amount}
-                onChange={event => setAmount(event.target.value)}
+                onChange={event => {
+                  amountRef.current = event.target.value;
+                  setAmount(event.target.value);
+                }}
                 disabled={status === "loading" || status === "capturing"}
               />
             </label>
@@ -254,7 +280,10 @@ export function BuyCourseButton({
               <input
                 type="checkbox"
                 checked={bookRequested}
-                onChange={event => setBookRequested(event.target.checked)}
+                onChange={event => {
+                  bookRequestedRef.current = event.target.checked;
+                  setBookRequested(event.target.checked);
+                }}
                 disabled={status === "loading" || status === "capturing"}
               />
               <span>
@@ -262,6 +291,24 @@ export function BuyCourseButton({
                 <small>La demande sera transmise a la direction, qui validera ensuite l'acceptation.</small>
               </span>
             </label>
+            {bookRequested && (
+              <label className="paypal-book-title">
+                <span>Titre du livre souhaite</span>
+                <input
+                  className="input"
+                  maxLength={180}
+                  placeholder="Ex : Mere de Dieu de Brant Pitre"
+                  required
+                  value={bookTitle}
+                  onChange={event => {
+                    bookTitleRef.current = event.target.value;
+                    setBookTitle(event.target.value);
+                  }}
+                  disabled={status === "loading" || status === "capturing"}
+                />
+                <small>La direction recevra ce titre avec votre demande.</small>
+              </label>
+            )}
             <div className="paypal-buttons-frame" id={paypalContainerId}>
               {!sdkReady && status !== "error" ? <p><Loader2 className="action-spin" size={18} /> Chargement PayPal...</p> : null}
             </div>
@@ -269,7 +316,7 @@ export function BuyCourseButton({
             {error && <small className="field-error" role="alert">{error}</small>}
           </div>
         </div>
-      )}
+      ), document.body)}
     </span>
   );
 }

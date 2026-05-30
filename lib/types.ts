@@ -98,6 +98,7 @@ export type BookRequest = {
   user_id: string;
   course_id: string;
   paypal_order_id?: string | null;
+  requested_title?: string | null;
   status: "en_attente_direction" | "approuve" | "refuse";
   requested_at?: string;
   reviewed_at?: string | null;

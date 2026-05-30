@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createPayPalOrder, getPayPalConfig, parseEuroAmountToCents, PAYPAL_CURRENCY, PAYPAL_DEFAULT_AMOUNT_CENTS } from "@/lib/paypal";
+import { createPayPalOrder, getPayPalConfig, normalizeBookTitle, parseEuroAmountToCents, PAYPAL_CURRENCY, PAYPAL_DEFAULT_AMOUNT_CENTS } from "@/lib/paypal";
 import { getSystemSettings } from "@/lib/settings";
 import { createServerClient } from "@/lib/supabase";
 import type { Course, Profile } from "@/lib/types";
@@ -77,6 +77,7 @@ export async function POST(request: Request) {
 
   try {
     const amountCents = parseEuroAmountToCents(body.amount);
+    const bookTitle = normalizeBookTitle(body.bookTitle, Boolean(body.bookRequested));
     const settings = await getSystemSettings(supabase);
     const origin = new URL(request.url).origin;
     const order = await createPayPalOrder({
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
       currency: PAYPAL_CURRENCY,
       status: String(order.status || "CREATED").toLowerCase(),
       book_requested: Boolean(body.bookRequested),
+      book_title: bookTitle || null,
       book_request_status: body.bookRequested ? "en_attente_direction" : "none",
       raw_order: order,
       updated_at: new Date().toISOString()

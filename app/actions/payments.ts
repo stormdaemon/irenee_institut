@@ -1,6 +1,6 @@
 "use server";
 
-import { capturePayPalOrder, createPayPalOrder, extractCompletedCapture, getPayPalConfig, parseEuroAmountToCents, PAYPAL_CURRENCY, PAYPAL_DEFAULT_AMOUNT_CENTS } from "@/lib/paypal";
+import { capturePayPalOrder, createPayPalOrder, extractCompletedCapture, getPayPalConfig, normalizeBookTitle, parseEuroAmountToCents, PAYPAL_CURRENCY, PAYPAL_DEFAULT_AMOUNT_CENTS } from "@/lib/paypal";
 import { getSystemSettings } from "@/lib/settings";
 import { createServerClient } from "@/lib/supabase";
 import type { Course, Profile } from "@/lib/types";
@@ -15,6 +15,7 @@ type CheckoutContext = {
 type CreateOrderInput = {
   amount: string;
   bookRequested: boolean;
+  bookTitle: string;
   courseId: string;
   origin: string;
   token: string;
@@ -124,6 +125,7 @@ export async function createPayPalOrderAction(input: CreateOrderInput) {
     const settings = await getSystemSettings(supabase);
     const config = getPayPalConfig(settings);
     const amountCents = parseEuroAmountToCents(input.amount);
+    const bookTitle = normalizeBookTitle(input.bookTitle, Boolean(input.bookRequested));
     const order = await createPayPalOrder({
       config,
       input: {
@@ -143,6 +145,7 @@ export async function createPayPalOrderAction(input: CreateOrderInput) {
       currency: PAYPAL_CURRENCY,
       status: String(order.status || "CREATED").toLowerCase(),
       book_requested: Boolean(input.bookRequested),
+      book_title: bookTitle || null,
       book_request_status: input.bookRequested ? "en_attente_direction" : "none",
       raw_order: order,
       updated_at: new Date().toISOString()
@@ -185,6 +188,7 @@ export async function capturePayPalOrderAction(input: CaptureOrderInput) {
     const { data: rpcData, error: rpcError } = await supabase.rpc("validate_paypal_payment", {
       p_amount_total: summary.amountCents || Number(orderRow.amount_total || 0),
       p_book_requested: Boolean(orderRow.book_requested),
+      p_book_title: String(orderRow.book_title || ""),
       p_capture_id: summary.captureId,
       p_course_id: orderRow.course_id,
       p_currency: summary.currency || PAYPAL_CURRENCY,

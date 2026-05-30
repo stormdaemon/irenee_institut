@@ -74,6 +74,7 @@ async function validateCapturedOrder({
   const { data, error } = await supabase.rpc("validate_paypal_payment", {
     p_amount_total: amountCents,
     p_book_requested: Boolean(orderRow.book_requested),
+    p_book_title: String(orderRow.book_title || ""),
     p_capture_id: captureId,
     p_course_id: orderRow.course_id,
     p_currency: currency,

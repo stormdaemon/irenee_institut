@@ -304,54 +304,96 @@ label { display: block; font-weight: 700; font-size: .9rem; margin-bottom: 8px; 
 .buy-course .field-error {
   max-width: 320px;
 }
-.paypal-checkout-backdrop {
-  padding: 18px;
+.modal-backdrop.paypal-checkout-backdrop {
+  z-index: 500;
+  padding: 20px;
+  overflow: hidden;
+  background: rgba(1, 8, 18, .9);
+  backdrop-filter: blur(6px);
 }
-.paypal-checkout-modal {
-  position: relative;
+.modal-card.paypal-checkout-modal {
   display: grid;
-  gap: 16px;
-  max-height: calc(100vh - 36px);
-  overflow: auto;
+  width: min(620px, calc(100vw - 40px));
+  max-height: calc(100dvh - 40px);
+  gap: 14px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 0 24px 24px;
+  color: #fff8e9;
+  background: #061524;
+  border: 1px solid rgba(239, 196, 111, .64);
+  box-shadow: 0 28px 92px rgba(0, 0, 0, .7);
 }
-.paypal-checkout-modal h2 {
+.paypal-modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 -24px;
+  padding: 18px 24px 14px;
+  background: #061524;
+  border-bottom: 1px solid rgba(239, 196, 111, .24);
+}
+.paypal-modal-header h2 {
   margin: 0;
-  color: #fff7e7;
+  color: #fff8e9;
+  font-size: 1.85rem;
 }
 .modal-close {
-  position: absolute;
-  top: 14px;
-  right: 14px;
+  flex: 0 0 auto;
   width: 38px;
   height: 38px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(220, 180, 107, .36);
+  border: 1px solid rgba(239, 196, 111, .72);
   border-radius: 8px;
-  background: rgba(255, 255, 255, .06);
-  color: #fff7e7;
+  background: rgba(239, 196, 111, .12);
+  color: #fff8e9;
   cursor: pointer;
 }
 .modal-close:hover {
-  background: rgba(220, 180, 107, .14);
+  background: rgba(239, 196, 111, .24);
+}
+.paypal-checkout-intro {
+  margin: 0;
+  color: #f2e7d2;
+  line-height: 1.5;
 }
 .paypal-amount-field,
-.paypal-book-request {
+.paypal-book-request,
+.paypal-book-title {
   display: grid;
   gap: 8px;
 }
-.paypal-amount-field span {
+.paypal-amount-field span,
+.paypal-book-title span {
   font-weight: 800;
-  color: #fff7e7;
+  color: #fff8e9;
+}
+.paypal-amount-field .input,
+.paypal-book-title .input {
+  color: #fff;
+  background: #0a2032;
+  border-color: rgba(239, 196, 111, .62);
+}
+.paypal-amount-field .input:focus,
+.paypal-book-title .input:focus {
+  border-color: #f2c66f;
+  box-shadow: 0 0 0 3px rgba(242, 198, 111, .18);
 }
 .paypal-book-request {
   grid-template-columns: 22px minmax(0, 1fr);
   align-items: flex-start;
   padding: 14px;
-  border: 1px solid rgba(220, 180, 107, .28);
+  border: 1px solid rgba(239, 196, 111, .5);
   border-radius: 8px;
-  background: rgba(255, 255, 255, .04);
+  background: rgba(239, 196, 111, .09);
 }
 .paypal-book-request input {
   margin-top: 3px;
@@ -360,15 +402,25 @@ label { display: block; font-weight: 700; font-size: .9rem; margin-bottom: 8px; 
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #fff7e7;
+  color: #fff8e9;
 }
 .paypal-book-request small {
   display: block;
   margin-top: 5px;
-  color: #d8c9ad;
+  color: #f0e3cc;
+}
+.paypal-book-title {
+  padding: 14px;
+  border: 1px solid rgba(239, 196, 111, .38);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .04);
+}
+.paypal-book-title small {
+  color: #f0e3cc;
 }
 .paypal-buttons-frame {
   min-height: 48px;
+  padding-top: 2px;
 }
 .paypal-settings-note {
   display: flex;
@@ -382,6 +434,34 @@ label { display: block; font-weight: 700; font-size: .9rem; margin-bottom: 8px; 
 }
 .paypal-settings-note p {
   margin: 0;
+}
+@media (max-width: 640px) {
+  .modal-backdrop.paypal-checkout-backdrop {
+    padding: 0;
+  }
+  .modal-card.paypal-checkout-modal {
+    width: 100vw;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    gap: 12px;
+    padding: 0 16px 18px;
+    border: 0;
+    border-radius: 0;
+  }
+  .paypal-modal-header {
+    margin: 0 -16px;
+    padding: 14px 16px 12px;
+  }
+  .paypal-modal-header h2 {
+    font-size: 1.5rem;
+  }
+  .paypal-checkout-intro {
+    font-size: .94rem;
+  }
+  .paypal-book-request,
+  .paypal-book-title {
+    padding: 12px;
+  }
 }
 .settings-panel {
   margin: 34px 0 24px;

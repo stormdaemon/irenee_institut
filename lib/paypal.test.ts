@@ -6,6 +6,7 @@ import {
   extractCompletedCapture,
   extractPayPalOrderIdFromWebhook,
   getPayPalBaseUrl,
+  normalizeBookTitle,
   parseEuroAmountToCents,
   parsePayPalValueToCents
 } from "./paypal";
@@ -34,6 +35,12 @@ test("centsToPayPalValue and parsePayPalValueToCents roundtrip PayPal money stri
   assert.equal(centsToPayPalValue(9900), "99.00");
   assert.equal(centsToPayPalValue(1234), "12.34");
   assert.equal(parsePayPalValueToCents("12.34"), 1234);
+});
+
+test("normalizeBookTitle trims whitespace and requires a title when a book is requested", () => {
+  assert.equal(normalizeBookTitle("  Le   christianisme  "), "Le christianisme");
+  assert.equal(normalizeBookTitle("", false), "");
+  assert.throws(() => normalizeBookTitle(" ", true), /titre du livre/);
 });
 
 test("buildPayPalOrderPayload creates a EUR capture order with course and student metadata", () => {

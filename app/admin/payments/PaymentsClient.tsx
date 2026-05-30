@@ -92,12 +92,13 @@ export function PaymentsClient({
       <h2 className="font-display" style={{ color: "var(--navy)", marginTop: 38 }}>Demandes de livre d'apologetique</h2>
       <div className="card table-wrap">
         <table className="data-table">
-          <thead><tr><th>Etudiant</th><th>Formation</th><th>Commande PayPal</th><th>Statut</th><th>Actions direction</th></tr></thead>
+          <thead><tr><th>Etudiant</th><th>Formation</th><th>Livre souhaite</th><th>Commande PayPal</th><th>Statut</th><th>Actions direction</th></tr></thead>
           <tbody>
             {bookRequests.map(item => (
               <tr key={item.id}>
                 <td><strong>{item.profiles?.prenom} {item.profiles?.nom}</strong><br /><small>{item.profiles?.email}</small></td>
                 <td>{item.courses?.titre || item.course_id}</td>
+                <td><strong>{item.requested_title || "Titre non renseigne"}</strong></td>
                 <td>{item.paypal_order_id || "Non renseignee"}</td>
                 <td><span className="badge">{bookStatusLabel(item.status)}</span></td>
                 <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -107,7 +108,7 @@ export function PaymentsClient({
               </tr>
             ))}
             {!bookRequests.length && (
-              <tr><td colSpan={5} style={{ padding: 30, textAlign: "center" }}>Aucune demande de livre en attente.</td></tr>
+              <tr><td colSpan={6} style={{ padding: 30, textAlign: "center" }}>Aucune demande de livre en attente.</td></tr>
             )}
           </tbody>
         </table>
