@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Vous ne pouvez finaliser que votre propre inscription." }, { status: 403 });
   }
 
-  const marketingOptIn = body.marketing_opt_in === true;
+  const marketingOptIn = body.marketing_opt_in !== false;
   const payload = {
     id: auth.user.id,
     email: auth.user.email || body.email,

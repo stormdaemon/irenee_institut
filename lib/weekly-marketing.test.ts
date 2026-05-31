@@ -39,12 +39,13 @@ test("weekly marketing subjects remain concise after personalization", () => {
   }
 });
 
-test("signup collects optional marketing consent and unsubscribe requires confirmation", () => {
+test("signup enables the weekly letter by default and unsubscribe requires confirmation", () => {
   const signup = readFileSync(new URL("../app/auth/signup/page.tsx", import.meta.url), "utf8");
   const unsubscribe = readFileSync(new URL("../app/desabonnement/route.ts", import.meta.url), "utf8");
 
   expect(signup).toContain('name="marketing_opt_in"');
-  expect(signup).not.toContain('name="marketing_opt_in" type="checkbox" defaultChecked');
+  expect(signup).toContain('name="marketing_opt_in" type="checkbox" defaultChecked');
+  expect(signup).toContain("Recevoir les actualités importantes, ressources et offres de formations de l'Institut Irénée");
   expect(unsubscribe).toContain("Confirmer le désabonnement");
   expect(unsubscribe).toContain("export async function POST");
 });

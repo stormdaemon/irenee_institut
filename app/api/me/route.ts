@@ -50,7 +50,7 @@ function normalizeModule(module: RawModule): CourseModule {
 function profileFromUser(user: { id: string; email?: string | null; user_metadata?: Record<string, unknown> }): Profile {
   const metadata = user.user_metadata || {};
   const email = user.email || "";
-  const marketingOptIn = metadata.marketing_opt_in === true;
+  const marketingOptIn = metadata.marketing_opt_in !== false;
   return {
     id: user.id,
     email,

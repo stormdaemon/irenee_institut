@@ -246,10 +246,10 @@ export default function SignupPage() {
         </label>
 
         <label style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-          <input name="marketing_opt_in" type="checkbox" disabled={isSubmitting || isSuccess} style={{ marginTop: 4 }} />
+          <input name="marketing_opt_in" type="checkbox" defaultChecked disabled={isSubmitting || isSuccess} style={{ marginTop: 4 }} />
           <span>
-            Je souhaite recevoir chaque semaine les actualités et propositions de formations de l'Institut Irénée.
-            <small className="auth-help" style={{ display: "block" }}>Facultatif. Désabonnement possible à tout moment.</small>
+            Recevoir les actualités importantes, ressources et offres de formations de l'Institut Irénée.
+            <small className="auth-help" style={{ display: "block" }}>Lettre hebdomadaire. Désabonnement possible à tout moment.</small>
           </span>
         </label>
 

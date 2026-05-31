@@ -160,7 +160,7 @@ export default function SettingsPage() {
                 <label style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                   <input name="marketing_opt_in" type="checkbox" defaultChecked={profile.marketing_opt_in === true} style={{ marginTop: 4 }} />
                   <span>
-                    Recevoir chaque semaine les actualités et propositions de formations de l'Institut Irénée.
+                    Recevoir les actualités importantes, ressources et offres de formations de l'Institut Irénée.
                     <small className="auth-help" style={{ display: "block" }}>Vous pouvez vous désabonner à tout moment.</small>
                   </span>
                 </label>
