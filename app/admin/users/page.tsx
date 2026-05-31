@@ -116,24 +116,26 @@ export default function AdminUsersPage() {
             </tbody>
           </table>
         </div>
-        {selected && (
-          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", display: "grid", placeItems: "center", zIndex: 50 }}>
-            <div className="card" style={{ width: "min(680px, calc(100% - 30px))", padding: 28 }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <div><h2 className="font-display" style={{ color: "var(--navy)", margin: 0 }}>Assigner des cours</h2><p>{selected.prenom} {selected.nom}</p></div>
-                <button className="btn btn-outline" onClick={() => setSelected(null)}><X size={16} /></button>
-              </div>
+      </div>
+      {selected && (
+        <div className="course-assignment-backdrop" role="dialog" aria-modal="true" aria-labelledby="course-assignment-title">
+          <div className="card course-assignment-modal">
+            <div className="course-assignment-header">
+              <div><h2 className="font-display" id="course-assignment-title">Assigner des cours</h2><p>{selected.prenom} {selected.nom}</p></div>
+              <button className="btn btn-outline course-assignment-close" aria-label="Fermer" onClick={() => setSelected(null)}><X size={16} /></button>
+            </div>
+            <div className="course-assignment-list">
               {courses.map(course => (
-                <label key={course.id} style={{ display: "flex", gap: 12, padding: 14, background: "#f7f9fc", marginTop: 8 }}>
+                <label className="course-assignment-option" key={course.id}>
                   <input type="checkbox" checked={assigned.includes(course.id)} onChange={() => setAssigned(assigned.includes(course.id) ? assigned.filter(id => id !== course.id) : [...assigned, course.id])} />
                   {course.titre}
                 </label>
               ))}
-              <p style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><span>{assigned.length} cours sélectionné{assigned.length > 1 ? "s" : ""}</span><button className="btn btn-primary" onClick={saveCourses}>Enregistrer</button></p>
             </div>
+            <p className="course-assignment-footer"><span>{assigned.length} cours sélectionné{assigned.length > 1 ? "s" : ""}</span><button className="btn btn-primary" onClick={saveCourses}>Enregistrer</button></p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 }

@@ -123,7 +123,7 @@ export default function CoursePage() {
   }
 
   return (
-    <section className="section">
+    <section className="section course-page">
       <div className="container">
         <Link href="/espace-etudiant">← Retour à l'espace étudiant</Link>
         <div className="card" style={{ padding: 34, marginTop: 18, marginBottom: 46 }}>
@@ -135,13 +135,13 @@ export default function CoursePage() {
             <span><Clock size={16} /> {formatDuration(course.duree_totale)} de contenu</span>
             <span><Award size={16} /> Certificat</span>
           </p>
-          <div className="soft-card" style={{ padding: 18, background: "#eaf3ff", color: "#315da9", boxShadow: "none" }}>
+          <div className="soft-card course-welcome" style={{ padding: 18 }}>
             Bon retour, {payload.profile.prenom || payload.profile.email}
           </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(260px, 340px)", gap: 34, alignItems: "start" }}>
           <div>
-            <h2 className="font-display" style={{ color: "var(--navy)" }}>Contenu de la formation</h2>
+            <h2 className="font-display course-section-title">Contenu de la formation</h2>
             {course.modules.map((module, index) => {
               const moduleProgress = progressByModule.get(module.id);
               const progress = moduleProgress?.complete ? 100 : Number(moduleProgress?.progression || 0);
@@ -149,14 +149,14 @@ export default function CoursePage() {
               return (
                 <article className="card" key={module.id} style={{ padding: 28, marginBottom: 22 }}>
                   <div style={{ display: "flex", gap: 18 }}>
-                    <div>{isComplete ? <CheckCircle2 color="#22c55e" /> : <PlayCircle color="var(--navy)" />}</div>
+                    <div>{isComplete ? <CheckCircle2 color="#22c55e" /> : <PlayCircle className="course-module-icon" />}</div>
                     <div style={{ flex: 1 }}>
                       <small>Module {index + 1}</small>
                       <h3 className="font-display" style={{ color: "var(--navy)", fontSize: "1.35rem", marginTop: 4 }}>{module.titre}</h3>
                       <p className="muted">{module.description}</p>
                       <p><Clock size={15} /> {module.duree} min <span className="badge">{module.type}</span></p>
-                      <div style={{ height: 6, background: "#e2e8f0", borderRadius: 99, overflow: "hidden", margin: "14px 0" }}>
-                        <div style={{ width: `${progress}%`, height: "100%", background: "var(--navy)" }} />
+                      <div className="course-progress-track">
+                        <div className="course-progress-value" style={{ width: `${progress}%` }} />
                       </div>
                       <Link className="btn btn-outline" href={`/cours/${course.slug}/modules/${module.id}`}>{isComplete ? "Revoir" : "Commencer"}</Link>
                     </div>

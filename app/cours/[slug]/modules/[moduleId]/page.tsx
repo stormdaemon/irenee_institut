@@ -187,7 +187,7 @@ export default function ModulePage() {
   }
 
   return (
-    <section className="section">
+    <section className="section course-page">
       <div className="container" style={{ maxWidth: 880 }}>
         <Link href={`/cours/${course.slug}`}>← Retour au cours</Link>
         <div className="card" style={{ padding: 34, marginTop: 24 }}>
@@ -197,7 +197,7 @@ export default function ModulePage() {
         </div>
         <div className="card" style={{ padding: 34, marginTop: 28 }}>
           {module.contenu_html ? (
-            <div dangerouslySetInnerHTML={{ __html: module.contenu_html }} />
+            <div className="course-module-content" dangerouslySetInnerHTML={{ __html: module.contenu_html }} />
           ) : module.contenu ? (
             <p>{module.contenu}</p>
           ) : (

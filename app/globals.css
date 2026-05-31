@@ -3306,6 +3306,230 @@ label {
   margin-top: 18px;
 }
 
+.course-assignment-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  overflow: hidden;
+  background: rgba(1, 8, 18, .9);
+  backdrop-filter: blur(6px);
+}
+
+.course-assignment-modal {
+  width: min(680px, calc(100vw - 40px));
+  max-height: calc(100dvh - 40px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 0 28px 24px;
+}
+
+.course-assignment-header,
+.course-assignment-footer {
+  position: sticky;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: #071523;
+}
+
+.course-assignment-header {
+  top: 0;
+  margin: 0 -28px;
+  padding: 20px 28px 14px;
+  border-bottom: 1px solid rgba(220, 180, 107, .28);
+}
+
+.course-assignment-header h2,
+.course-assignment-header p {
+  margin: 0;
+}
+
+.course-assignment-header p {
+  margin-top: 8px;
+}
+
+.course-assignment-close {
+  flex: 0 0 auto;
+  width: 48px;
+  padding: 0;
+}
+
+.course-assignment-list {
+  display: grid;
+  gap: 8px;
+  padding: 14px 0;
+}
+
+.course-assignment-option {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 0;
+  padding: 14px;
+  color: #f4dfb8;
+  border: 1px solid rgba(220, 180, 107, .32);
+  background: rgba(220, 180, 107, .08);
+}
+
+.course-assignment-option input {
+  flex: 0 0 auto;
+  accent-color: var(--gold);
+}
+
+.course-assignment-footer {
+  bottom: -24px;
+  margin: 0 -28px -24px;
+  padding: 14px 28px 18px;
+  border-top: 1px solid rgba(220, 180, 107, .28);
+}
+
+.course-section-title {
+  color: #fff7e7 !important;
+}
+
+.course-welcome {
+  color: #f4dfb8 !important;
+  background: rgba(220, 180, 107, .08) !important;
+  box-shadow: none !important;
+}
+
+.course-module-icon {
+  color: var(--gold-2);
+}
+
+.course-progress-track {
+  height: 6px;
+  margin: 14px 0;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .12);
+}
+
+.course-progress-value {
+  height: 100%;
+  background: linear-gradient(90deg, #9a2020, var(--gold));
+}
+
+.course-module-content {
+  color: #eadabd;
+  line-height: 1.72;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.course-module-content .module-content {
+  color: #eadabd !important;
+}
+
+.course-module-content h1,
+.course-module-content h2,
+.course-module-content h3,
+.course-module-content h4,
+.course-module-content strong {
+  color: #fff7e7 !important;
+}
+
+.course-module-content p,
+.course-module-content li,
+.course-module-content blockquote,
+.course-module-content span {
+  color: inherit !important;
+}
+
+.course-module-content .definition-box {
+  color: #1f2937 !important;
+}
+
+.course-module-content .quote-box,
+.course-module-content .biblical-quote,
+.course-module-content .important-note,
+.course-module-content .example-box,
+.course-module-content .key-concept {
+  color: #1f2937 !important;
+}
+
+.course-module-content .definition-box h1,
+.course-module-content .definition-box h2,
+.course-module-content .definition-box h3,
+.course-module-content .definition-box h4,
+.course-module-content .definition-box strong,
+.course-module-content .quote-box h1,
+.course-module-content .quote-box h2,
+.course-module-content .quote-box h3,
+.course-module-content .quote-box h4,
+.course-module-content .quote-box strong,
+.course-module-content .biblical-quote h1,
+.course-module-content .biblical-quote h2,
+.course-module-content .biblical-quote h3,
+.course-module-content .biblical-quote h4,
+.course-module-content .biblical-quote strong,
+.course-module-content .important-note h1,
+.course-module-content .important-note h2,
+.course-module-content .important-note h3,
+.course-module-content .important-note h4,
+.course-module-content .important-note strong,
+.course-module-content .example-box h1,
+.course-module-content .example-box h2,
+.course-module-content .example-box h3,
+.course-module-content .example-box h4,
+.course-module-content .example-box strong,
+.course-module-content .key-concept h1,
+.course-module-content .key-concept h2,
+.course-module-content .key-concept h3,
+.course-module-content .key-concept h4,
+.course-module-content .key-concept strong {
+  color: #16243d !important;
+}
+
+.course-module-content .comparison-table td {
+  color: #1f2937 !important;
+  background: #f9fafb !important;
+}
+
+.course-module-content .comparison-table td strong {
+  color: #16243d !important;
+}
+
+.course-module-content a {
+  color: var(--gold-2) !important;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .course-assignment-backdrop {
+    padding: 0;
+  }
+
+  .course-assignment-modal {
+    width: 100vw;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    padding: 0 16px 18px;
+    border: 0 !important;
+  }
+
+  .course-assignment-header {
+    margin: 0 -16px;
+    padding: 16px;
+  }
+
+  .course-assignment-footer {
+    bottom: -18px;
+    margin: 0 -16px -18px;
+    padding: 12px 16px 16px;
+  }
+}
+
 .data-table thead th {
   color: #f7d995 !important;
   background: linear-gradient(180deg, rgba(220, 180, 107, .18), rgba(220, 180, 107, .08)) !important;
