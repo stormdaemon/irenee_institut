@@ -10,6 +10,8 @@ const defaults = {
   bic: "",
   beneficiary: "Association Parole et Partage",
   adminEmail: "oeuvrecatholiquefrance@gmail.com",
+  googleAppsScriptMailSecret: "",
+  googleAppsScriptMailSecretConfigured: false,
   paypalAppName: "irenee_institut",
   paypalClientId: "",
   paypalClientIdConfigured: false,
@@ -71,7 +73,9 @@ export async function GET() {
     paypalClientSecretConfigured: Boolean(rawSettingsObject.paypalClientSecret),
     paypalClientSecretPreview: "",
     paypalWebhookId: "",
-    paypalWebhookIdConfigured: Boolean(rawSettingsObject.paypalWebhookId)
+    paypalWebhookIdConfigured: Boolean(rawSettingsObject.paypalWebhookId),
+    googleAppsScriptMailSecret: "",
+    googleAppsScriptMailSecretConfigured: Boolean(rawSettingsObject.googleAppsScriptMailSecret)
   });
 }
 

@@ -1,5 +1,6 @@
 -- Schema aligned with the recovered Institut Irénée Supabase project.
 -- It documents the live tables the Next.js app now reads/writes.
+-- Apply the versioned files in supabase/migrations after this recovered baseline.
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,

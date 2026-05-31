@@ -3,7 +3,8 @@ import type { createServerClient } from "@/lib/supabase";
 export const secretSettingKeys = new Set([
   "paypalClientId",
   "paypalClientSecret",
-  "paypalWebhookId"
+  "paypalWebhookId",
+  "googleAppsScriptMailSecret"
 ]);
 
 export type SystemSettings = Record<string, unknown>;

@@ -8,8 +8,6 @@ import { buildPayPalSdkUrl } from "@/lib/paypal-sdk";
 import { createBrowserClient } from "@/lib/supabase";
 
 type BuyCourseButtonProps = {
-  courseId: string;
-  courseTitle?: string;
   defaultAmountCents?: number;
   label?: string;
   className?: string;
@@ -45,10 +43,8 @@ declare global {
 }
 
 export function BuyCourseButton({
-  courseId,
-  courseTitle = "cette formation",
   defaultAmountCents = 9900,
-  label = "Paiement libre",
+  label = "Obtenir le pass annuel",
   className = "btn btn-primary"
 }: BuyCourseButtonProps) {
   const stableId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
@@ -176,12 +172,11 @@ export function BuyCourseButton({
             amount: amountRef.current,
             bookRequested: bookRequestedRef.current,
             bookTitle: bookTitleRef.current,
-            courseId,
             origin: window.location.origin,
             token
           });
 
-          if (result.alreadyEnrolled && result.redirectUrl) {
+          if (result.alreadyActive && result.redirectUrl) {
             window.location.href = result.redirectUrl;
             return "";
           }
@@ -231,7 +226,7 @@ export function BuyCourseButton({
       container.innerHTML = "";
       buttons?.close?.();
     };
-  }, [config?.clientId, courseId, open, paypalContainerId, sdkReady, token]);
+  }, [config?.clientId, open, paypalContainerId, sdkReady, token]);
 
   return (
     <span className="buy-course">
@@ -253,8 +248,8 @@ export function BuyCourseButton({
               </button>
             </div>
             <p className="paypal-checkout-intro">
-              Le prix conseille est de 99 euros, mais vous choisissez librement le montant verse pour {courseTitle}.
-              La formation est attribuee automatiquement des que PayPal confirme le paiement.
+              Le prix conseille est de 99 euros, mais vous choisissez librement le montant verse pour votre année scolaire.
+              Le pass annuel donne accès à l'ensemble du cursus dès que PayPal confirme le paiement.
             </p>
             <label className="paypal-amount-field">
               <span>Montant libre en euros</span>
@@ -307,7 +302,7 @@ export function BuyCourseButton({
             <div className="paypal-buttons-frame" id={paypalContainerId}>
               {!sdkReady && status !== "error" ? <p><Loader2 className="action-spin" size={18} /> Chargement PayPal...</p> : null}
             </div>
-            {status === "capturing" && <p className="muted">Validation du paiement et attribution de la formation...</p>}
+            {status === "capturing" && <p className="muted">Validation du paiement et activation du pass annuel...</p>}
             {error && <small className="field-error" role="alert">{error}</small>}
           </div>
         </div>

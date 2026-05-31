@@ -102,7 +102,7 @@ export function buildPayPalOrderPayload({ amountCents, bookRequested, course, or
       {
         reference_id: trimForPayPal(course.id, 256),
         custom_id: trimForPayPal(customId, 127),
-        description: trimForPayPal(`Formation ${course.titre}`, 127),
+        description: trimForPayPal(`Accès ${course.titre}`, 127),
         amount: {
           currency_code: PAYPAL_CURRENCY,
           value: amount

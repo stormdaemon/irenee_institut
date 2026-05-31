@@ -23,14 +23,22 @@ bun run build
 - Pages publiques : accueil, formations, formateurs, à propos, contact/FAQ.
 - Auth : connexion et inscription Supabase côté client avec fallback local.
 - LMS : espace étudiant, détail cours, détail module, quiz/progression.
+- Cursus annuel : pass de 365 jours, accès aux cours publiés, examen final et certificat nominatif.
+- Documents pédagogiques : parchemins de module et de cours enregistrés dans Supabase.
 - Admin : dashboard, cours, utilisateurs, devoirs, paiements, paramètres, stats, pages légales.
 - API routes : courses, users, homework, payments, profile avatar, progress, settings, inscription.
 - Assets récupérés : logos, formateurs, partenaires.
-- Schéma Supabase inféré : `supabase/schema.sql`.
+- Schéma Supabase inféré : `supabase/schema.sql`, complété par les migrations de `supabase/migrations`.
+
+## Emails pédagogiques
+
+Les parchemins et certificats sont placés dans `learning_documents` avec le statut `queued`.
+Le worker Google Apps Script prêt à configurer se trouve dans `scripts/google-apps-script-learning-documents.gs`.
+Il récupère la file via `/api/automation/learning-documents`, envoie les pièces jointes avec Gmail, puis confirme la délivrance.
 
 ## À compléter ensuite
 
 - Brancher les vraies politiques RLS Supabase selon les rôles.
-- Paiement PayPal actif avec montant libre et attribution automatique des formations.
+- Configurer le worker Google Apps Script et son secret dédié depuis les paramètres administrateur.
 - Remplacer les contenus de secours par les vrais contenus DB si la base les contient.
 - Recréer l'éditeur riche complet si TinyMCE/Cloudinary doit être conservé tel quel.

@@ -99,6 +99,22 @@ export async function GET(request: Request) {
   }
 
   const isStaff = profile.role === "directeur" || profile.role === "formateur";
+  const { data: annualPass, error: annualPassError } = isStaff
+    ? { data: null, error: null }
+    : await supabase
+      .from("annual_access_passes")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .gt("expires_at", new Date().toISOString())
+      .order("expires_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+  if (annualPassError) {
+    return NextResponse.json({ ok: false, error: annualPassError.message }, { status: 400 });
+  }
+
   const { data: enrollments, error: enrollmentError } = isStaff
     ? { data: [], error: null }
     : await supabase
@@ -112,10 +128,11 @@ export async function GET(request: Request) {
 
   let courseIds = [...new Set((enrollments || []).map(item => item.course_id).filter(Boolean))];
 
-  if (isStaff) {
+  if (isStaff || annualPass) {
     const { data: staffCourseRows, error: staffCourseError } = await supabase
       .from("courses")
       .select("id")
+      .eq("statut", "publie")
       .order("numero", { ascending: true });
 
     if (staffCourseError) {
@@ -183,7 +200,38 @@ export async function GET(request: Request) {
       .filter(Boolean) as Homework[];
   }
 
+  const [{ data: learningDocuments, error: documentsError }, { data: latestExamAttempt, error: examError }] = await Promise.all([
+    supabase
+      .from("learning_documents")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("issued_at", { ascending: false }),
+    supabase
+      .from("final_exam_attempts")
+      .select("score, passed, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+  ]);
+
+  if (documentsError) return NextResponse.json({ ok: false, error: documentsError.message }, { status: 400 });
+  if (examError) return NextResponse.json({ ok: false, error: examError.message }, { status: 400 });
+
+  const curriculumCompleted = Boolean(annualPass) && courses.length > 0 && courses.every(course => course.modules.length > 0 && course.completedModules === course.modules.length);
+
   return NextResponse.json({
+    annualPass,
+    curriculum: {
+      completed: curriculumCompleted,
+      completedCourses: courses.filter(course => course.modules.length > 0 && course.completedModules === course.modules.length).length,
+      totalCourses: courses.length
+    },
+    documents: learningDocuments || [],
+    finalExam: {
+      eligible: curriculumCompleted,
+      latestAttempt: latestExamAttempt || null
+    },
     ok: true,
     profile,
     courses,

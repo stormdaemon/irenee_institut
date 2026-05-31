@@ -8,3 +8,4 @@ node_modules
 .codex-screenshots/
 old_build/
 seo-evidence/captures/
+supabase/.temp/

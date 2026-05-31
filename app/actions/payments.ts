@@ -1,12 +1,12 @@
 "use server";
 
-import { capturePayPalOrder, createPayPalOrder, extractCompletedCapture, getPayPalConfig, normalizeBookTitle, parseEuroAmountToCents, PAYPAL_CURRENCY, PAYPAL_DEFAULT_AMOUNT_CENTS } from "@/lib/paypal";
+import { capturePayPalOrder, createPayPalOrder, extractCompletedCapture, getPayPalConfig, normalizeBookTitle, parseEuroAmountToCents, PAYPAL_CURRENCY } from "@/lib/paypal";
+import { ANNUAL_PASS_NAME, ANNUAL_PASS_PRODUCT_ID, ANNUAL_PASS_SLUG } from "@/lib/curriculum";
 import { getSystemSettings } from "@/lib/settings";
 import { createServerClient } from "@/lib/supabase";
-import type { Course, Profile } from "@/lib/types";
+import type { Profile } from "@/lib/types";
 
 type CheckoutContext = {
-  course: Course;
   profile: Profile;
   supabase: NonNullable<ReturnType<typeof createServerClient>>;
   userId: string;
@@ -16,7 +16,6 @@ type CreateOrderInput = {
   amount: string;
   bookRequested: boolean;
   bookTitle: string;
-  courseId: string;
   origin: string;
   token: string;
 };
@@ -26,37 +25,7 @@ type CaptureOrderInput = {
   token: string;
 };
 
-function isUuid(value: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-}
-
-function normalizeCourse(course: Record<string, unknown>): Course {
-  return {
-    id: String(course.id || ""),
-    slug: String(course.slug || ""),
-    titre: String(course.titre || ""),
-    description: String(course.description || ""),
-    image_url: course.image_url ? String(course.image_url) : null,
-    niveau: String(course.niveau || "debutant"),
-    duree_totale: Number(course.duree_totale_minutes || course.duree_totale || course.duree || 0),
-    duree_totale_minutes: Number(course.duree_totale_minutes || course.duree_totale || course.duree || 0),
-    nb_modules: Number(course.nb_modules || 0),
-    nb_etudiants: Number(course.nb_etudiants || 0),
-    prix: Number(course.prix || PAYPAL_DEFAULT_AMOUNT_CENTS),
-    prix_reduit: Number(course.prix_reduit || 0),
-    url_paiement_paypal: course.url_paiement_paypal ? String(course.url_paiement_paypal) : null,
-    auteur_nom: course.auteur_nom ? String(course.auteur_nom) : undefined,
-    statut: course.statut ? String(course.statut) : null,
-    semestre: course.semestre ? Number(course.semestre) : null,
-    numero: course.numero ? Number(course.numero) : null,
-    objectifs: Array.isArray(course.objectifs) ? course.objectifs as string[] : [],
-    competences: Array.isArray(course.competences) ? course.competences as string[] : [],
-    prerequis: Array.isArray(course.prerequis) ? course.prerequis as string[] : [],
-    modules: []
-  };
-}
-
-async function getCheckoutContext(token: string, courseId: string): Promise<CheckoutContext | { error: string; status: number }> {
+async function getCheckoutContext(token: string): Promise<CheckoutContext | { error: string; status: number }> {
   const supabase = createServerClient();
   if (!supabase) return { error: "Le paiement est momentanement indisponible.", status: 501 };
 
@@ -69,16 +38,7 @@ async function getCheckoutContext(token: string, courseId: string): Promise<Chec
   if (profileError) return { error: profileError.message, status: 400 };
   if (!profile) return { error: "Votre compte n'est pas pret pour l'achat. Reconnectez-vous puis reessayez.", status: 403 };
 
-  const courseQuery = isUuid(courseId)
-    ? supabase.from("courses").select("*").eq("id", courseId).maybeSingle()
-    : supabase.from("courses").select("*").eq("slug", courseId).maybeSingle();
-  const { data: course, error: courseError } = await courseQuery;
-
-  if (courseError) return { error: courseError.message, status: 400 };
-  if (!course) return { error: "Cette formation n'existe pas.", status: 404 };
-
   return {
-    course: normalizeCourse(course),
     profile: profile as Profile,
     supabase,
     userId: authData.user.id
@@ -107,19 +67,21 @@ export async function getPayPalCheckoutConfigAction() {
 
 export async function createPayPalOrderAction(input: CreateOrderInput) {
   try {
-    const context = await getCheckoutContext(input.token, input.courseId);
+    const context = await getCheckoutContext(input.token);
     if ("error" in context) return { ok: false, error: context.error, status: context.status };
 
-    const { course, profile, supabase, userId } = context;
-    const { data: existingEnrollment } = await supabase
-      .from("course_enrollments")
+    const { profile, supabase, userId } = context;
+    const { data: existingPass } = await supabase
+      .from("annual_access_passes")
       .select("id")
-      .eq("etudiant_id", userId)
-      .eq("course_id", course.id)
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .gt("expires_at", new Date().toISOString())
+      .limit(1)
       .maybeSingle();
 
-    if (existingEnrollment) {
-      return { ok: true, alreadyEnrolled: true, redirectUrl: "/espace-etudiant" };
+    if (existingPass) {
+      return { ok: true, alreadyActive: true, redirectUrl: "/espace-etudiant" };
     }
 
     const settings = await getSystemSettings(supabase);
@@ -131,7 +93,11 @@ export async function createPayPalOrderAction(input: CreateOrderInput) {
       input: {
         amountCents,
         bookRequested: Boolean(input.bookRequested),
-        course,
+        course: {
+          id: ANNUAL_PASS_PRODUCT_ID,
+          slug: ANNUAL_PASS_SLUG,
+          titre: ANNUAL_PASS_NAME
+        },
         origin: input.origin || "https://irenee-institut.org",
         profile
       }
@@ -140,7 +106,8 @@ export async function createPayPalOrderAction(input: CreateOrderInput) {
     const { error: orderError } = await supabase.from("paypal_orders").upsert({
       order_id: String(order.id),
       user_id: userId,
-      course_id: course.id,
+      course_id: null,
+      product_type: "annual_pass",
       amount_total: amountCents,
       currency: PAYPAL_CURRENCY,
       status: String(order.status || "CREATED").toLowerCase(),
@@ -169,7 +136,7 @@ export async function capturePayPalOrderAction(input: CaptureOrderInput) {
 
     const { data: orderRow, error: orderError } = await supabase
       .from("paypal_orders")
-      .select("*, courses(slug)")
+      .select("*")
       .eq("order_id", input.orderId)
       .eq("user_id", authData.user.id)
       .maybeSingle();
@@ -194,17 +161,17 @@ export async function capturePayPalOrderAction(input: CaptureOrderInput) {
       p_currency: summary.currency || PAYPAL_CURRENCY,
       p_event_name: "paypal_capture_completed",
       p_order_id: input.orderId,
+      p_product_type: String(orderRow.product_type || "annual_pass"),
       p_raw_payload: capture,
       p_user_id: authData.user.id
     });
 
     if (rpcError) return { ok: false, error: rpcError.message };
 
-    const courseSlug = Array.isArray(orderRow.courses) ? orderRow.courses[0]?.slug : orderRow.courses?.slug;
     return {
       ok: true,
       data: rpcData,
-      redirectUrl: `/paiement/merci?course=${encodeURIComponent(courseSlug || "")}&paypal_order_id=${encodeURIComponent(input.orderId)}`
+      redirectUrl: `/paiement/merci?paypal_order_id=${encodeURIComponent(input.orderId)}`
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Le paiement PayPal n'a pas pu etre capture.";

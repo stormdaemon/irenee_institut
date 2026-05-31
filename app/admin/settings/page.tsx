@@ -10,6 +10,8 @@ type Settings = {
   bic: string;
   beneficiary: string;
   adminEmail: string;
+  googleAppsScriptMailSecret: string;
+  googleAppsScriptMailSecretConfigured?: boolean;
   paypalAppName: string;
   paypalClientId: string;
   paypalClientIdConfigured?: boolean;
@@ -37,6 +39,7 @@ const emptySettings: Settings = {
   bic: "",
   beneficiary: "",
   adminEmail: "",
+  googleAppsScriptMailSecret: "",
   paypalAppName: "irenee_institut",
   paypalClientId: "",
   paypalClientSecret: "",
@@ -63,6 +66,7 @@ export default function AdminSettingsPage() {
           paypalClientId: "",
           paypalClientSecret: "",
           paypalWebhookId: "",
+          googleAppsScriptMailSecret: "",
           paypalEnvironment: data.paypalEnvironment === "sandbox" ? "sandbox" : "live",
           paypalDefaultAmountCents: Number(data.paypalDefaultAmountCents || 9900)
         }));
@@ -81,6 +85,7 @@ export default function AdminSettingsPage() {
       bic: settings.bic,
       beneficiary: settings.beneficiary,
       adminEmail: settings.adminEmail,
+      googleAppsScriptMailSecret: settings.googleAppsScriptMailSecret,
       paypalAppName: settings.paypalAppName,
       paypalClientId: settings.paypalClientId,
       paypalClientSecret: settings.paypalClientSecret,
@@ -106,6 +111,7 @@ export default function AdminSettingsPage() {
           paypalClientId: "",
           paypalClientSecret: "",
           paypalWebhookId: "",
+          googleAppsScriptMailSecret: "",
           paypalEnvironment: refreshed.paypalEnvironment === "sandbox" ? "sandbox" : "live"
         }));
       }
@@ -140,6 +146,18 @@ export default function AdminSettingsPage() {
           <p><label>BIC</label><input className="input" name="bic" value={settings.bic} onChange={event => update("bic", event.target.value)} /></p>
           <p><label>Nom du beneficiaire</label><input className="input" name="beneficiary" value={settings.beneficiary} onChange={event => update("beneficiary", event.target.value)} /></p>
           <p><label>Email administratif</label><input className="input" name="adminEmail" value={settings.adminEmail} onChange={event => update("adminEmail", event.target.value)} /></p>
+          <p>
+            <label>Secret de synchronisation Google Apps Script</label>
+            <input
+              className="input"
+              type="password"
+              value={settings.googleAppsScriptMailSecret}
+              onChange={event => update("googleAppsScriptMailSecret", event.target.value)}
+              placeholder={settings.googleAppsScriptMailSecretConfigured ? "Secret déjà enregistré" : "À renseigner lors de la configuration Google Apps Script"}
+              autoComplete="off"
+            />
+            {settings.googleAppsScriptMailSecretConfigured && <small className="auth-help">Secret déjà enregistré. Laissez vide pour le conserver.</small>}
+          </p>
 
           <div className="settings-panel">
             <div className="course-editor-head">
@@ -154,7 +172,7 @@ export default function AdminSettingsPage() {
 
             <div className="paypal-settings-note">
               <CheckCircle2 size={18} />
-              <p>Prix conseille par defaut : <strong>99 euros</strong>. L'etudiant peut modifier librement le montant dans la fenetre PayPal, puis la formation est attribuee automatiquement apres capture.</p>
+              <p>Prix conseille par defaut : <strong>99 euros</strong>. L'etudiant peut modifier librement le montant dans la fenetre PayPal, puis son pass annuel est active automatiquement apres capture.</p>
             </div>
 
             <div className="grid-2">

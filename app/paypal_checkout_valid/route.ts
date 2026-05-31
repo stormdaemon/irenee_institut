@@ -80,6 +80,7 @@ async function validateCapturedOrder({
     p_currency: currency,
     p_event_name: status,
     p_order_id: orderId,
+    p_product_type: String(orderRow.product_type || "annual_pass"),
     p_raw_payload: event,
     p_user_id: orderRow.user_id
   });

@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, Award, BookOpen, CalendarClock, CheckCircle2, ClipboardList, FileText, Loader2, Settings, TrendingUp } from "lucide-react";
+import { AlertTriangle, Award, BookOpen, CalendarClock, CheckCircle2, ClipboardList, FileText, GraduationCap, Loader2, ScrollText, Settings, TrendingUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { LearningDocumentButton } from "@/components/LearningDocumentButton";
 import { createBrowserClient } from "@/lib/supabase";
 import { formatDuration } from "@/lib/data";
 import type { Course, Homework, Profile } from "@/lib/types";
+import type { LearningDocument } from "@/lib/learning-documents";
 
 type StudentCourse = Course & {
   progress?: number;
@@ -13,6 +15,10 @@ type StudentCourse = Course & {
 };
 
 type StudentPayload = {
+  annualPass?: { expires_at: string } | null;
+  curriculum?: { completed: boolean; completedCourses: number; totalCourses: number };
+  documents?: LearningDocument[];
+  finalExam?: { eligible: boolean; latestAttempt?: { score: number; passed: boolean } | null };
   profile: Profile;
   courses: StudentCourse[];
   homework: Homework[];
@@ -57,6 +63,10 @@ export default function StudentSpacePage() {
       }
 
       setPayload({
+        annualPass: data.annualPass || null,
+        curriculum: data.curriculum,
+        documents: data.documents || [],
+        finalExam: data.finalExam,
         profile: data.profile,
         courses: data.courses || [],
         homework: data.homework || []
@@ -72,6 +82,7 @@ export default function StudentSpacePage() {
 
   const activeCourses = payload?.courses || [];
   const homework = payload?.homework || [];
+  const documents = payload?.documents || [];
   const completedModules = useMemo(
     () => activeCourses.reduce((sum, course) => sum + Number(course.completedModules || 0), 0),
     [activeCourses]
@@ -131,6 +142,16 @@ export default function StudentSpacePage() {
           <div className="kpi"><Award color="#a855f7" /><strong>{completedModules}</strong><span>Modules terminés</span></div>
         </div>
 
+        {payload.annualPass && (
+          <div className="card" style={{ padding: 26, marginBottom: 28 }}>
+            <span className="badge">Année scolaire active</span>
+            <h2 className="font-display" style={{ color: "var(--navy)" }}>Pass annuel de l'institut d'apologétique saint Irénée</h2>
+            <p className="muted">Accès illimité au cursus jusqu'au {new Date(payload.annualPass.expires_at).toLocaleDateString("fr-FR")}.</p>
+            <p><strong>{payload.curriculum?.completedCourses || 0} / {payload.curriculum?.totalCourses || activeCourses.length}</strong> cours entièrement suivis.</p>
+            <Link className="btn btn-primary" href="/examen-final"><GraduationCap size={18} /> {payload.finalExam?.eligible ? "Présenter l'examen final" : "Voir les conditions de l'examen"}</Link>
+          </div>
+        )}
+
         <div className="grid-3" style={{ alignItems: "start" }}>
           <div style={{ gridColumn: "span 2" }}>
             <h2 className="font-display" style={{ color: "var(--navy)" }}>Mes formations</h2>
@@ -187,6 +208,16 @@ export default function StudentSpacePage() {
               ) : (
                 <p className="muted">Aucune validation enregistrée pour le moment.</p>
               )}
+            </div>
+            <div className="card" style={{ padding: 24, marginTop: 22 }}>
+              <h2 className="font-display" style={{ color: "var(--navy)", marginTop: 0 }}><ScrollText size={19} /> Mes parchemins</h2>
+              {documents.length ? documents.slice(0, 6).map(document => (
+                <div key={document.id} style={{ borderTop: "1px solid rgba(220, 180, 107, .22)", padding: "14px 0" }}>
+                  <strong>{document.document_kind === "final_certificate" ? "Certificat nominatif" : document.module_title || document.course_title || "Parchemin de connaissance"}</strong>
+                  <p className="muted">{new Date(document.issued_at).toLocaleDateString("fr-FR")}</p>
+                  <LearningDocumentButton documentId={document.id} />
+                </div>
+              )) : <p className="muted">Vos parchemins apparaîtront ici au fil du cursus.</p>}
             </div>
           </aside>
         </div>
