@@ -1,38 +1,14 @@
-const defaultRecipients = [
-  "sam3ams@gmail.com",
-  "tlafont49@gmail.com",
-  "oeuvrecatholiquefrance@gmail.com"
-];
-
-type RegistrationRecord = {
-  user_id?: string;
-  email?: string;
-  prenom?: string;
-  nom?: string;
-  created_at?: string;
-};
+import {
+  buildGoogleAppsScriptPayload,
+  getGoogleAppsScriptError,
+  type RegistrationRecord
+} from "./google-apps-script.ts";
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: { "Content-Type": "application/json; charset=utf-8" }
   });
-}
-
-function getRecipients() {
-  const configured = Deno.env.get("REGISTRATION_NOTIFICATION_TO");
-  return (configured ? configured.split(",") : defaultRecipients)
-    .map(email => email.trim())
-    .filter(Boolean);
-}
-
-function escapeHtml(value: unknown) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }
 
 async function updateDelivery(record: RegistrationRecord, values: Record<string, unknown>) {
@@ -66,18 +42,16 @@ Deno.serve(async request => {
     return json({ ok: false, error: "Unauthorized" }, 401);
   }
 
-  const recipients = getRecipients();
-  const resendApiKey = Deno.env.get("RESEND_API_KEY");
-  const from = Deno.env.get("REGISTRATION_NOTIFICATION_FROM");
+  const googleAppsScriptUrl = Deno.env.get("GOOGLE_APPS_SCRIPT_URL");
+  const googleAppsScriptWebhookSecret = Deno.env.get("GOOGLE_APPS_SCRIPT_WEBHOOK_SECRET");
   const payload = await request.json().catch(() => ({}));
 
   if (payload.healthcheck === true) {
     return json({
       ok: true,
       configured: {
-        recipients: recipients.length,
-        resendApiKey: Boolean(resendApiKey),
-        from: Boolean(from)
+        googleAppsScriptUrl: Boolean(googleAppsScriptUrl),
+        googleAppsScriptWebhookSecret: Boolean(googleAppsScriptWebhookSecret)
       }
     });
   }
@@ -87,8 +61,8 @@ Deno.serve(async request => {
     return json({ ok: false, error: "Invalid registration payload" }, 400);
   }
 
-  if (!resendApiKey || !from || recipients.length === 0) {
-    const error = "Email provider configuration is incomplete";
+  if (!googleAppsScriptUrl || !googleAppsScriptWebhookSecret) {
+    const error = "Google Apps Script configuration is incomplete";
     await updateDelivery(record, {
       delivery_status: "failed",
       attempt_count: 1,
@@ -97,47 +71,23 @@ Deno.serve(async request => {
     return json({ ok: false, error }, 503);
   }
 
-  const fullName = [record.prenom, record.nom].filter(Boolean).join(" ") || "Non renseign\u00e9";
-  const registeredAt = record.created_at || new Date().toISOString();
-
-  const resendResponse = await fetch("https://api.resend.com/emails", {
+  const googleAppsScriptResponse = await fetch(googleAppsScriptUrl, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${resendApiKey}`,
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({
-      from,
-      to: recipients,
-      subject: "Nouvelle inscription sur Institut Ir\u00e9n\u00e9e",
-      text: [
-        "Une nouvelle inscription vient d'\u00eatre effectu\u00e9e.",
-        "",
-        `Nom : ${fullName}`,
-        `Email : ${record.email}`,
-        `Date : ${registeredAt}`
-      ].join("\n"),
-      html: `
-        <h1>Nouvelle inscription</h1>
-        <p>Une nouvelle inscription vient d'\u00eatre effectu\u00e9e sur Institut Ir\u00e9n\u00e9e.</p>
-        <ul>
-          <li><strong>Nom :</strong> ${escapeHtml(fullName)}</li>
-          <li><strong>Email :</strong> ${escapeHtml(record.email)}</li>
-          <li><strong>Date :</strong> ${escapeHtml(registeredAt)}</li>
-        </ul>
-      `
-    })
+    body: JSON.stringify(buildGoogleAppsScriptPayload(record, googleAppsScriptWebhookSecret))
   });
 
-  const resendResult = await resendResponse.json().catch(() => ({}));
-  if (!resendResponse.ok) {
-    const error = String(resendResult.message || resendResult.error || "Resend rejected the email");
+  const googleAppsScriptResult = await googleAppsScriptResponse.json().catch(() => ({}));
+  const googleAppsScriptError = getGoogleAppsScriptError(googleAppsScriptResponse.ok, googleAppsScriptResult);
+  if (googleAppsScriptError) {
     await updateDelivery(record, {
       delivery_status: "failed",
       attempt_count: 1,
-      last_error: error
+      last_error: googleAppsScriptError
     });
-    return json({ ok: false, error }, 502);
+    return json({ ok: false, error: googleAppsScriptError }, 502);
   }
 
   await updateDelivery(record, {
@@ -147,5 +97,5 @@ Deno.serve(async request => {
     last_error: null
   });
 
-  return json({ ok: true, emailId: resendResult.id });
+  return json({ ok: true });
 });
