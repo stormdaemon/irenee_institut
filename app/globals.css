@@ -2114,6 +2114,14 @@ label {
   color: var(--gold-2);
 }
 
+.hero-motto {
+  margin: -8px auto 18px;
+  color: #fff3dd;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.18rem, 1.8vw, 1.62rem);
+  letter-spacing: .035em;
+}
+
 .hero-title-mobile {
   display: none;
 }

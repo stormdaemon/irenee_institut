@@ -15,13 +15,17 @@ export function Footer() {
           <div>
             <h3>Formation</h3>
             <p><Link href="/formations">Nos formations</Link></p>
+            <p><Link href="/programme-apologetique">Programme d'apologétique</Link></p>
+            <p><Link href="/ecole-apologetique-en-ligne">École en ligne</Link></p>
             <p><Link href="/blog">Blog apologétique</Link></p>
+            <p><Link href="/ressources-apologetique">Ressources</Link></p>
             <p><Link href="/formateurs">Nos formateurs</Link></p>
             <p><Link href="/formations">Tarifs</Link></p>
             <p><Link href="/espace-etudiant">Espace étudiant</Link></p>
           </div>
           <div>
             <h3>Institut</h3>
+            <p><Link href="/institut-apologetique">Institut d'apologétique</Link></p>
             <p><Link href="/a-propos">À propos</Link></p>
             <p><Link href="/contact">Contact</Link></p>
             <p><Link href="/contact#faq">FAQ</Link></p>

@@ -166,6 +166,24 @@ export default async function BlogArticlePage({ params }: BlogArticlePageProps) 
                   })}
                 </ul>
               </section>
+
+              <section className="blog-source-panel">
+                <h2>Se former avec l'Institut Irénée</h2>
+                <p>
+                  Vous souhaitez relier ces repères à un parcours structuré ? Découvrez l'Institut d'Apologétique
+                  Irénée et les formations accessibles en ligne.
+                </p>
+                <p>
+                  <Link className="feature-link" href="/institut-apologetique">
+                    Découvrir l'Institut d'Apologétique <ArrowRight size={14} />
+                  </Link>
+                </p>
+                <p>
+                  <Link className="feature-link" href="/formations">
+                    Voir les formations <ArrowRight size={14} />
+                  </Link>
+                </p>
+              </section>
             </div>
           </div>
         </section>

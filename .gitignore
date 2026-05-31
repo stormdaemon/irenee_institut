@@ -7,3 +7,4 @@ node_modules
 !.env.example
 .codex-screenshots/
 old_build/
+seo-evidence/captures/

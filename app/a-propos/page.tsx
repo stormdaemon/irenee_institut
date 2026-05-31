@@ -1,4 +1,14 @@
 import Image from "next/image";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "À propos de l'Institut Irénée",
+  description:
+    "Découvrez la direction, les valeurs et la mission de l'Institut d'Apologétique Irénée au service de la formation catholique.",
+  alternates: {
+    canonical: "/a-propos"
+  }
+};
 
 const samuelPhotoUrl = "https://bilan-previsionnel.fr/wp-content/uploads/2020/11/Bilan-Previsionnel-presentation-portrait-img-1.jpg";
 
@@ -25,6 +35,16 @@ const reasons = [
 export default function AboutPage() {
   return (
     <>
+      <section className="page-hero">
+        <div className="container center">
+          <span className="hero-eyebrow">Institut d'Apologétique Irénée</span>
+          <h1 className="font-display" style={{ fontSize: "clamp(2.7rem, 6vw, 5.2rem)", margin: 0 }}>À propos</h1>
+          <p style={{ fontSize: "1.25rem", color: "#f0dfc2", maxWidth: 820, margin: "20px auto 0" }}>
+            Une formation catholique exigeante pour comprendre la foi, mieux la transmettre et répondre avec charité.
+          </p>
+        </div>
+      </section>
+
       <section className="section about-direction-section">
         <div className="container center">
           <h2 className="section-title">Direction</h2>

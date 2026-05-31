@@ -4,19 +4,20 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { FloatingNetworkMenu } from "@/components/FloatingNetworkMenu";
 import { DonationPrompt } from "@/components/DonationPrompt";
+import { organizationJsonLd, serializeJsonLd, siteDescription, siteName, siteUrl, websiteJsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://irenee-institut.org"),
+  metadataBase: new URL(siteUrl),
   title: {
-    default: "Institut Irénée",
-    template: "%s | Institut Irénée"
+    default: "Institut d'Apologétique Irénée | Formation catholique en ligne",
+    template: `%s | ${siteName}`
   },
-  description: "Formation certifiante en apologétique catholique.",
+  description: siteDescription,
   openGraph: {
-    title: "Institut Irénée",
-    description: "Rendre compte de la crédibilité de la foi catholique.",
-    url: "https://irenee-institut.org",
-    siteName: "Institut Irénée",
+    title: "Institut d'Apologétique Irénée",
+    description: siteDescription,
+    url: siteUrl,
+    siteName,
     locale: "fr_FR",
     type: "website",
     images: [
@@ -24,14 +25,14 @@ export const metadata: Metadata = {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "Institut Irénée - Formation certifiante en apologétique catholique"
+        alt: "Institut d'Apologétique Irénée - Formation catholique en ligne"
       }
     ]
   },
   twitter: {
     card: "summary_large_image",
-    title: "Institut Irénée",
-    description: "Formation certifiante en apologétique catholique.",
+    title: "Institut d'Apologétique Irénée",
+    description: siteDescription,
     images: ["/twitter-image.png"]
   },
   icons: {
@@ -44,6 +45,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr">
       <body>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteJsonLd) }} />
         <Header />
         <FloatingNetworkMenu />
         <DonationPrompt />

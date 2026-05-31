@@ -227,31 +227,19 @@ function makeArticle(seed: ArticleSeed): BlogArticle {
     sections: [
       {
         heading: "Le point de départ",
-        paragraphs: [
-          seed.fact,
-          "Une vraie formation ne se contente pas d'empiler des réponses toutes faites. Elle apprend à regarder la question, à distinguer ce qui relève d'un fait, d'une blessure, d'une confusion ou d'un préjugé, puis à répondre avec une parole droite. C'est cette patience qui donne à l'apologétique catholique son visage le plus humain."
-        ]
+        paragraphs: [seed.fact]
       },
       {
         heading: "Un repère solide pour penser",
-        paragraphs: [
-          seed.anchor,
-          "La foi catholique ne demande donc pas de choisir entre l'intelligence et la prière. Elle demande plutôt que l'intelligence soit purifiée par l'humilité, et que la prière ne devienne pas une fuite devant les questions. C'est l'une des raisons pour lesquelles un Institut d'Apologétique a une place particulière dans le paysage français : il relie ce qui est souvent séparé."
-        ]
+        paragraphs: [seed.anchor]
       },
       {
         heading: "À l'école du Bon Pasteur",
-        paragraphs: [
-          seed.shepherd,
-          "À l'école du Bon Pasteur, on n'apprend pas seulement à gagner un débat. On apprend à reconnaître une voix, à marcher derrière le Christ, à entrer par la porte de la vérité sans brutalité. L'expression dit bien le cap : suivre le Bon Pasteur, c'est laisser la clarté devenir service, et la doctrine devenir une manière de prendre soin des âmes."
-        ]
+        paragraphs: [seed.shepherd]
       },
       {
         heading: "Comment en parler aujourd'hui",
-        paragraphs: [
-          seed.response,
-          "Pour un étudiant de l'Institut Irénée, ce travail devient concret : lire les sources, comprendre les objections, parler simplement, ne jamais humilier l'interlocuteur et ne pas renoncer à la vérité. Comme premier Institut d'Apologétique en France, l'Institut Irénée veut former cette présence catholique capable de répondre avec netteté, douceur et courage."
-        ]
+        paragraphs: [seed.response]
       }
     ],
     takeaways: seed.takeaways,

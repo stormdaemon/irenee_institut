@@ -1,8 +1,18 @@
 import Image from "next/image";
+import type { Metadata } from "next";
 import { Mail } from "lucide-react";
 import { formatDbAvatar, getTrainers } from "@/lib/server-data";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Formateurs en apologétique catholique",
+  description:
+    "Découvrez les formateurs de l'Institut Irénée et leur travail de transmission de la foi catholique avec rigueur intellectuelle et pédagogie.",
+  alternates: {
+    canonical: "/formateurs"
+  }
+};
 
 export default async function FormateursPage() {
   const trainers = await getTrainers();

@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/admin", "/api", "/espace-etudiant", "/devoirs", "/parametres"]
+      disallow: "/api"
     },
     sitemap: "https://irenee-institut.org/sitemap.xml"
   };

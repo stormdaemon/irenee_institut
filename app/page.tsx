@@ -1,10 +1,27 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import { getCourses } from "@/lib/server-data";
+import { siteDescription } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: {
+    absolute: "Institut d'Apologétique Saint-Irénée"
+  },
+  description: siteDescription,
+  alternates: {
+    canonical: "/"
+  },
+  openGraph: {
+    title: "Institut d'Apologétique Saint-Irénée",
+    description: siteDescription,
+    url: "/"
+  }
+};
 
 const features = [
   {
@@ -50,11 +67,11 @@ export default async function HomePage() {
         <div className="container">
           <div className="hero-content">
             <span className="hero-cross" aria-hidden="true">✝</span>
-            <span className="hero-eyebrow">Formation certifiante en apologétique</span>
+            <span className="hero-eyebrow">Formation catholique en ligne</span>
             <h1 className="font-display hero-title">
-              <span className="hero-title-desktop">Rendre compte de la<br /> crédibilité de la <span>foi catholique</span></span>
-              <span className="hero-title-mobile">Rendre<br />compte de la<br />crédibilité<br />de la foi<br /><span>catholique</span></span>
+              Institut d'Apologétique<br /><span>Irénée</span>
             </h1>
+            <p className="hero-motto">Rendre compte de la crédibilité de la foi catholique</p>
             <div className="hero-separator" aria-hidden="true" />
             <p className="hero-lead">
               Approfondissez votre foi catholique et apprenez à la défendre avec rigueur et bienveillance grâce à nos formations en ligne dispensées par des experts catholiques.
@@ -97,6 +114,21 @@ export default async function HomePage() {
               <cite>1 Pierre 3,15</cite>
             </blockquote>
           </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="container center">
+          <span className="hero-eyebrow">Comprendre, répondre, transmettre</span>
+          <h2 className="section-title">Un institut d'apologétique catholique accessible en ligne</h2>
+          <p className="subtitle" style={{ maxWidth: 930, margin: "0 auto 26px" }}>
+            L'Institut Irénée propose une formation structurée pour apprendre à présenter les raisons de croire,
+            étudier les sources et répondre aux objections contemporaines. L'objectif n'est pas de gagner des
+            querelles, mais de servir la vérité avec précision, patience et charité.
+          </p>
+          <Link className="btn btn-outline" href="/institut-apologetique">
+            Découvrir l'Institut d'Apologétique <ArrowRight size={17} />
+          </Link>
         </div>
       </section>
 
