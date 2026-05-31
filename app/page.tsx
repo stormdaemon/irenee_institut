@@ -157,7 +157,7 @@ export default async function HomePage() {
         <div className="container center">
           <h2 className="section-title">Nos formations</h2>
           <p className="subtitle">Un parcours structuré en deux semestres pour une formation complète en apologétique.</p>
-          <div className="grid-2" style={{ marginTop: 40, textAlign: "left" }}>
+          <div className="grid-2 course-catalog-grid" style={{ marginTop: 40, textAlign: "left" }}>
             {courses.slice(0, 2).map(course => (
               <article className="card" key={course.id} style={{ padding: 30 }}>
                 <span className="badge">{course.niveau}</span>

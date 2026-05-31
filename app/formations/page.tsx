@@ -115,7 +115,7 @@ export default async function FormationsPage() {
         </div>
       </section>
       <section className="section">
-        <div className="container grid-2">
+        <div className="container grid-2 course-catalog-grid">
           {courses.map(course => (
             <div className="card" key={course.id} style={{ padding: 30 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>

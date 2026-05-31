@@ -3417,6 +3417,24 @@ label {
   background: linear-gradient(90deg, #9a2020, var(--gold));
 }
 
+.course-catalog-grid {
+  width: min(1100px, calc(100vw - 440px));
+  margin-right: auto;
+  margin-left: auto;
+}
+
+@media (max-width: 1180px) and (min-width: 901px) {
+  .course-catalog-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .course-catalog-grid {
+    width: min(calc(100vw - 28px), 1120px);
+  }
+}
+
 .course-module-content {
   color: #eadabd;
   line-height: 1.72;

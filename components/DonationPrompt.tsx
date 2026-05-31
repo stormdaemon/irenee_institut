@@ -1,16 +1,25 @@
 "use client";
 
 import { HandHeart, X } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { isPrivateAppPath } from "@/lib/private-app-paths";
 
 const donationUrl = "https://www.paypal.com/ncp/payment/4TJJK3C697B9A";
 const storageKey = "irenee-donation-prompt-dismissed";
 const promptDelay = 15000;
 
 export function DonationPrompt() {
+  const pathname = usePathname();
+  const privateAppPath = isPrivateAppPath(pathname);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    if (privateAppPath) {
+      setVisible(false);
+      return;
+    }
+
     try {
       if (sessionStorage.getItem(storageKey)) return;
     } catch {
@@ -19,7 +28,7 @@ export function DonationPrompt() {
 
     const timer = window.setTimeout(() => setVisible(true), promptDelay);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [privateAppPath]);
 
   useEffect(() => {
     if (!visible) return;
@@ -41,7 +50,7 @@ export function DonationPrompt() {
     }
   };
 
-  if (!visible) return null;
+  if (privateAppPath || !visible) return null;
 
   return (
     <div className="donation-popup-backdrop" role="presentation" onClick={dismiss}>

@@ -3,7 +3,9 @@
 import type { LucideIcon } from "lucide-react";
 import { HandHeart } from "lucide-react";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { isPrivateAppPath } from "@/lib/private-app-paths";
 
 type FloatingLink = {
   label: string;
@@ -87,6 +89,7 @@ function FloatingIcon({ link, size }: { link: FloatingLink; size: number }) {
 }
 
 export function FloatingNetworkMenu() {
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileClosing, setMobileClosing] = useState(false);
   const closingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -119,6 +122,8 @@ export function FloatingNetworkMenu() {
     if (mobileOpen) closeMobileHub();
     else openMobileHub();
   };
+
+  if (isPrivateAppPath(pathname)) return null;
 
   return (
     <>

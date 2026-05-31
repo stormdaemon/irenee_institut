@@ -6,6 +6,8 @@ const stylesheet = readFileSync(new URL("../app/globals.css", import.meta.url), 
 const adminUsersPage = readFileSync(new URL("../app/admin/users/page.tsx", import.meta.url), "utf8");
 const coursePage = readFileSync(new URL("../app/cours/[slug]/page.tsx", import.meta.url), "utf8");
 const modulePage = readFileSync(new URL("../app/cours/[slug]/modules/[moduleId]/page.tsx", import.meta.url), "utf8");
+const formationsPage = readFileSync(new URL("../app/formations/page.tsx", import.meta.url), "utf8");
+const homePage = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
 
 function rule(selector: string) {
   const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -36,4 +38,10 @@ test("course pages use dark-theme contrast helpers", () => {
   assert.match(rule(".course-module-content .module-content"), /color:\s*#eadabd\s*!important\s*;/);
   assert.match(rule(".course-module-content .definition-box"), /color:\s*#1f2937\s*!important\s*;/);
   assert.match(rule(".course-module-content .comparison-table td"), /background:\s*#f9fafb\s*!important\s*;/);
+});
+
+test("public course grids stay outside the floating shortcut rails", () => {
+  assert.match(formationsPage, /className="container grid-2 course-catalog-grid"/);
+  assert.match(homePage, /className="grid-2 course-catalog-grid"/);
+  assert.match(rule(".course-catalog-grid"), /width:\s*min\(1100px,\s*calc\(100vw\s*-\s*440px\)\)\s*;/);
 });
