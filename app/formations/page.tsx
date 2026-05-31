@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, Award, BookOpen, CheckCircle2, Clock, User } from "lucide-react";
 import { formatDuration, formatPrice } from "@/lib/data";
-import { getCourses } from "@/lib/server-data";
+import { getPublicCourses } from "@/lib/server-data";
 import { BuyCourseButton } from "@/components/BuyCourseButton";
 import { serializeJsonLd, siteUrl } from "@/lib/seo";
 
@@ -36,7 +36,7 @@ const formationQuestions = [
 ];
 
 export default async function FormationsPage() {
-  const courses = await getCourses();
+  const courses = await getPublicCourses();
   const collectionJsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",

@@ -3,6 +3,7 @@
 import { Camera, CheckCircle2, Loader2, RotateCcw, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
 import type { Profile } from "@/lib/types";
+import { createBrowserClient } from "@/lib/supabase";
 
 type AvatarUploaderProps = {
   profile: Profile;
@@ -38,9 +39,15 @@ export function AvatarUploader({ profile, onUploaded }: AvatarUploaderProps) {
     setError("");
     try {
       const uploaded = await uploadToCloudinary(file, fileName);
+      const supabase = createBrowserClient();
+      const { data: sessionData } = await supabase?.auth.getSession() || { data: { session: null } };
+      if (!sessionData.session?.access_token) throw new Error("Connectez-vous pour modifier votre photo.");
       const response = await fetch("/api/profile/avatar", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`
+        },
         body: JSON.stringify({ user_id: profile.id, avatar_url: uploaded.secure_url, avatar_public_id: uploaded.public_id }),
       });
       const data = await response.json();

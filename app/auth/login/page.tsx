@@ -106,7 +106,25 @@ export default function LoginPage() {
       return;
     }
 
-    window.location.href = getSafeNextPath();
+    const next = getSafeNextPath();
+    if (next.startsWith("/admin")) {
+      const adminResponse = await fetch("/api/auth/admin-session", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${data.session.access_token}` }
+      });
+      if (!adminResponse.ok) {
+        await supabase.auth.signOut();
+        setNotice({
+          title: "Acces refuse",
+          description: "Cette zone est reservee a la direction.",
+          field: "form"
+        });
+        setStatus("error");
+        return;
+      }
+    }
+
+    window.location.href = next;
   }
 
   const isSubmitting = status === "submitting";

@@ -1,9 +1,24 @@
 import { NextResponse } from "next/server";
 import { profiles } from "@/lib/data";
 import { createServerClient } from "@/lib/supabase";
+import { authorizeDirector, authorizeUser } from "@/lib/server-auth";
 
-export async function GET() {
-  const supabase = createServerClient();
+const selfEditableFields = new Set([
+  "civilite",
+  "date_naissance",
+  "prenom",
+  "nom",
+  "telephone",
+  "adresse",
+  "code_postal",
+  "ville",
+  "pays"
+]);
+
+export async function GET(request: Request) {
+  const auth = await authorizeDirector(request);
+  if (!auth.ok) return auth.response;
+  const { supabase } = auth;
   if (!supabase) return NextResponse.json(profiles);
   const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
   if (error) return NextResponse.json(profiles);
@@ -12,12 +27,21 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   const { id, role, course_ids, ...profileFields } = await request.json();
-  const supabase = createServerClient();
-  if (!supabase) return NextResponse.json({ ok: false, error: "Le service est momentanément indisponible." }, { status: 501 });
+  const auth = await authorizeUser(request);
+  if (!auth.ok) return auth.response;
+  const { supabase } = auth;
   if (!id) return NextResponse.json({ ok: false, error: "id is required" }, { status: 400 });
+  const isDirector = auth.profile.role === "directeur";
+  if (!isDirector && id !== auth.user.id) {
+    return NextResponse.json({ ok: false, error: "Vous ne pouvez modifier que votre propre profil." }, { status: 403 });
+  }
+  if (!isDirector && (role !== undefined || course_ids !== undefined)) {
+    return NextResponse.json({ ok: false, error: "Ces champs sont reserves a la direction." }, { status: 403 });
+  }
 
   const profilePayload = Object.fromEntries(
-    Object.entries({ ...profileFields, ...(role ? { role } : {}) }).filter(([, value]) => value !== undefined)
+    Object.entries({ ...profileFields, ...(isDirector && role ? { role } : {}) })
+      .filter(([key, value]) => value !== undefined && (isDirector || selfEditableFields.has(key)))
   );
 
   let profile = null;
@@ -37,7 +61,7 @@ export async function PATCH(request: Request) {
   }
 
   let enrollments = null;
-  if (Array.isArray(course_ids)) {
+  if (isDirector && Array.isArray(course_ids)) {
     const { error: deleteError } = await supabase.from("course_enrollments").delete().eq("etudiant_id", id);
     if (deleteError) return NextResponse.json({ ok: false, verified: false, error: deleteError.message }, { status: 400 });
 

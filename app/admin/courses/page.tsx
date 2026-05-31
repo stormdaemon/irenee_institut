@@ -132,7 +132,7 @@ export default function AdminCoursesPage() {
   }, []);
 
   async function refreshCourses() {
-    const next = await fetch("/api/courses").then(response => response.json()).catch(() => []);
+    const next = await fetch("/api/courses?scope=admin").then(response => response.json()).catch(() => []);
     const normalized = Array.isArray(next) ? next : [];
     setCourses(normalized);
     return normalized as Course[];

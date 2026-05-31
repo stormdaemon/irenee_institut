@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import { ArrowRight, ExternalLink } from "lucide-react";
-import { getCourses } from "@/lib/server-data";
+import { getPublicCourses } from "@/lib/server-data";
 import { siteDescription } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -59,7 +59,7 @@ const features = [
 ];
 
 export default async function HomePage() {
-  const courses = await getCourses();
+  const courses = await getPublicCourses();
 
   return (
     <>

@@ -74,9 +74,19 @@ export default function SettingsPage() {
     setStatus("saving");
     setError("");
     const form = new FormData(event.currentTarget);
+    const supabase = createBrowserClient();
+    const { data: sessionData } = await supabase?.auth.getSession() || { data: { session: null } };
+    if (!sessionData.session?.access_token) {
+      setError("Connectez-vous pour modifier votre profil.");
+      setStatus("error");
+      return;
+    }
     const response = await fetch("/api/users", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionData.session.access_token}`
+      },
       body: JSON.stringify({
         id: profile.id,
         civilite: form.get("civilite"),

@@ -1,19 +1,24 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase";
+import { authorizeBearerUser } from "@/lib/server-auth";
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const supabase = createServerClient();
-  if (!supabase) return NextResponse.json({ ok: false, error: "Le service est momentanément indisponible." }, { status: 501 });
+  const auth = await authorizeBearerUser(request);
+  if (!auth.ok) return auth.response;
+  const { supabase } = auth;
   if (!body.user_id && !body.id) return NextResponse.json({ ok: false, error: "user_id is required to update profile registration" }, { status: 400 });
+  if ((body.user_id || body.id) !== auth.user.id) {
+    return NextResponse.json({ ok: false, error: "Vous ne pouvez finaliser que votre propre inscription." }, { status: 403 });
+  }
 
   const payload = {
-    id: body.user_id || body.id,
-    email: body.email,
+    id: auth.user.id,
+    email: auth.user.email || body.email,
     prenom: body.prenom,
     nom: body.nom,
     telephone: body.telephone,
-    role: body.role || "etudiant",
+    role: "etudiant",
     formation_choisie: body.formation_choisie || body.formationChoisie,
     tarif_applicable: body.tarif_applicable || body.tarifApplicable,
     modalite_paiement: body.modalite_paiement || body.modalitePaiement,

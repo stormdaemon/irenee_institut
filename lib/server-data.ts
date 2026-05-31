@@ -3,6 +3,7 @@ import { legalPages, type LegalPageKey } from "./legal";
 import { createServerClient } from "./supabase";
 import { cloudinaryAvatarUrl } from "./cloudinary";
 import type { BookRequest, Course, CourseModule, Homework, Profile } from "./types";
+import { toPublicCourse, type PublicCourse } from "./public-courses";
 
 type RawCourse = Omit<Course, "modules" | "objectifs" | "competences" | "prerequis"> & {
   objectifs?: string[] | null;
@@ -97,6 +98,12 @@ export async function getCourses(): Promise<Course[]> {
   }
 
   return courses.map(course => normalizeCourse(course, modulesByCourse.get(course.id) || []));
+}
+
+export async function getPublicCourses(): Promise<PublicCourse[]> {
+  return (await getCourses())
+    .filter(course => !course.statut || course.statut === "publie")
+    .map(toPublicCourse);
 }
 
 export async function getCourseBySlug(slug: string): Promise<Course | null> {

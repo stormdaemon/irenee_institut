@@ -117,32 +117,34 @@ export default function SignupPage() {
       return;
     }
 
-    const profileResponse = await fetch("/api/inscription", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: data.user.id,
-        email,
-        prenom,
-        nom,
-        role: "etudiant",
-        statut_inscription: "en_attente"
-      })
-    });
-    const profileResult = await profileResponse.json().catch(() => null);
-
-    if (!profileResponse.ok || profileResult?.verified !== true) {
-      await supabase.auth.signOut();
-      setNotice({
-        title: "Compte créé, finalisation impossible",
-        description: profileResult?.error || "Le compte a été créé, mais votre espace n'a pas pu être préparé.",
-        field: "form"
-      });
-      setStatus("error");
-      return;
-    }
-
     if (data.session?.access_token) {
+      const profileResponse = await fetch("/api/inscription", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.session.access_token}`
+        },
+        body: JSON.stringify({
+          user_id: data.user.id,
+          email,
+          prenom,
+          nom,
+          statut_inscription: "en_attente"
+        })
+      });
+      const profileResult = await profileResponse.json().catch(() => null);
+
+      if (!profileResponse.ok || profileResult?.verified !== true) {
+        await supabase.auth.signOut();
+        setNotice({
+          title: "Compte créé, finalisation impossible",
+          description: profileResult?.error || "Le compte a été créé, mais votre espace n'a pas pu être préparé.",
+          field: "form"
+        });
+        setStatus("error");
+        return;
+      }
+
       const meResponse = await fetch("/api/me", {
         headers: { Authorization: `Bearer ${data.session.access_token}` }
       });

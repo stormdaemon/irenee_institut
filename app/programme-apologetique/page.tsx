@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ArrowRight, BookOpen, CheckCircle2, Clock } from "lucide-react";
 import { formatDuration } from "@/lib/data";
 import { serializeJsonLd, siteUrl } from "@/lib/seo";
-import { getCourses } from "@/lib/server-data";
+import { getPublicCourses } from "@/lib/server-data";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +32,7 @@ const themes = [
 ];
 
 export default async function ProgrammeApologetiquePage() {
-  const courses = await getCourses();
+  const courses = await getPublicCourses();
   const itemListJsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",

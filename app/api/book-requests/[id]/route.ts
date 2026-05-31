@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase";
+import { authorizeDirector } from "@/lib/server-auth";
 
 const allowedStatuses = new Set(["en_attente_direction", "approuve", "refuse"]);
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await authorizeDirector(request);
+  if (!auth.ok) return auth.response;
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
   const status = String(body.status || "").trim();
@@ -12,7 +15,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ ok: false, error: "Statut de demande invalide." }, { status: 400 });
   }
 
-  const supabase = createServerClient();
+  const { supabase } = auth;
   if (!supabase) return NextResponse.json({ ok: false, error: "Le service est momentanement indisponible." }, { status: 501 });
 
   const { data, error } = await supabase

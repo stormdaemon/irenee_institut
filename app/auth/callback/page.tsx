@@ -28,7 +28,10 @@ export default function AuthCallbackPage() {
 
       const url = new URL(window.location.href);
       const code = url.searchParams.get("code");
-      const next = url.searchParams.get("next") || "/espace-etudiant";
+      const requestedNext = url.searchParams.get("next");
+      const next = requestedNext && requestedNext.startsWith("/") && !requestedNext.startsWith("//")
+        ? requestedNext
+        : "/espace-etudiant";
 
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
@@ -63,6 +66,24 @@ export default function AuthCallbackPage() {
         });
         setStatus("error");
         return;
+      }
+
+      if (next.startsWith("/admin")) {
+        const adminResponse = await fetch("/api/auth/admin-session", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${data.session.access_token}` }
+        });
+        if (!adminResponse.ok) {
+          await supabase.auth.signOut();
+          if (!mounted) return;
+          setNotice({
+            title: "Acces refuse",
+            description: "Cette zone est reservee a la direction.",
+            field: "form"
+          });
+          setStatus("error");
+          return;
+        }
       }
 
       window.location.replace(next);

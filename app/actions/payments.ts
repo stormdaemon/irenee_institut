@@ -76,6 +76,7 @@ async function getCheckoutContext(token: string, courseId: string): Promise<Chec
 
   if (courseError) return { error: courseError.message, status: 400 };
   if (!course) return { error: "Cette formation n'existe pas.", status: 404 };
+  if (course.statut !== "publie") return { error: "Cette formation n'est pas disponible a l'achat.", status: 404 };
 
   return {
     course: normalizeCourse(course),

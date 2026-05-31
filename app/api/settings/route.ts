@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase";
 import { legalPages } from "@/lib/legal";
 import { parseSettingValue, secretSettingKeys, stringifySettingValue } from "@/lib/settings";
 import { PAYPAL_DEFAULT_AMOUNT_CENTS, PAYPAL_WEBHOOK_URL } from "@/lib/paypal";
+import { authorizeDirector } from "@/lib/server-auth";
 
 const defaults = {
   rib: "",
@@ -45,8 +46,10 @@ async function upsertSystemSetting(supabase: NonNullable<ReturnType<typeof creat
   return data;
 }
 
-export async function GET() {
-  const supabase = createServerClient();
+export async function GET(request: Request) {
+  const auth = await authorizeDirector(request);
+  if (!auth.ok) return auth.response;
+  const { supabase } = auth;
   if (!supabase) return NextResponse.json({ ...defaults, legalPages });
 
   const [{ data: settings }, { data: legalRows }] = await Promise.all([
@@ -77,7 +80,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const supabase = createServerClient();
+  const auth = await authorizeDirector(request);
+  if (!auth.ok) return auth.response;
+  const { supabase } = auth;
   if (!supabase) return NextResponse.json({ ok: false, error: "Le service est momentanément indisponible." }, { status: 501 });
 
   try {

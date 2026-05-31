@@ -37,6 +37,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Ce cours n'est pas disponible sur votre compte." }, { status: 403 });
   }
 
+  const { data: module } = await supabase
+    .from("course_modules")
+    .select("id")
+    .eq("id", body.module_id)
+    .eq("course_id", body.course_id)
+    .maybeSingle();
+
+  if (!module) {
+    return NextResponse.json({ ok: false, error: "Ce module n'appartient pas au cours indique." }, { status: 403 });
+  }
+
   const payload = {
     enrollment_id: enrollment.id,
     etudiant_id: authData.user.id,

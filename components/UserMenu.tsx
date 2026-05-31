@@ -72,8 +72,24 @@ export function UserMenu() {
 
   async function signOut() {
     const supabase = createBrowserClient();
+    await fetch("/api/auth/admin-session", { method: "DELETE" }).catch(() => undefined);
     await supabase?.auth.signOut();
     window.location.href = "/";
+  }
+
+  async function openAdmin(event: React.MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault();
+    const supabase = createBrowserClient();
+    const { data } = await supabase?.auth.getSession() || { data: { session: null } };
+    if (!data.session?.access_token) {
+      window.location.href = "/auth/login?next=/admin";
+      return;
+    }
+    const response = await fetch("/api/auth/admin-session", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${data.session.access_token}` }
+    });
+    window.location.href = response.ok ? "/admin" : "/auth/login?next=/admin";
   }
 
   if (!profile) {
@@ -85,7 +101,7 @@ export function UserMenu() {
     );
   }
 
-  const isStaff = profile.role === "directeur" || profile.role === "formateur";
+  const isDirector = profile.role === "directeur";
 
   return (
     <div className="user-menu" ref={menuRef}>
@@ -113,8 +129,8 @@ export function UserMenu() {
             <small>{profile.role}</small>
           </div>
           <Link href="/espace-etudiant" onClick={() => setOpen(false)}><BookOpen size={16} /> Mes cours</Link>
-          <Link href={isStaff ? "/admin/homework" : "/devoirs"} onClick={() => setOpen(false)}><ClipboardList size={16} /> Devoirs</Link>
-          {isStaff && <Link href="/admin" onClick={() => setOpen(false)}><LayoutDashboard size={16} /> Administration</Link>}
+          <Link href={isDirector ? "/admin/homework" : "/devoirs"} onClick={() => setOpen(false)}><ClipboardList size={16} /> Devoirs</Link>
+          {isDirector && <Link href="/admin" onClick={openAdmin}><LayoutDashboard size={16} /> Administration</Link>}
           <Link href="/parametres" onClick={() => setOpen(false)}><Settings size={16} /> Paramètres</Link>
           <button type="button" onClick={signOut}><LogOut size={16} /> Déconnexion</button>
         </div>

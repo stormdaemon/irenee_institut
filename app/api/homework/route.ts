@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { homework } from "@/lib/data";
 import { createServerClient } from "@/lib/supabase";
+import { authorizeDirector } from "@/lib/server-auth";
 
-export async function GET() {
-  const supabase = createServerClient();
+export async function GET(request: Request) {
+  const auth = await authorizeDirector(request);
+  if (!auth.ok) return auth.response;
+  const { supabase } = auth;
   if (!supabase) return NextResponse.json(homework);
   const { data, error } = await supabase.from("homework").select("*, homework_assignments(*)").order("created_at", { ascending: false });
   if (error) return NextResponse.json(homework);
@@ -11,9 +14,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await authorizeDirector(request);
+  if (!auth.ok) return auth.response;
   const form = await request.formData();
   const studentIds = form.getAll("student_ids").map(String);
-  const supabase = createServerClient();
+  const { supabase } = auth;
   if (!supabase) return NextResponse.json({ ok: false, error: "Le service est momentanément indisponible." }, { status: 501 });
 
   const { data: author, error: authorError } = await supabase

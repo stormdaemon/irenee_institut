@@ -63,6 +63,7 @@ export async function POST(request: Request) {
 
   if (courseError) return NextResponse.json({ ok: false, error: courseError.message }, { status: 400 });
   if (!course) return NextResponse.json({ ok: false, error: "Cette formation n'existe pas." }, { status: 404 });
+  if (course.statut !== "publie") return NextResponse.json({ ok: false, error: "Cette formation n'est pas disponible a l'achat." }, { status: 404 });
 
   const { data: existingEnrollment } = await supabase
     .from("course_enrollments")

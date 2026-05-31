@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCourses } from "@/lib/server-data";
 import { createServerClient } from "@/lib/supabase";
+import { toPublicCourse } from "@/lib/public-courses";
+import { authorizeDirector } from "@/lib/server-auth";
 
 function parseJsonArray(value: FormDataEntryValue | null) {
   if (!value) return [];
@@ -31,12 +33,20 @@ async function getDefaultAuthor(supabase: NonNullable<ReturnType<typeof createSe
   };
 }
 
-export async function GET() {
-  return NextResponse.json(await getCourses());
+export async function GET(request: Request) {
+  const courses = await getCourses();
+  if (new URL(request.url).searchParams.get("scope") !== "admin") {
+    return NextResponse.json(courses.filter(course => !course.statut || course.statut === "publie").map(toPublicCourse));
+  }
+  const auth = await authorizeDirector(request);
+  if (!auth.ok) return auth.response;
+  return NextResponse.json(courses);
 }
 
 export async function POST(request: Request) {
-  const supabase = createServerClient();
+  const auth = await authorizeDirector(request);
+  if (!auth.ok) return auth.response;
+  const { supabase } = auth;
   if (!supabase) return NextResponse.json({ ok: false, error: "Le service est momentanément indisponible." }, { status: 501 });
 
   const form = await request.formData();
