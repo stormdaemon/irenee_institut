@@ -4,6 +4,7 @@ import { BookOpen, CreditCard, Loader2, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { capturePayPalOrderAction, createPayPalOrderAction, getPayPalCheckoutConfigAction } from "@/app/actions/payments";
+import { buildPayPalSdkUrl } from "@/lib/paypal-sdk";
 import { createBrowserClient } from "@/lib/supabase";
 
 type BuyCourseButtonProps = {
@@ -113,13 +114,7 @@ export function BuyCourseButton({
 
     const scriptId = "paypal-js-sdk";
     const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
-    const params = new URLSearchParams({
-      "client-id": config.clientId,
-      currency: config.currency || "EUR",
-      intent: "capture",
-      components: "buttons"
-    });
-    const src = `https://www.paypal.com/sdk/js?${params.toString()}`;
+    const src = buildPayPalSdkUrl({ clientId: config.clientId, currency: config.currency });
 
     if (existing && existing.dataset.paypalSrc !== src) {
       existing.remove();
