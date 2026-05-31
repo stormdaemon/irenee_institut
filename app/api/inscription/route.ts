@@ -12,6 +12,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Vous ne pouvez finaliser que votre propre inscription." }, { status: 403 });
   }
 
+  const marketingOptIn = body.marketing_opt_in === true;
   const payload = {
     id: auth.user.id,
     email: auth.user.email || body.email,
@@ -24,6 +25,9 @@ export async function POST(request: Request) {
     modalite_paiement: body.modalite_paiement || body.modalitePaiement,
     moyen_paiement: body.moyen_paiement || body.moyenPaiement,
     statut_inscription: body.statut_inscription || "en_attente",
+    marketing_opt_in: marketingOptIn,
+    marketing_opt_in_at: marketingOptIn ? new Date().toISOString() : null,
+    marketing_opt_out_at: marketingOptIn ? null : new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
 

@@ -12,7 +12,8 @@ const selfEditableFields = new Set([
   "adresse",
   "code_postal",
   "ville",
-  "pays"
+  "pays",
+  "marketing_opt_in"
 ]);
 
 export async function GET(request: Request) {
@@ -43,6 +44,12 @@ export async function PATCH(request: Request) {
     Object.entries({ ...profileFields, ...(isDirector && role ? { role } : {}) })
       .filter(([key, value]) => value !== undefined && (isDirector || selfEditableFields.has(key)))
   );
+  if (profilePayload.marketing_opt_in !== undefined) {
+    const marketingOptIn = profilePayload.marketing_opt_in === true;
+    profilePayload.marketing_opt_in = marketingOptIn;
+    profilePayload.marketing_opt_in_at = marketingOptIn ? new Date().toISOString() : null;
+    profilePayload.marketing_opt_out_at = marketingOptIn ? null : new Date().toISOString();
+  }
 
   let profile = null;
   if (Object.keys(profilePayload).length) {

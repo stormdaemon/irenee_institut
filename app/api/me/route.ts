@@ -50,13 +50,17 @@ function normalizeModule(module: RawModule): CourseModule {
 function profileFromUser(user: { id: string; email?: string | null; user_metadata?: Record<string, unknown> }): Profile {
   const metadata = user.user_metadata || {};
   const email = user.email || "";
+  const marketingOptIn = metadata.marketing_opt_in === true;
   return {
     id: user.id,
     email,
     prenom: String(metadata.prenom || metadata.first_name || email.split("@")[0] || ""),
     nom: String(metadata.nom || metadata.last_name || ""),
     role: "etudiant",
-    statut_inscription: "en_attente"
+    statut_inscription: "en_attente",
+    marketing_opt_in: marketingOptIn,
+    marketing_opt_in_at: marketingOptIn ? new Date().toISOString() : null,
+    marketing_opt_out_at: marketingOptIn ? null : new Date().toISOString()
   };
 }
 

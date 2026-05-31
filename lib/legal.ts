@@ -35,6 +35,8 @@ L'Institut Irénée veille à l'exactitude des informations publiées, sans gara
 
 Les données collectées peuvent comprendre : identité, email, téléphone, adresse, date de naissance, choix de formation, informations de paiement, rôle utilisateur, progression pédagogique, devoirs, rendus, notes et échanges administratifs.
 
+Lorsque vous choisissez de recevoir les actualités et propositions de formations de l'Institut Irénée, votre consentement est enregistré. Vous pouvez retirer ce consentement à tout moment depuis vos paramètres ou au moyen du lien de désabonnement présent dans chaque message.
+
 Finalités
 
 Ces données servent à créer le compte utilisateur, gérer l'accès aux formations, suivre la progression pédagogique, administrer les devoirs, traiter les inscriptions, assurer le support et respecter les obligations légales.

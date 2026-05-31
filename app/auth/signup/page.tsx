@@ -41,6 +41,7 @@ export default function SignupPage() {
     const email = getFieldValue(form, "email").toLowerCase();
     const password = String(form.get("password") || "");
     const passwordConfirm = String(form.get("passwordConfirm") || "");
+    const marketingOptIn = form.get("marketing_opt_in") === "on";
     const nextFieldErrors: FieldErrors = {};
 
     if (!prenom) nextFieldErrors.prenom = "Indiquez votre prénom.";
@@ -81,7 +82,7 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        data: { prenom, nom },
+        data: { prenom, nom, marketing_opt_in: marketingOptIn },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(getSafeNextPath())}`
       }
     });
@@ -129,6 +130,7 @@ export default function SignupPage() {
           email,
           prenom,
           nom,
+          marketing_opt_in: marketingOptIn,
           statut_inscription: "en_attente"
         })
       });
@@ -241,6 +243,14 @@ export default function SignupPage() {
             <input className="input" name="passwordConfirm" type="password" autoComplete="new-password" minLength={8} disabled={isSubmitting || isSuccess} aria-invalid={Boolean(fieldErrors.passwordConfirm)} />
           </span>
           {fieldErrors.passwordConfirm && <small className="field-error">{fieldErrors.passwordConfirm}</small>}
+        </label>
+
+        <label style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <input name="marketing_opt_in" type="checkbox" disabled={isSubmitting || isSuccess} style={{ marginTop: 4 }} />
+          <span>
+            Je souhaite recevoir chaque semaine les actualités et propositions de formations de l'Institut Irénée.
+            <small className="auth-help" style={{ display: "block" }}>Facultatif. Désabonnement possible à tout moment.</small>
+          </span>
         </label>
 
         <button className="btn btn-primary auth-submit" disabled={isSubmitting || isSuccess}>

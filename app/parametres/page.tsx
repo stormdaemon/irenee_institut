@@ -97,7 +97,8 @@ export default function SettingsPage() {
         adresse: form.get("adresse"),
         code_postal: form.get("code_postal"),
         ville: form.get("ville"),
-        pays: form.get("pays")
+        pays: form.get("pays"),
+        marketing_opt_in: form.get("marketing_opt_in") === "on"
       })
     });
     const data = await response.json();
@@ -155,6 +156,15 @@ export default function SettingsPage() {
                 <p><label>Ville</label><input className="input" name="ville" defaultValue={profile.ville || ""} /></p>
                 <p><label>Pays</label><input className="input" name="pays" defaultValue={profile.pays || "France"} /></p>
               </div>
+              <p>
+                <label style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <input name="marketing_opt_in" type="checkbox" defaultChecked={profile.marketing_opt_in === true} style={{ marginTop: 4 }} />
+                  <span>
+                    Recevoir chaque semaine les actualités et propositions de formations de l'Institut Irénée.
+                    <small className="auth-help" style={{ display: "block" }}>Vous pouvez vous désabonner à tout moment.</small>
+                  </span>
+                </label>
+              </p>
               <p style={{ textAlign: "right" }}><button className="btn btn-primary"><Save size={18} /> Enregistrer les modifications</button></p>
             </form>
 

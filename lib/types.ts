@@ -71,6 +71,10 @@ export type Profile = {
   avatar_url?: string;
   avatar_public_id?: string;
   created_at?: string;
+  marketing_opt_in?: boolean;
+  marketing_opt_in_at?: string | null;
+  marketing_opt_out_at?: string | null;
+  marketing_unsubscribe_token?: string;
 };
 
 export type Homework = {
