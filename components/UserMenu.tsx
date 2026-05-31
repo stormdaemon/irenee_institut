@@ -77,19 +77,19 @@ export function UserMenu() {
     window.location.href = "/";
   }
 
-  async function openAdmin(event: React.MouseEvent<HTMLAnchorElement>) {
+  async function openAdmin(event: React.MouseEvent<HTMLAnchorElement>, target: string) {
     event.preventDefault();
     const supabase = createBrowserClient();
     const { data } = await supabase?.auth.getSession() || { data: { session: null } };
     if (!data.session?.access_token) {
-      window.location.href = "/auth/login?next=/admin";
+      window.location.href = `/auth/login?next=${encodeURIComponent(target)}`;
       return;
     }
     const response = await fetch("/api/auth/admin-session", {
       method: "POST",
       headers: { Authorization: `Bearer ${data.session.access_token}` }
     });
-    window.location.href = response.ok ? "/admin" : "/auth/login?next=/admin";
+    window.location.href = response.ok ? target : `/auth/login?next=${encodeURIComponent(target)}`;
   }
 
   if (!profile) {
@@ -102,6 +102,8 @@ export function UserMenu() {
   }
 
   const isDirector = profile.role === "directeur";
+  const isStaff = isDirector || profile.role === "formateur";
+  const adminTarget = isDirector ? "/admin" : "/admin/courses";
 
   return (
     <div className="user-menu" ref={menuRef}>
@@ -130,7 +132,7 @@ export function UserMenu() {
           </div>
           <Link href="/espace-etudiant" onClick={() => setOpen(false)}><BookOpen size={16} /> Mes cours</Link>
           <Link href={isDirector ? "/admin/homework" : "/devoirs"} onClick={() => setOpen(false)}><ClipboardList size={16} /> Devoirs</Link>
-          {isDirector && <Link href="/admin" onClick={openAdmin}><LayoutDashboard size={16} /> Administration</Link>}
+          {isStaff && <Link href={adminTarget} onClick={(event) => openAdmin(event, adminTarget)}><LayoutDashboard size={16} /> Administration</Link>}
           <Link href="/parametres" onClick={() => setOpen(false)}><Settings size={16} /> Paramètres</Link>
           <button type="button" onClick={signOut}><LogOut size={16} /> Déconnexion</button>
         </div>

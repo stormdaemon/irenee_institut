@@ -12,8 +12,8 @@ const cookieOptions = {
 export async function POST(request: Request) {
   const auth = await authorizeBearerUser(request);
   if (!auth.ok) return auth.response;
-  if (auth.profile.role !== "directeur") {
-    return NextResponse.json({ ok: false, error: "Acces reserve a la direction." }, { status: 403 });
+  if (auth.profile.role !== "directeur" && auth.profile.role !== "formateur") {
+    return NextResponse.json({ ok: false, error: "Acces reserve au personnel pedagogique." }, { status: 403 });
   }
 
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() || "";

@@ -15,6 +15,10 @@ type AuthContext = {
 type Authorized = AuthContext & { ok: true };
 type Rejected = { ok: false; response: NextResponse };
 
+function isStaff(profile: Profile) {
+  return profile.role === "directeur" || profile.role === "formateur";
+}
+
 function unauthorized(message = "Vous devez etre connecte pour acceder a cet espace.") {
   return NextResponse.json({ ok: false, error: message }, { status: 401 });
 }
@@ -71,8 +75,22 @@ export async function authorizeDirector(request: Request): Promise<Authorized | 
     : { ok: false, response: forbidden() };
 }
 
+export async function authorizeStaff(request: Request): Promise<Authorized | Rejected> {
+  const auth = await authorizeUser(request);
+  if (!auth.ok) return auth;
+  return isStaff(auth.profile)
+    ? auth
+    : { ok: false, response: forbidden() };
+}
+
 export async function requireDirectorSession() {
   const store = await cookies();
   const context = await authenticate(store.get(ADMIN_SESSION_COOKIE)?.value || "");
   return context?.profile.role === "directeur" ? context : null;
+}
+
+export async function requireStaffSession() {
+  const store = await cookies();
+  const context = await authenticate(store.get(ADMIN_SESSION_COOKIE)?.value || "");
+  return context && isStaff(context.profile) ? context : null;
 }

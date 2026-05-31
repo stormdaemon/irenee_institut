@@ -2,10 +2,13 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { BarChart3, BookOpen, ClipboardList, CreditCard, FileText, Settings, Users } from "lucide-react";
 import { getCourses, getCurrentProfile, getHomework, getPaymentRequests, getProfiles, getStats } from "@/lib/server-data";
+import { requireDirectorSession } from "@/lib/server-auth";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
+  if (!await requireDirectorSession()) redirect("/admin/courses");
   const [courses, profile, stats, profiles, homework, paymentRequests] = await Promise.all([
     getCourses(),
     getCurrentProfile(),

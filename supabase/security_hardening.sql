@@ -72,7 +72,7 @@ create policy progress_read_self
   to authenticated
   using (etudiant_id = auth.uid());
 
-create policy modules_read_enrolled_or_director
+create policy modules_read_enrolled_or_staff
   on public.course_modules
   for select
   to authenticated
@@ -88,7 +88,7 @@ create policy modules_read_enrolled_or_director
       select 1
       from public.profiles
       where profiles.id = auth.uid()
-        and profiles.role = 'directeur'
+        and profiles.role in ('directeur', 'formateur')
     )
   );
 

@@ -455,7 +455,8 @@ create policy progress_read_self
   using (etudiant_id = auth.uid());
 
 drop policy if exists modules_read_enrolled_or_director on public.course_modules;
-create policy modules_read_enrolled_or_director
+drop policy if exists modules_read_enrolled_or_staff on public.course_modules;
+create policy modules_read_enrolled_or_staff
   on public.course_modules
   for select
   to authenticated
@@ -471,7 +472,7 @@ create policy modules_read_enrolled_or_director
       select 1
       from public.profiles
       where profiles.id = auth.uid()
-        and profiles.role = 'directeur'
+        and profiles.role in ('directeur', 'formateur')
     )
   );
 

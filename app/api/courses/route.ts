@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getCourses } from "@/lib/server-data";
 import { createServerClient } from "@/lib/supabase";
 import { toPublicCourse } from "@/lib/public-courses";
-import { authorizeDirector } from "@/lib/server-auth";
+import { authorizeStaff } from "@/lib/server-auth";
 
 function parseJsonArray(value: FormDataEntryValue | null) {
   if (!value) return [];
@@ -38,13 +38,13 @@ export async function GET(request: Request) {
   if (new URL(request.url).searchParams.get("scope") !== "admin") {
     return NextResponse.json(courses.filter(course => !course.statut || course.statut === "publie").map(toPublicCourse));
   }
-  const auth = await authorizeDirector(request);
+  const auth = await authorizeStaff(request);
   if (!auth.ok) return auth.response;
   return NextResponse.json(courses);
 }
 
 export async function POST(request: Request) {
-  const auth = await authorizeDirector(request);
+  const auth = await authorizeStaff(request);
   if (!auth.ok) return auth.response;
   const { supabase } = auth;
   if (!supabase) return NextResponse.json({ ok: false, error: "Le service est momentanément indisponible." }, { status: 501 });
