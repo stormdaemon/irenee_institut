@@ -2126,6 +2126,10 @@ label {
   display: none;
 }
 
+.hero-motto-mobile {
+  display: none;
+}
+
 .hero-title-desktop {
   color: inherit !important;
 }
@@ -3110,7 +3114,7 @@ label {
 
   .hero-title {
     max-width: 100%;
-    font-size: clamp(1.95rem, 8.9vw, 2.45rem);
+    font-size: clamp(1.8rem, 7.6vw, 2.15rem);
     line-height: 1;
   }
 
@@ -3121,6 +3125,19 @@ label {
   .hero-title-mobile {
     display: block;
     color: inherit !important;
+  }
+
+  .hero-motto {
+    max-width: 320px;
+    line-height: 1.15;
+  }
+
+  .hero-motto-desktop {
+    display: none;
+  }
+
+  .hero-motto-mobile {
+    display: block;
   }
 
   .hero-lead {

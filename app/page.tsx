@@ -69,9 +69,13 @@ export default async function HomePage() {
             <span className="hero-cross" aria-hidden="true">✝</span>
             <span className="hero-eyebrow">Formation catholique en ligne</span>
             <h1 className="font-display hero-title">
-              Institut d'Apologétique<br /><span>Irénée</span>
+              <span className="hero-title-desktop">Institut d'Apologétique<br /><span>Saint Irénée</span></span>
+              <span className="hero-title-mobile">Institut<br />d'Apologétique<br /><span>Saint Irénée</span></span>
             </h1>
-            <p className="hero-motto">Rendre compte de la crédibilité de la foi catholique</p>
+            <p className="hero-motto">
+              <span className="hero-motto-desktop">Rendre compte de la crédibilité de la foi catholique</span>
+              <span className="hero-motto-mobile">Rendre compte de la crédibilité<br />de la foi catholique</span>
+            </p>
             <div className="hero-separator" aria-hidden="true" />
             <p className="hero-lead">
               Approfondissez votre foi catholique et apprenez à la défendre avec rigueur et bienveillance grâce à nos formations en ligne dispensées par des experts catholiques.
