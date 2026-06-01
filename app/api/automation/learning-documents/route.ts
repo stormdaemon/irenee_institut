@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     .select("*, profiles(email)")
     .eq("delivery_status", "queued")
     .order("issued_at", { ascending: true })
-    .limit(20);
+    .limit(100);
 
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
 
@@ -88,4 +88,3 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true, data });
 }
-
