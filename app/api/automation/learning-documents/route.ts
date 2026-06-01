@@ -40,7 +40,7 @@ export async function GET(request: Request) {
     .select("*, profiles(email)")
     .eq("delivery_status", "queued")
     .order("issued_at", { ascending: true })
-    .limit(100);
+    .limit(20);
 
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
 

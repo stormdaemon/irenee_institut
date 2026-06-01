@@ -79,7 +79,7 @@ export async function renderLearningDocumentPdf(document: LearningDocument) {
   const regular = await pdf.embedFont(StandardFonts.TimesRoman);
   const bold = await pdf.embedFont(StandardFonts.TimesRomanBold);
   const italic = await pdf.embedFont(StandardFonts.TimesRomanItalic);
-  const logo = await pdf.embedPng(await readFile(path.join(process.cwd(), "public", "images", "logo_without_text.png")));
+  const logo = await pdf.embedPng(await readFile(path.join(process.cwd(), "public", "images", "logo_without_text_pdf.png")));
 
   page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(0.03, 0.11, 0.23) });
   page.drawRectangle({ x: 24, y: 24, width: PAGE_WIDTH - 48, height: PAGE_HEIGHT - 48, color: rgb(0.97, 0.89, 0.69) });
