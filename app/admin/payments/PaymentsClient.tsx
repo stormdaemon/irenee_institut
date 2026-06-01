@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ActionNotice } from "@/components/ActionNotice";
 import { formatPrice } from "@/lib/data";
+import { authenticatedFetch } from "@/lib/authenticated-fetch";
 import type { BookRequest, Profile } from "@/lib/types";
 
 function formationLabel(value: unknown) {
@@ -31,7 +32,7 @@ export function PaymentsClient({
   async function validate(id: string) {
     setStatus("saving");
     setError("");
-    const response = await fetch(`/api/payments/${id}`, {
+    const response = await authenticatedFetch(`/api/payments/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ statut: "validee" })
@@ -49,7 +50,7 @@ export function PaymentsClient({
   async function updateBookRequest(id: string, nextStatus: BookRequest["status"]) {
     setStatus("saving");
     setError("");
-    const response = await fetch(`/api/book-requests/${id}`, {
+    const response = await authenticatedFetch(`/api/book-requests/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: nextStatus })

@@ -19,13 +19,12 @@ function avatarSrc(profile: Profile | null) {
   if (!profile) return "";
   const src = profile.avatar_public_id || profile.avatar_url || "";
   if (!src) return "";
-  if (!src.startsWith("http") && !src.startsWith("/") && !src.includes("balzaac") && !src.includes("nezchristos") && !src.includes("mathieu")) {
+  if (!src.startsWith("http") && !src.startsWith("/") && !src.includes("balzaac") && !src.includes("nezchristos")) {
     return cloudinaryAvatarUrl(src);
   }
   if (src.startsWith("http") || src.startsWith("/")) return src;
-  if (src.includes("balzaac")) return "/images/balzaac.jpeg";
+  if (src.includes("balzaac")) return "/images/guillaume-maspero.jpg";
   if (src.includes("nezchristos")) return "/images/nezchristos.jpeg";
-  if (src.includes("mathieu")) return "/images/mathieu.webp";
   return "";
 }
 

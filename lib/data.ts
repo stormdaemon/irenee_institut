@@ -205,17 +205,18 @@ export const homework = [
 
 export const trainers = [
   {
-    name: "Balzaac",
-    title: "Influenceur Apologétique sur TikTok",
-    image: "/images/balzaac.jpeg",
-    tags: ["Apologétique", "Défense de la foi", "Théologie", "Évangélisation"],
+    name: "Guillaume Maspero",
+    title: "Professeur de théologie dogmatique",
+    image: "/images/guillaume-maspero.jpg",
+    tags: ["Théologie dogmatique", "Foi catholique", "Transmission", "Enseignement"],
     description:
-      "Influenceur catholique spécialisé dans l'apologétique moderne. Il crée du contenu pour défendre la foi catholique avec rigueur intellectuelle tout en restant accessible aux jeunes générations.",
+      "Prêtre catholique et professeur de théologie dogmatique.",
     achievements: [
-      "Contenu vidéo sur l'apologétique catholique moderne",
-      "Réponses aux objections courantes contre la foi",
-      "Vulgarisation de concepts théologiques complexes",
-      "Collaboration avec d'autres influenceurs catholiques"
+      "Professeur ordinaire de théologie dogmatique",
+      "Doyen de la Faculté de théologie",
+      "Enseignement consacré au mystère de Dieu",
+      "Formation académique en physique théorique et en théologie",
+      "Transmission de la foi catholique"
     ]
   },
   {

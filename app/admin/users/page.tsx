@@ -4,6 +4,7 @@ import type { Course, Profile, Role } from "@/lib/types";
 import { Calendar, Mail, Plus, Search, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ActionNotice } from "@/components/ActionNotice";
+import { authenticatedFetch } from "@/lib/authenticated-fetch";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<Profile[]>([]);
@@ -17,8 +18,8 @@ export default function AdminUsersPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/users").then(response => response.json()).then(setUsers).catch(() => setUsers([]));
-    fetch("/api/courses").then(response => response.json()).then(setCourses).catch(() => setCourses([]));
+    authenticatedFetch("/api/users").then(response => response.json()).then(setUsers).catch(() => setUsers([]));
+    authenticatedFetch("/api/courses").then(response => response.json()).then(setCourses).catch(() => setCourses([]));
   }, []);
 
   const filtered = useMemo(() => users.filter(user => {
@@ -31,7 +32,7 @@ export default function AdminUsersPage() {
     setStatus("saving");
     setSuccessMessage("");
     setError("");
-    const response = await fetch("/api/users", {
+    const response = await authenticatedFetch("/api/users", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, role: nextRole })
@@ -52,7 +53,7 @@ export default function AdminUsersPage() {
     setStatus("saving");
     setSuccessMessage("");
     setError("");
-    const response = await fetch("/api/users", {
+    const response = await authenticatedFetch("/api/users", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: selected.id, course_ids: assigned })

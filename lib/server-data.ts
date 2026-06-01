@@ -26,9 +26,44 @@ type RawModule = {
   quiz?: CourseModule["quiz"] | null;
 };
 
+function isExcludedPublicName(name: string) {
+  const normalizedName = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return normalizedName.includes("raffray") || normalizedName.includes("rafray");
+}
+
+function isLegacyBalzaacProfile(profile: Profile) {
+  return [profile.prenom, profile.nom, profile.avatar_public_id, profile.avatar_url]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .includes("balzaac");
+}
+
+function normalizePublicTrainer(profile: Profile): Profile {
+  if (!isLegacyBalzaacProfile(profile)) return profile;
+  return {
+    ...profile,
+    email: "maspero@pusc.it",
+    prenom: "Guillaume",
+    nom: "Maspero",
+    profession: "Professeur de théologie dogmatique",
+    bio: "Prêtre catholique et professeur de théologie dogmatique.",
+    bio_description: "Prêtre catholique et professeur de théologie dogmatique.",
+    specialites: ["Théologie dogmatique", "Mystère de Dieu", "Transmission de la foi"],
+    realisations: [
+      "Professeur ordinaire de théologie dogmatique",
+      "Doyen de la Faculté de théologie",
+      "Formation académique en physique théorique et en théologie"
+    ],
+    avatar_url: "/images/guillaume-maspero.jpg",
+    avatar_public_id: undefined
+  };
+}
+
 function normalizeCourse(course: RawCourse, modules: CourseModule[] = []): Course {
   return {
     ...course,
+    auteur_nom: course.auteur_nom && isExcludedPublicName(course.auteur_nom) ? "Institut Irénée" : course.auteur_nom,
     description: course.description || "",
     niveau: course.niveau || "debutant",
     duree_totale: Number(course.duree_totale_minutes || course.duree_totale || course.duree || 0),
@@ -74,7 +109,9 @@ export async function getCurrentProfile(): Promise<Profile> {
 
 export async function getTrainers(): Promise<Profile[]> {
   const profiles = await getProfiles();
-  return profiles.filter(profile => profile.role === "formateur");
+  return profiles
+    .filter(profile => profile.role === "formateur" && !isExcludedPublicName(`${profile.prenom} ${profile.nom}`))
+    .map(normalizePublicTrainer);
 }
 
 export async function getCourses(): Promise<Course[]> {
@@ -155,10 +192,9 @@ export async function getLegalPage(slug: LegalPageKey) {
 
 export function formatDbAvatar(profile: Profile) {
   const src = profile.avatar_public_id || profile.avatar_url;
-  if (!src) return profile.role === "formateur" ? "/images/balzaac.jpeg" : undefined;
+  if (!src) return profile.role === "formateur" ? "/images/guillaume-maspero.jpg" : undefined;
   if (src.startsWith("http") || src.startsWith("/")) return src;
-  if (src.includes("balzaac")) return "/images/balzaac.jpeg";
+  if (src.includes("balzaac")) return "/images/guillaume-maspero.jpg";
   if (src.includes("nezchristos")) return "/images/nezchristos.jpeg";
-  if (src.includes("mathieu")) return "/images/mathieu.webp";
   return cloudinaryAvatarUrl(src);
 }

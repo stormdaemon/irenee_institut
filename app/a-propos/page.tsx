@@ -59,11 +59,14 @@ export default function AboutPage() {
             </article>
             <article className="card about-director-card">
               <div className="about-director-photo">
-                <Image src="/images/mathieu.webp" alt="Matthieu Raffray" fill sizes="150px" style={{ objectFit: "cover" }} />
+                <Image src="/images/abbe-de-tanouarn.jpg" alt="Abbé Guillaume de Tanoüarn" fill sizes="150px" style={{ objectFit: "cover", objectPosition: "55% 28%" }} />
               </div>
               <span className="badge">Directeur administratif</span>
-              <h3>Matthieu Raffray</h3>
+              <h3>Abbé de Tanoüarn</h3>
               <p className="muted">Directeur administratif, engagé dans l'organisation et l'accompagnement des étudiants.</p>
+              <small className="muted">
+                Photo : <a href="https://commons.wikimedia.org/wiki/File:Paris_-_Abb%C3%A9_Guillaume_de_Tano%C3%BCarn_-_3.jpg" target="_blank" rel="noreferrer">Peter Potrowl, CC BY-SA 4.0</a>
+              </small>
             </article>
           </div>
         </div>

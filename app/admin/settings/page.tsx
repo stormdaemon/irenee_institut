@@ -3,6 +3,7 @@
 import { CheckCircle2, Save, ShieldCheck, TestTube2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ActionNotice } from "@/components/ActionNotice";
+import { authenticatedFetch } from "@/lib/authenticated-fetch";
 
 type Settings = {
   rib: string;
@@ -57,7 +58,7 @@ export default function AdminSettingsPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/settings")
+    authenticatedFetch("/api/settings")
       .then(response => response.json())
       .then(data => {
         setSettings(current => ({
@@ -95,7 +96,7 @@ export default function AdminSettingsPage() {
       paypalDefaultAmountCents: settings.paypalDefaultAmountCents
     };
 
-    const response = await fetch("/api/settings", {
+    const response = await authenticatedFetch("/api/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -103,7 +104,7 @@ export default function AdminSettingsPage() {
     const data = await response.json();
     if (response.ok && data.verified === true) {
       setStatus("success");
-      const refreshed = await fetch("/api/settings").then(result => result.json()).catch(() => null);
+      const refreshed = await authenticatedFetch("/api/settings").then(result => result.json()).catch(() => null);
       if (refreshed) {
         setSettings(current => ({
           ...current,
@@ -124,7 +125,7 @@ export default function AdminSettingsPage() {
   async function testPayPal() {
     setTestStatus("saving");
     setTestResult(null);
-    const response = await fetch("/api/payments/paypal/test");
+    const response = await authenticatedFetch("/api/payments/paypal/test");
     const data = await response.json().catch(() => null);
     setTestResult(data);
     setTestStatus(response.ok && data?.ok ? "success" : "error");

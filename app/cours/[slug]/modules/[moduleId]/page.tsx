@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import DOMPurify from "dompurify";
 import { AlertTriangle, CheckCircle2, Download, ExternalLink, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
@@ -96,6 +97,7 @@ export default function ModulePage() {
   const module = useMemo(() => course?.modules.find(item => item.id === moduleId), [course, moduleId]);
   const progress = useMemo(() => payload?.progress.find(item => item.module_id === moduleId), [payload, moduleId]);
   const resources = module ? getResources(module) : [];
+  const sanitizedContent = useMemo(() => module?.contenu_html ? DOMPurify.sanitize(module.contenu_html) : "", [module?.contenu_html]);
   const isComplete = Boolean(progress?.complete) || Number(progress?.progression || 0) >= 100;
 
   async function markComplete() {
@@ -197,7 +199,7 @@ export default function ModulePage() {
         </div>
         <div className="card" style={{ padding: 34, marginTop: 28 }}>
           {module.contenu_html ? (
-            <div dangerouslySetInnerHTML={{ __html: module.contenu_html }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizedContent }} />
           ) : module.contenu ? (
             <p>{module.contenu}</p>
           ) : (

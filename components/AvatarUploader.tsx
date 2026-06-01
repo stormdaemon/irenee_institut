@@ -2,6 +2,7 @@
 
 import { Camera, CheckCircle2, Loader2, RotateCcw, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
+import { authenticatedFetch } from "@/lib/authenticated-fetch";
 import type { Profile } from "@/lib/types";
 
 type AvatarUploaderProps = {
@@ -38,10 +39,10 @@ export function AvatarUploader({ profile, onUploaded }: AvatarUploaderProps) {
     setError("");
     try {
       const uploaded = await uploadToCloudinary(file, fileName);
-      const response = await fetch("/api/profile/avatar", {
+      const response = await authenticatedFetch("/api/profile/avatar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: profile.id, avatar_url: uploaded.secure_url, avatar_public_id: uploaded.public_id }),
+        body: JSON.stringify({ avatar_url: uploaded.secure_url, avatar_public_id: uploaded.public_id }),
       });
       const data = await response.json();
       if (!response.ok || data.verified !== true) throw new Error(data.error || "La photo n'a pas pu être enregistrée.");

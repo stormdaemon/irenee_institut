@@ -5,6 +5,7 @@ import { Check, FileText, GripVertical, Plus, Save, Trash2, X } from "lucide-rea
 import { useEffect, useMemo, useState } from "react";
 import { ActionNotice } from "@/components/ActionNotice";
 import { RichHtmlEditor } from "@/components/RichHtmlEditor";
+import { authenticatedFetch } from "@/lib/authenticated-fetch";
 
 type ModuleDraft = {
   id?: string;
@@ -132,7 +133,7 @@ export default function AdminCoursesPage() {
   }, []);
 
   async function refreshCourses() {
-    const next = await fetch("/api/courses").then(response => response.json()).catch(() => []);
+    const next = await authenticatedFetch("/api/courses").then(response => response.json()).catch(() => []);
     const normalized = Array.isArray(next) ? next : [];
     setCourses(normalized);
     return normalized as Course[];
@@ -224,7 +225,7 @@ export default function AdminCoursesPage() {
     form.set("nb_modules", String(draft.modules.filter(module => module.titre.trim()).length));
 
     const url = draft.id ? `/api/courses/${draft.id}` : "/api/courses";
-    const response = await fetch(url, { method: draft.id ? "PATCH" : "POST", body: form });
+    const response = await authenticatedFetch(url, { method: draft.id ? "PATCH" : "POST", body: form });
     const data = await response.json();
 
     if (response.ok && data.verified === true) {

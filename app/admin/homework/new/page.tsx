@@ -4,6 +4,7 @@ import type { Course, Profile } from "@/lib/types";
 import { CheckCircle2, Loader2, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { authenticatedFetch } from "@/lib/authenticated-fetch";
 
 export default function NewHomeworkPage() {
   const router = useRouter();
@@ -17,8 +18,8 @@ export default function NewHomeworkPage() {
   const allSelected = selectedStudents.size === students.length && students.length > 0;
 
   useEffect(() => {
-    fetch("/api/courses").then(response => response.json()).then(setCourses).catch(() => setCourses([]));
-    fetch("/api/users").then(response => response.json()).then(setProfiles).catch(() => setProfiles([]));
+    authenticatedFetch("/api/courses").then(response => response.json()).then(setCourses).catch(() => setCourses([]));
+    authenticatedFetch("/api/users").then(response => response.json()).then(setProfiles).catch(() => setProfiles([]));
   }, []);
 
   function toggleAll() {
@@ -39,7 +40,7 @@ export default function NewHomeworkPage() {
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
     selectedStudents.forEach(id => form.append("student_ids", id));
-    const response = await fetch("/api/homework", { method: "POST", body: form });
+    const response = await authenticatedFetch("/api/homework", { method: "POST", body: form });
     const data = await response.json();
     if (response.ok && data.verified === true) {
       formElement.reset();

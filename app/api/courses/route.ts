@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import { authorizeRequest } from "@/lib/api-auth";
 import { getCourses } from "@/lib/server-data";
-import { createServerClient } from "@/lib/supabase";
 
 function parseJsonArray(value: FormDataEntryValue | null) {
   if (!value) return [];
@@ -16,27 +16,16 @@ function toCents(value: FormDataEntryValue | null) {
   return Number.isFinite(amount) ? Math.round(amount * 100) : 0;
 }
 
-async function getDefaultAuthor(supabase: NonNullable<ReturnType<typeof createServerClient>>) {
-  const { data } = await supabase
-    .from("profiles")
-    .select("id, prenom, nom, email")
-    .in("role", ["directeur", "formateur"])
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (!data) return {};
-  return {
-    auteur_id: data.id,
-    auteur_nom: `${data.prenom || ""} ${data.nom || ""}`.trim() || data.email
-  };
-}
-
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await authorizeRequest(request, ["directeur", "formateur"]);
+  if (!auth.ok) return auth.response;
   return NextResponse.json(await getCourses());
 }
 
 export async function POST(request: Request) {
-  const supabase = createServerClient();
+  const auth = await authorizeRequest(request, ["directeur", "formateur"]);
+  if (!auth.ok) return auth.response;
+  const { profile, supabase } = auth;
   if (!supabase) return NextResponse.json({ ok: false, error: "Le service est momentanément indisponible." }, { status: 501 });
 
   const form = await request.formData();
@@ -44,7 +33,10 @@ export async function POST(request: Request) {
   const objectifs = parseJsonArray(form.get("objectifs"));
   const competences = parseJsonArray(form.get("competences"));
   const prerequis = parseJsonArray(form.get("prerequis"));
-  const author = await getDefaultAuthor(supabase);
+  const author = {
+    auteur_id: profile.id,
+    auteur_nom: `${profile.prenom || ""} ${profile.nom || ""}`.trim() || profile.email
+  };
   const duration = Number(form.get("duree_totale_minutes") || form.get("duree_totale") || 0);
 
   const payload = {

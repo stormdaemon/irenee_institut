@@ -39,7 +39,7 @@ export default async function FormateursPage() {
               <article className="card" key={trainer.id} style={{ padding: 28 }}>
                 <div style={{ display: "flex", gap: 22, alignItems: "center" }}>
                   <Image
-                    src={formatDbAvatar(trainer) || "/images/balzaac.jpeg"}
+                    src={formatDbAvatar(trainer) || "/images/guillaume-maspero.jpg"}
                     alt={`${trainer.prenom} ${trainer.nom}`}
                     width={96}
                     height={96}

@@ -5,6 +5,7 @@ import { FileText, Save } from "lucide-react";
 import { legalPages, type LegalPageKey } from "@/lib/legal";
 import { useEffect, useState } from "react";
 import { ActionNotice } from "@/components/ActionNotice";
+import { authenticatedFetch } from "@/lib/authenticated-fetch";
 
 const keys: LegalPageKey[] = ["mentions-legales", "politique-confidentialite", "cgv"];
 
@@ -19,7 +20,7 @@ export default function AdminLegalPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/settings")
+    authenticatedFetch("/api/settings")
       .then(response => response.json())
       .then(data => {
         if (data.legalPages) setValues(current => ({ ...current, ...data.legalPages }));
@@ -30,7 +31,7 @@ export default function AdminLegalPage() {
   async function save() {
     setStatus("saving");
     setError("");
-    const response = await fetch("/api/settings", {
+    const response = await authenticatedFetch("/api/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ legalPages: values })

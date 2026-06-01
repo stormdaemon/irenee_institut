@@ -1,25 +1,25 @@
 import { NextResponse } from "next/server";
-import { createServerClient } from "@/lib/supabase";
+import { authorizeRequest } from "@/lib/api-auth";
 
 const allowedStatuses = new Set(["en_attente_direction", "approuve", "refuse"]);
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await authorizeRequest(request, ["directeur"]);
+  if (!auth.ok) return auth.response;
+
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
   const status = String(body.status || "").trim();
-
   if (!allowedStatuses.has(status)) {
     return NextResponse.json({ ok: false, error: "Statut de demande invalide." }, { status: 400 });
   }
 
-  const supabase = createServerClient();
-  if (!supabase) return NextResponse.json({ ok: false, error: "Le service est momentanement indisponible." }, { status: 501 });
-
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from("book_requests")
     .update({
       status,
       reviewed_at: status === "en_attente_direction" ? null : new Date().toISOString(),
+      reviewed_by: status === "en_attente_direction" ? null : auth.user.id,
       updated_at: new Date().toISOString()
     })
     .eq("id", id)
@@ -29,7 +29,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
 
   if (data.paypal_order_id) {
-    await supabase
+    await auth.supabase
       .from("paypal_orders")
       .update({
         book_request_status: status,

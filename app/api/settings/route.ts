@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { createServerClient } from "@/lib/supabase";
+import { authorizeRequest } from "@/lib/api-auth";
 import { legalPages } from "@/lib/legal";
 import { parseSettingValue, secretSettingKeys, stringifySettingValue } from "@/lib/settings";
 import { PAYPAL_DEFAULT_AMOUNT_CENTS, PAYPAL_WEBHOOK_URL } from "@/lib/paypal";
+import { createServerClient } from "@/lib/supabase";
 
 const defaults = {
   rib: "",
@@ -26,6 +27,24 @@ const defaults = {
   paypalDefaultAmountCents: PAYPAL_DEFAULT_AMOUNT_CENTS
 };
 
+const editableSettingKeys = new Set([
+  "adminEmail",
+  "beneficiary",
+  "bic",
+  "googleAppsScriptMailSecret",
+  "iban",
+  "paypalAppName",
+  "paypalClientId",
+  "paypalClientSecret",
+  "paypalDefaultAmountCents",
+  "paypalEnvironment",
+  "paypalWebhookId",
+  "paypalWebhookUrl",
+  "rib"
+]);
+
+const editableLegalSlugs = new Set(Object.keys(legalPages));
+
 async function upsertSystemSetting(supabase: NonNullable<ReturnType<typeof createServerClient>>, key: string, value: unknown) {
   const normalized = stringifySettingValue(value);
   const { data: existing, error: selectError } = await supabase.from("system_settings").select("*").eq("key", key).maybeSingle();
@@ -47,13 +66,13 @@ async function upsertSystemSetting(supabase: NonNullable<ReturnType<typeof creat
   return data;
 }
 
-export async function GET() {
-  const supabase = createServerClient();
-  if (!supabase) return NextResponse.json({ ...defaults, legalPages });
+export async function GET(request: Request) {
+  const auth = await authorizeRequest(request, ["directeur"]);
+  if (!auth.ok) return auth.response;
 
   const [{ data: settings }, { data: legalRows }] = await Promise.all([
-    supabase.from("system_settings").select("*"),
-    supabase.from("legal_pages").select("*")
+    auth.supabase.from("system_settings").select("*"),
+    auth.supabase.from("legal_pages").select("*")
   ]);
 
   const rawSettingsObject = Object.fromEntries((settings || []).map(item => [item.key, item.value]));
@@ -80,17 +99,18 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  const supabase = createServerClient();
-  if (!supabase) return NextResponse.json({ ok: false, error: "Le service est momentanément indisponible." }, { status: 501 });
+  const auth = await authorizeRequest(request, ["directeur"]);
+  if (!auth.ok) return auth.response;
 
+  const body = await request.json().catch(() => ({}));
   try {
     const verified: Record<string, unknown> = {};
 
     if (body.legalPages && typeof body.legalPages === "object") {
       const legalResults = [];
       for (const [slug, contenu] of Object.entries(body.legalPages)) {
-        const { data, error } = await supabase
+        if (!editableLegalSlugs.has(slug)) continue;
+        const { data, error } = await auth.supabase
           .from("legal_pages")
           .update({
             contenu: String(contenu),
@@ -107,9 +127,9 @@ export async function POST(request: Request) {
     }
 
     for (const [key, value] of Object.entries(body)) {
-      if (key === "legalPages") continue;
+      if (!editableSettingKeys.has(key)) continue;
       if (secretSettingKeys.has(key) && typeof value === "string" && !value.trim()) continue;
-      verified[key] = await upsertSystemSetting(supabase, key, value);
+      verified[key] = await upsertSystemSetting(auth.supabase, key, value);
     }
 
     return NextResponse.json({ ok: true, verified: true, data: verified });
