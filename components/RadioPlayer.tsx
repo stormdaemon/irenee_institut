@@ -3,7 +3,7 @@
 import { Pause, Play, Radio, X } from "lucide-react";
 import { useRef, useState } from "react";
 
-const streamUrl = "https://play.radioking.io/heavenradio";
+const streamUrl = "https://listen.radioking.com/radio/666997/stream/1";
 
 export function RadioPlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);

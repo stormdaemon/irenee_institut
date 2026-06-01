@@ -4,7 +4,7 @@ export const siteUrl = "https://irenee-institut.org";
 export const siteName = "Institut d'Apologétique Saint Irénée";
 export const organizationName = "Institut Irénée";
 export const siteDescription =
-  "Institut d'apologétique catholique en ligne : formations structurées pour comprendre, défendre et transmettre la foi avec rigueur et charité.";
+  "Institut d'Apologétique Saint Irénée : formations catholiques structurées en ligne pour comprendre, défendre et transmettre la foi avec rigueur et charité.";
 
 export const privatePageMetadata: Metadata = {
   robots: {

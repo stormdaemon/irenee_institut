@@ -44,15 +44,16 @@ function normalizePublicTrainer(profile: Profile): Profile {
   return {
     ...profile,
     email: "maspero@pusc.it",
-    prenom: "Guillaume",
+    prenom: "Giulio",
     nom: "Maspero",
-    profession: "Professeur de théologie dogmatique",
-    bio: "Prêtre catholique et professeur de théologie dogmatique.",
-    bio_description: "Prêtre catholique et professeur de théologie dogmatique.",
+    profession: "Directeur d'études",
+    bio: "Prêtre catholique, professeur ordinaire de théologie dogmatique à l'Université pontificale de la Sainte-Croix et doyen de sa Faculté de théologie depuis 2024.",
+    bio_description: "Prêtre catholique, professeur ordinaire de théologie dogmatique à l'Université pontificale de la Sainte-Croix et doyen de sa Faculté de théologie depuis 2024. Il est notamment l'auteur de l'ouvrage Il mistero di Dio uno e trino.",
     specialites: ["Théologie dogmatique", "Mystère de Dieu", "Transmission de la foi"],
     realisations: [
       "Professeur ordinaire de théologie dogmatique",
-      "Doyen de la Faculté de théologie",
+      "Doyen de la Faculté de théologie de l'Université pontificale de la Sainte-Croix",
+      "Auteur de Il mistero di Dio uno e trino",
       "Formation académique en physique théorique et en théologie"
     ],
     avatar_url: "/images/guillaume-maspero.jpg",

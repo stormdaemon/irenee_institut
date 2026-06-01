@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { blogArticles } from "@/lib/blog";
 
 const baseUrl = "https://irenee-institut.org";
-const publicContentUpdatedAt = new Date("2026-06-01T17:06:44+02:00");
+const publicContentUpdatedAt = new Date("2026-06-01T23:56:27+02:00");
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes = [
@@ -11,6 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/ecole-apologetique-en-ligne",
     "/programme-apologetique",
     "/ressources-apologetique",
+    "/bibliotheque-apologetique",
     "/formations",
     "/blog",
     "/formateurs",

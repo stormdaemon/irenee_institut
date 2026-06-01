@@ -200,7 +200,12 @@ export async function GET(request: Request) {
       .filter(Boolean) as Homework[];
   }
 
-  const [{ data: learningDocuments, error: documentsError }, { data: latestExamAttempt, error: examError }] = await Promise.all([
+  const [
+    { data: learningDocuments, error: documentsError },
+    { data: latestExamAttempt, error: examError },
+    { data: libraryMembership, error: libraryMembershipError },
+    { data: bookRequests, error: bookRequestsError }
+  ] = await Promise.all([
     supabase
       .from("learning_documents")
       .select("*")
@@ -212,11 +217,27 @@ export async function GET(request: Request) {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(1)
-      .maybeSingle()
+      .maybeSingle(),
+    supabase
+      .from("library_memberships")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .gt("expires_at", new Date().toISOString())
+      .order("expires_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("book_requests")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("requested_at", { ascending: false })
   ]);
 
   if (documentsError) return NextResponse.json({ ok: false, error: documentsError.message }, { status: 400 });
   if (examError) return NextResponse.json({ ok: false, error: examError.message }, { status: 400 });
+  if (libraryMembershipError) return NextResponse.json({ ok: false, error: libraryMembershipError.message }, { status: 400 });
+  if (bookRequestsError) return NextResponse.json({ ok: false, error: bookRequestsError.message }, { status: 400 });
 
   const curriculumCompleted = Boolean(annualPass) && courses.length > 0 && courses.every(course => course.modules.length > 0 && course.completedModules === course.modules.length);
 
@@ -228,6 +249,8 @@ export async function GET(request: Request) {
       totalCourses: courses.length
     },
     documents: learningDocuments || [],
+    libraryMembership: libraryMembership || null,
+    bookRequests: bookRequests || [],
     finalExam: {
       eligible: curriculumCompleted,
       latestAttempt: latestExamAttempt || null

@@ -24,7 +24,8 @@ const questions = [
 export const metadata: Metadata = {
   title: "École d'Apologétique en ligne",
   description:
-    "Découvrez l'École d'Apologétique en ligne de l'Institut Irénée : une formation catholique progressive pour étudier la foi et répondre aux objections.",
+    "Découvrez l'École d'Apologétique en ligne de l'Institut d'Apologétique Saint Irénée : une école apologétique catholique progressive pour étudier la foi et répondre aux objections.",
+  keywords: ["école d'apologétique", "école apologétique", "école apologétique catholique", "formation apologétique en ligne"],
   alternates: {
     canonical: "/ecole-apologetique-en-ligne"
   },
@@ -43,6 +44,7 @@ export default function EcoleApologetiqueEnLignePage() {
     "@id": `${siteUrl}/ecole-apologetique-en-ligne#webpage`,
     url: `${siteUrl}/ecole-apologetique-en-ligne`,
     name: "École d'Apologétique en ligne",
+    alternateName: "École apologétique catholique en ligne",
     description:
       "Une formation catholique progressive et accessible à distance pour comprendre, répondre et transmettre.",
     isPartOf: {
@@ -102,6 +104,10 @@ export default function EcoleApologetiqueEnLignePage() {
             L'Institut Irénée propose un parcours accessible en ligne. Cette modalité convient à ceux qui veulent
             progresser régulièrement depuis leur lieu de vie, reprendre un module important et relier l'étude à
             leurs conversations réelles : en famille, en paroisse, au travail ou sur internet.
+          </p>
+          <p className="subtitle">
+            Cette école apologétique catholique en ligne conserve la même exigence : former une intelligence de la
+            foi capable d'écouter, de vérifier et de répondre avec charité.
           </p>
         </div>
       </section>

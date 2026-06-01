@@ -25,12 +25,13 @@ export const metadata: Metadata = {
 
 const features = [
   {
-    title: "Formations exigeantes",
-    text: "Des parcours complets en apologétique, théologie et philosophie pour fortifier votre intelligence de la foi.",
+    title: "Bibliothèque d'école apologétique",
+    text: "Une bibliothèque réservée aux étudiants pour demander le livre apologétique de leur choix après une adhésion annuelle de 15 EUR.",
     image: "/images/irenee-feature-1.png",
-    icon: "/images/irenee-feature-medallion-1.png",
+    icon: "/images/irenee-feature-medallion-library.png",
     iconLeft: "50%",
-    iconPosition: "50% 50%"
+    iconPosition: "50% 50%",
+    href: "/bibliotheque-apologetique"
   },
   {
     title: "Enseignants qualifiés",
@@ -38,7 +39,8 @@ const features = [
     image: "/images/irenee-feature-2.png",
     icon: "/images/irenee-feature-medallion-teacher.png",
     iconLeft: "50%",
-    iconPosition: "50% 50%"
+    iconPosition: "50% 50%",
+    href: "/formateurs"
   },
   {
     title: "Une mission claire",
@@ -46,15 +48,17 @@ const features = [
     image: "/images/irenee-feature-3.png",
     icon: "/images/irenee-feature-medallion-3.png",
     iconLeft: "50%",
-    iconPosition: "50% 50%"
+    iconPosition: "50% 50%",
+    href: "/institut-apologetique"
   },
   {
-    title: "Formation intégrale",
-    text: "Grandir humainement et spirituellement pour mieux connaître, aimer et servir Notre-Seigneur Jésus-Christ.",
+    title: "Sessions apologétiques en présentiel",
+    text: "Des sessions dans une abbaye avec un expert pour approfondir une question, échanger et progresser ensemble.",
     image: "/images/irenee-feature-4.png",
-    icon: "/images/irenee-feature-medallion-4.png",
+    icon: "/images/irenee-feature-medallion-abbey.png",
     iconLeft: "50%",
-    iconPosition: "50% 50%"
+    iconPosition: "50% 50%",
+    href: "/contact"
   }
 ];
 
@@ -67,7 +71,7 @@ export default async function HomePage() {
         <div className="container">
           <div className="hero-content">
             <span className="hero-cross" aria-hidden="true">✝</span>
-            <span className="hero-eyebrow">Formation catholique en ligne</span>
+            <span className="hero-eyebrow">Rentrée académique 2026 · inscriptions ouvertes</span>
             <h1 className="font-display hero-title">
               <span className="hero-title-desktop">Institut d'Apologétique<br /><span>Saint Irénée</span></span>
               <span className="hero-title-mobile">Institut<br />d'Apologétique<br /><span>Saint Irénée</span></span>
@@ -106,7 +110,7 @@ export default async function HomePage() {
                 </span>
                 <h3>{feature.title}</h3>
                 <p>{feature.text}</p>
-                <Link className="feature-link" href="/formations">
+                <Link className="feature-link" href={feature.href}>
                   En savoir plus <ArrowRight size={14} />
                 </Link>
               </article>

@@ -98,7 +98,7 @@ export function PaymentsClient({
             {bookRequests.map(item => (
               <tr key={item.id}>
                 <td><strong>{item.profiles?.prenom} {item.profiles?.nom}</strong><br /><small>{item.profiles?.email}</small></td>
-                <td>{item.courses?.titre || item.course_id}</td>
+                <td>{item.courses?.titre || (item.library_membership_id ? "Bibliothèque d'école apologétique" : item.course_id || "Service étudiant")}</td>
                 <td><strong>{item.requested_title || "Titre non renseigne"}</strong></td>
                 <td>{item.paypal_order_id || "Non renseignee"}</td>
                 <td><span className="badge">{bookStatusLabel(item.status)}</span></td>

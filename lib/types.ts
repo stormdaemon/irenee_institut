@@ -96,7 +96,8 @@ export type ModuleProgress = {
 export type BookRequest = {
   id: string;
   user_id: string;
-  course_id: string;
+  course_id?: string | null;
+  library_membership_id?: string | null;
   paypal_order_id?: string | null;
   requested_title?: string | null;
   status: "en_attente_direction" | "approuve" | "refuse";
@@ -105,4 +106,15 @@ export type BookRequest = {
   notes?: string | null;
   profiles?: Pick<Profile, "email" | "nom" | "prenom"> | null;
   courses?: Pick<Course, "titre" | "slug"> | null;
+};
+
+export type LibraryMembership = {
+  id: string;
+  user_id: string;
+  provider_order_id: string;
+  amount_total: number;
+  currency: string;
+  status: "active" | "expired" | "revoked";
+  starts_at: string;
+  expires_at: string;
 };

@@ -205,15 +205,16 @@ export const homework = [
 
 export const trainers = [
   {
-    name: "Guillaume Maspero",
-    title: "Professeur de théologie dogmatique",
+    name: "Giulio Maspero",
+    title: "Directeur d'études",
     image: "/images/guillaume-maspero.jpg",
     tags: ["Théologie dogmatique", "Foi catholique", "Transmission", "Enseignement"],
     description:
-      "Prêtre catholique et professeur de théologie dogmatique.",
+      "Prêtre catholique, professeur ordinaire de théologie dogmatique à l'Université pontificale de la Sainte-Croix et doyen de sa Faculté de théologie depuis 2024. Auteur de Il mistero di Dio uno e trino.",
     achievements: [
       "Professeur ordinaire de théologie dogmatique",
       "Doyen de la Faculté de théologie",
+      "Auteur de Il mistero di Dio uno e trino",
       "Enseignement consacré au mystère de Dieu",
       "Formation académique en physique théorique et en théologie",
       "Transmission de la foi catholique"

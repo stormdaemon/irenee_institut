@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { RadioPlayer } from "@/components/RadioPlayer";
 import { FloatingNetworkMenu } from "@/components/FloatingNetworkMenu";
 import { DonationPrompt } from "@/components/DonationPrompt";
 import { organizationJsonLd, serializeJsonLd, siteDescription, siteName, siteUrl, websiteJsonLd } from "@/lib/seo";
@@ -47,7 +48,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteJsonLd) }} />
-        <Header />
+        <div className="site-chrome">
+          <RadioPlayer />
+          <Header />
+        </div>
         <FloatingNetworkMenu />
         <DonationPrompt />
         <main>{children}</main>

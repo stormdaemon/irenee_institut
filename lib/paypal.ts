@@ -29,9 +29,11 @@ export type PayPalConfig = {
 export type PayPalOrderPayloadInput = {
   amountCents: number;
   bookRequested: boolean;
+  cancelPath?: string;
   course: Pick<Course, "id" | "slug" | "titre">;
   origin: string;
   profile: Pick<Profile, "id" | "email" | "prenom" | "nom">;
+  returnPath?: string;
 };
 
 type FetchLike = typeof fetch;
@@ -90,7 +92,7 @@ export function normalizeBookTitle(value: unknown, required = false) {
   return trimForPayPal(title, PAYPAL_BOOK_TITLE_MAX_LENGTH);
 }
 
-export function buildPayPalOrderPayload({ amountCents, bookRequested, course, origin, profile }: PayPalOrderPayloadInput) {
+export function buildPayPalOrderPayload({ amountCents, bookRequested, cancelPath, course, origin, profile, returnPath }: PayPalOrderPayloadInput) {
   const amount = centsToPayPalValue(amountCents);
   const fullName = `${profile.prenom || ""} ${profile.nom || ""}`.trim();
   const customId = `${profile.id}:${course.id}`;
@@ -128,8 +130,8 @@ export function buildPayPalOrderPayload({ amountCents, bookRequested, course, or
           landing_page: "LOGIN",
           shipping_preference: "NO_SHIPPING",
           user_action: "PAY_NOW",
-          return_url: `${safeOrigin}/paiement/merci?course=${encodeURIComponent(course.slug)}&book=${bookRequested ? "1" : "0"}`,
-          cancel_url: `${safeOrigin}/formations?paypal_cancelled=1`
+          return_url: `${safeOrigin}${returnPath || `/paiement/merci?course=${encodeURIComponent(course.slug)}&book=${bookRequested ? "1" : "0"}`}`,
+          cancel_url: `${safeOrigin}${cancelPath || "/formations?paypal_cancelled=1"}`
         }
       }
     }

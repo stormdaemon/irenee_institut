@@ -10,8 +10,6 @@ export const metadata: Metadata = {
   }
 };
 
-const samuelPhotoUrl = "https://bilan-previsionnel.fr/wp-content/uploads/2020/11/Bilan-Previsionnel-presentation-portrait-img-1.jpg";
-
 const values = [
   ["Excellence académique", "Nous maintenons les plus hauts standards d'enseignement théologique.", "/images/irenee-value-medallion-1.png", "50% 50%"],
   ["Bienveillance", "Le dialogue apologétique doit se faire dans la charité.", "/images/irenee-value-medallion-2.png", "50% 50%"],
@@ -45,28 +43,37 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="section about-direction-section">
-        <div className="container center">
-          <h2 className="section-title">Direction</h2>
-          <div className="grid-2 about-directors">
-            <article className="card about-director-card">
-              <div className="about-director-photo">
-                <Image src={samuelPhotoUrl} alt="Samuel Armanios" fill sizes="150px" style={{ objectFit: "cover", objectPosition: "52% 14%", transform: "scale(1.62)" }} />
-              </div>
-              <span className="badge">Directeur</span>
-              <h3>Samuel Armanios</h3>
-              <p className="muted">Diplômé en théologie à l'Université de la Sainte Croix.</p>
+      <section className="section">
+        <div className="container" style={{ maxWidth: 980 }}>
+          <h2 className="section-title">Une école pour rendre compte de l'espérance</h2>
+          <p className="subtitle">
+            L'Institut d'Apologétique Saint Irénée est né d'une conviction simple : la foi catholique gagne à être
+            connue dans sa cohérence, étudiée dans ses sources et présentée avec une parole ajustée. La formation
+            relie exigence intellectuelle, vie spirituelle et attention réelle aux questions de nos contemporains.
+          </p>
+          <p className="subtitle">
+            Notre projet pédagogique associe des cours en ligne, une bibliothèque d'école apologétique et des
+            sessions en présentiel dans un cadre propice au travail. La rentrée académique 2026 ouvre une nouvelle
+            étape pour faire grandir cette communauté d'étudiants.
+          </p>
+        </div>
+      </section>
+
+      <section className="section hero-band">
+        <div className="container">
+          <h2 className="section-title" style={{ color: "white" }}>Notre méthode</h2>
+          <div className="grid-3">
+            <article className="soft-card" style={{ padding: 28 }}>
+              <h3>Étudier les sources</h3>
+              <p className="muted">Revenir aux textes, aux faits historiques et aux repères doctrinaux avant de répondre.</p>
             </article>
-            <article className="card about-director-card">
-              <div className="about-director-photo">
-                <Image src="/images/abbe-de-tanouarn.jpg" alt="Abbé Guillaume de Tanoüarn" fill sizes="150px" style={{ objectFit: "cover", objectPosition: "55% 28%" }} />
-              </div>
-              <span className="badge">Directeur administratif</span>
-              <h3>Abbé de Tanoüarn</h3>
-              <p className="muted">Directeur administratif, engagé dans l'organisation et l'accompagnement des étudiants.</p>
-              <small className="muted">
-                Photo : <a href="https://commons.wikimedia.org/wiki/File:Paris_-_Abb%C3%A9_Guillaume_de_Tano%C3%BCarn_-_3.jpg" target="_blank" rel="noreferrer">Peter Potrowl, CC BY-SA 4.0</a>
-              </small>
+            <article className="soft-card" style={{ padding: 28 }}>
+              <h3>Construire une réponse</h3>
+              <p className="muted">Distinguer les niveaux d'une objection et avancer avec précision, sans caricature.</p>
+            </article>
+            <article className="soft-card" style={{ padding: 28 }}>
+              <h3>Transmettre avec charité</h3>
+              <p className="muted">Former une parole claire, fidèle et attentive à la personne qui pose la question.</p>
             </article>
           </div>
         </div>

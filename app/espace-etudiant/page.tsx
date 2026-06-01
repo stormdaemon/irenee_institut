@@ -4,9 +4,10 @@ import Link from "next/link";
 import { AlertTriangle, Award, BookOpen, CalendarClock, CheckCircle2, ClipboardList, FileText, GraduationCap, Loader2, ScrollText, Settings, TrendingUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { LearningDocumentButton } from "@/components/LearningDocumentButton";
+import { LibraryPanel } from "@/components/LibraryPanel";
 import { createBrowserClient } from "@/lib/supabase";
 import { formatDuration } from "@/lib/data";
-import type { Course, Homework, Profile } from "@/lib/types";
+import type { BookRequest, Course, Homework, LibraryMembership, Profile } from "@/lib/types";
 import type { LearningDocument } from "@/lib/learning-documents";
 
 type StudentCourse = Course & {
@@ -18,6 +19,8 @@ type StudentPayload = {
   annualPass?: { expires_at: string } | null;
   curriculum?: { completed: boolean; completedCourses: number; totalCourses: number };
   documents?: LearningDocument[];
+  libraryMembership?: LibraryMembership | null;
+  bookRequests?: BookRequest[];
   finalExam?: { eligible: boolean; latestAttempt?: { score: number; passed: boolean } | null };
   profile: Profile;
   courses: StudentCourse[];
@@ -66,6 +69,8 @@ export default function StudentSpacePage() {
         annualPass: data.annualPass || null,
         curriculum: data.curriculum,
         documents: data.documents || [],
+        libraryMembership: data.libraryMembership || null,
+        bookRequests: data.bookRequests || [],
         finalExam: data.finalExam,
         profile: data.profile,
         courses: data.courses || [],
@@ -141,6 +146,8 @@ export default function StudentSpacePage() {
           <div className="kpi"><ClipboardList color="#eab308" /><strong>{homework.length}</strong><span>Devoirs à rendre</span></div>
           <div className="kpi"><Award color="#a855f7" /><strong>{completedModules}</strong><span>Modules terminés</span></div>
         </div>
+
+        <LibraryPanel membership={payload.libraryMembership} initialRequests={payload.bookRequests || []} />
 
         {payload.annualPass && (
           <div className="card" style={{ padding: 26, marginBottom: 28 }}>

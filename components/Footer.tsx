@@ -19,7 +19,8 @@ export function Footer() {
             <p><Link href="/ecole-apologetique-en-ligne">École en ligne</Link></p>
             <p><Link href="/blog">Blog apologétique</Link></p>
             <p><Link href="/ressources-apologetique">Ressources</Link></p>
-            <p><Link href="/formateurs">Nos formateurs</Link></p>
+            <p><Link href="/bibliotheque-apologetique">Bibliothèque</Link></p>
+            <p><Link href="/formateurs">Notre équipe</Link></p>
             <p><Link href="/formations">Tarifs</Link></p>
             <p><Link href="/espace-etudiant">Espace étudiant</Link></p>
           </div>
