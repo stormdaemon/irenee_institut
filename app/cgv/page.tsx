@@ -1,8 +1,17 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { markdownToHtml } from "@/lib/markdown";
 import { getLegalPage } from "@/lib/server-data";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Conditions générales de vente",
+  description: "Consultez les conditions générales de vente des formations de l'Institut d'Apologétique Saint Irénée.",
+  alternates: {
+    canonical: "/cgv"
+  }
+};
 
 export default async function TermsPage() {
   const page = await getLegalPage("cgv");

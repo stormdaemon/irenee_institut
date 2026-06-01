@@ -29,12 +29,12 @@ const questions = [
 export const metadata: Metadata = {
   title: "Institut d'Apologétique catholique en ligne",
   description:
-    "Découvrez l'Institut d'Apologétique Irénée : une formation catholique en ligne pour approfondir la foi, étudier les sources et répondre aux objections.",
+    "Découvrez l'Institut d'Apologétique Saint Irénée : une formation catholique en ligne pour approfondir la foi, étudier les sources et répondre aux objections.",
   alternates: {
     canonical: "/institut-apologetique"
   },
   openGraph: {
-    title: "Institut d'Apologétique Irénée",
+    title: "Institut d'Apologétique Saint Irénée",
     description:
       "Une formation catholique en ligne pour comprendre, défendre et transmettre la foi avec rigueur et charité.",
     url: "/institut-apologetique"
@@ -79,7 +79,7 @@ export default function InstitutApologetiquePage() {
     "@type": "WebPage",
     "@id": `${siteUrl}/institut-apologetique#webpage`,
     url: `${siteUrl}/institut-apologetique`,
-    name: "Institut d'Apologétique Irénée",
+    name: "Institut d'Apologétique Saint Irénée",
     description:
       "Une formation catholique en ligne pour comprendre, défendre et transmettre la foi avec rigueur et charité.",
     isPartOf: {
@@ -103,7 +103,7 @@ export default function InstitutApologetiquePage() {
             className="font-display"
             style={{ fontSize: "clamp(2.7rem, 5vw, 4.45rem)", lineHeight: 1.04, maxWidth: 1040, margin: "0 auto" }}
           >
-            Institut d'Apologétique Irénée
+            Institut d'Apologétique Saint Irénée
           </h1>
           <p style={{ fontSize: "1.3rem", color: "#f0dfc2", maxWidth: 900, margin: "22px auto 0" }}>
             Approfondir la foi, étudier les sources et apprendre à répondre avec intelligence, précision et charité.

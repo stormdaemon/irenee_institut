@@ -1,8 +1,17 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { markdownToHtml } from "@/lib/markdown";
 import { getLegalPage } from "@/lib/server-data";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Politique de confidentialité",
+  description: "Consultez la politique de confidentialité de l'Institut d'Apologétique Saint Irénée.",
+  alternates: {
+    canonical: "/politique-confidentialite"
+  }
+};
 
 export default async function PrivacyPage() {
   const page = await getLegalPage("politique-confidentialite");

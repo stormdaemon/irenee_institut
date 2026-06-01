@@ -3,7 +3,7 @@
 import Link from "next/link";
 import DOMPurify from "dompurify";
 import { AlertTriangle, CheckCircle2, Download, ExternalLink, Loader2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { createBrowserClient } from "@/lib/supabase";
 import type { Course, CourseModule, ModuleProgress } from "@/lib/types";
@@ -24,6 +24,75 @@ type Resource = {
   label: string;
   url: string;
 };
+
+const unsafeCssPattern = /@import|url\s*\(|expression\s*\(|behavior\s*:|-moz-binding|javascript\s*:/i;
+
+function getSafeModuleCss(html: string) {
+  return [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)]
+    .map(match => match[1])
+    .filter(css => !unsafeCssPattern.test(css))
+    .join("\n");
+}
+
+function sanitizeModuleHtml(html: string) {
+  const document = new DOMParser().parseFromString(DOMPurify.sanitize(html), "text/html");
+  document.querySelectorAll<HTMLElement>("[style]").forEach(element => {
+    if (unsafeCssPattern.test(element.getAttribute("style") || "")) {
+      element.removeAttribute("style");
+    }
+  });
+  return document.body.innerHTML;
+}
+
+function ModuleHtmlContent({ html, title }: { html: string; title: string }) {
+  const frameRef = useRef<HTMLIFrameElement | null>(null);
+  const document = useMemo(() => {
+    const sanitizedHtml = sanitizeModuleHtml(html);
+    const sanitizedCss = getSafeModuleCss(html);
+    return `<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; media-src https:; style-src 'unsafe-inline'; font-src 'none'; form-action 'none'" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>html,body{margin:0;padding:0;background:transparent}body{overflow-wrap:anywhere}table{max-width:100%}</style>
+    <style>${sanitizedCss}</style>
+  </head>
+  <body>${sanitizedHtml}</body>
+</html>`;
+  }, [html]);
+
+  const syncHeight = useCallback(() => {
+    const frame = frameRef.current;
+    const root = frame?.contentDocument?.documentElement;
+    const body = frame?.contentDocument?.body;
+    if (!frame || !root || !body) return;
+    frame.style.height = `${Math.max(root.scrollHeight, body.scrollHeight)}px`;
+  }, []);
+
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const observer = new ResizeObserver(syncHeight);
+    observer.observe(frame);
+    window.addEventListener("resize", syncHeight);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", syncHeight);
+    };
+  }, [syncHeight]);
+
+  return (
+    <iframe
+      ref={frameRef}
+      className="module-html-frame"
+      sandbox="allow-same-origin"
+      srcDoc={document}
+      title={`Contenu du module : ${title}`}
+      onLoad={syncHeight}
+    />
+  );
+}
 
 function getResources(module: CourseModule): Resource[] {
   if (!Array.isArray(module.ressources)) return [];
@@ -97,7 +166,6 @@ export default function ModulePage() {
   const module = useMemo(() => course?.modules.find(item => item.id === moduleId), [course, moduleId]);
   const progress = useMemo(() => payload?.progress.find(item => item.module_id === moduleId), [payload, moduleId]);
   const resources = module ? getResources(module) : [];
-  const sanitizedContent = useMemo(() => module?.contenu_html ? DOMPurify.sanitize(module.contenu_html) : "", [module?.contenu_html]);
   const isComplete = Boolean(progress?.complete) || Number(progress?.progression || 0) >= 100;
 
   async function markComplete() {
@@ -199,7 +267,7 @@ export default function ModulePage() {
         </div>
         <div className="card" style={{ padding: 34, marginTop: 28 }}>
           {module.contenu_html ? (
-            <div dangerouslySetInnerHTML={{ __html: sanitizedContent }} />
+            <ModuleHtmlContent html={module.contenu_html} title={module.titre} />
           ) : module.contenu ? (
             <p>{module.contenu}</p>
           ) : (

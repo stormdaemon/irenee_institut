@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const siteUrl = "https://irenee-institut.org";
-export const siteName = "Institut d'Apologétique Irénée";
+export const siteName = "Institut d'Apologétique Saint Irénée";
 export const organizationName = "Institut Irénée";
 export const siteDescription =
   "Institut d'apologétique catholique en ligne : formations structurées pour comprendre, défendre et transmettre la foi avec rigueur et charité.";

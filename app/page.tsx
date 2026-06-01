@@ -10,14 +10,14 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: {
-    absolute: "Institut d'Apologétique Saint-Irénée"
+    absolute: "Institut d'Apologétique Saint Irénée"
   },
   description: siteDescription,
   alternates: {
     canonical: "/"
   },
   openGraph: {
-    title: "Institut d'Apologétique Saint-Irénée",
+    title: "Institut d'Apologétique Saint Irénée",
     description: siteDescription,
     url: "/"
   }

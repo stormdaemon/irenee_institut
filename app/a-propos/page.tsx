@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "À propos de l'Institut Irénée",
   description:
-    "Découvrez la direction, les valeurs et la mission de l'Institut d'Apologétique Irénée au service de la formation catholique.",
+    "Découvrez la direction, les valeurs et la mission de l'Institut d'Apologétique Saint Irénée au service de la formation catholique.",
   alternates: {
     canonical: "/a-propos"
   }
@@ -37,7 +37,7 @@ export default function AboutPage() {
     <>
       <section className="page-hero">
         <div className="container center">
-          <span className="hero-eyebrow">Institut d'Apologétique Irénée</span>
+          <span className="hero-eyebrow">Institut d'Apologétique Saint Irénée</span>
           <h1 className="font-display" style={{ fontSize: "clamp(2.7rem, 6vw, 5.2rem)", margin: 0 }}>À propos</h1>
           <p style={{ fontSize: "1.25rem", color: "#f0dfc2", maxWidth: 820, margin: "20px auto 0" }}>
             Une formation catholique exigeante pour comprendre la foi, mieux la transmettre et répondre avec charité.

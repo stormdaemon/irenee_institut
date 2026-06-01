@@ -913,6 +913,14 @@ label { display: block; font-weight: 700; font-size: .9rem; margin-bottom: 8px; 
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th, .data-table td { padding: 14px 16px; border-top: 1px solid #e8edf5; text-align: left; vertical-align: top; }
 .data-table thead th { background: #eef4ff; color: var(--navy); border-top: 0; }
+
+.module-html-frame {
+  display: block;
+  width: 100%;
+  min-height: 240px;
+  border: 0;
+  background: transparent;
+}
 .progress-bar { height: 8px; border-radius: 999px; overflow: hidden; background: #e2e8f0; }
 .progress-bar span { display: block; height: 100%; background: var(--navy); }
 .legal-content { line-height: 1.8; color: #24324a; }

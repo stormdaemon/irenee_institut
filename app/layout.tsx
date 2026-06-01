@@ -9,12 +9,12 @@ import { organizationJsonLd, serializeJsonLd, siteDescription, siteName, siteUrl
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Institut d'Apologétique Irénée | Formation catholique en ligne",
+    default: "Institut d'Apologétique Saint Irénée | Formation catholique en ligne",
     template: `%s | ${siteName}`
   },
   description: siteDescription,
   openGraph: {
-    title: "Institut d'Apologétique Irénée",
+    title: "Institut d'Apologétique Saint Irénée",
     description: siteDescription,
     url: siteUrl,
     siteName,
@@ -25,13 +25,13 @@ export const metadata: Metadata = {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "Institut d'Apologétique Irénée - Formation catholique en ligne"
+        alt: "Institut d'Apologétique Saint Irénée - Formation catholique en ligne"
       }
     ]
   },
   twitter: {
     card: "summary_large_image",
-    title: "Institut d'Apologétique Irénée",
+    title: "Institut d'Apologétique Saint Irénée",
     description: siteDescription,
     images: ["/twitter-image.png"]
   },

@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { blogArticles } from "@/lib/blog";
 
 const baseUrl = "https://irenee-institut.org";
-const publicContentUpdatedAt = new Date("2026-05-31T12:00:00+02:00");
+const publicContentUpdatedAt = new Date("2026-06-01T17:06:44+02:00");
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes = [
@@ -30,7 +30,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
     ...blogArticles.map(article => ({
       url: `${baseUrl}/blog/${article.slug}`,
-      lastModified: new Date(`${article.date}T12:00:00+02:00`),
+      lastModified: publicContentUpdatedAt,
       changeFrequency: "monthly" as const,
       priority: article.featured ? 0.9 : 0.82
     }))
