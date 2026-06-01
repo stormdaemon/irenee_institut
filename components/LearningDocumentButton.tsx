@@ -34,7 +34,7 @@ export function LearningDocumentButton({ documentId, label = "Télécharger" }: 
     const url = URL.createObjectURL(blob);
     const link = window.document.createElement("a");
     link.href = url;
-    link.download = response.headers.get("content-disposition")?.match(/filename="([^"]+)"/)?.[1] || "document-saint-irenee.svg";
+    link.download = response.headers.get("content-disposition")?.match(/filename="([^"]+)"/)?.[1] || "document-saint-irenee.pdf";
     link.click();
     URL.revokeObjectURL(url);
     setBusy(false);
@@ -49,4 +49,3 @@ export function LearningDocumentButton({ documentId, label = "Télécharger" }: 
     </span>
   );
 }
-

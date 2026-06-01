@@ -21,17 +21,18 @@ function escapeXml(value: unknown) {
     .replace(/'/g, "&apos;");
 }
 
-function formatDate(value: string) {
+export function learningDocumentIssuedAt(document: LearningDocument) {
+  const value = document.issued_at;
   return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeZone: "Europe/Paris" }).format(new Date(value));
 }
 
-function titleFor(document: LearningDocument) {
+export function learningDocumentTitle(document: LearningDocument) {
   if (document.document_kind === "final_certificate") return "Certificat nominatif d'apologétique";
   if (document.document_kind === "course_parchment") return "Parchemin de connaissance";
   return "Parchemin de connaissance";
 }
 
-function achievementFor(document: LearningDocument) {
+export function learningDocumentAchievement(document: LearningDocument) {
   if (document.document_kind === "final_certificate") {
     return "a achevé le cursus annuel et réussi l'examen final d'apologétique";
   }
@@ -43,14 +44,14 @@ function achievementFor(document: LearningDocument) {
 
 export function learningDocumentFilename(document: LearningDocument) {
   const kind = document.document_kind === "final_certificate" ? "certificat-apologetique" : "parchemin-connaissance";
-  return `${kind}-${document.document_number.toLowerCase()}.svg`;
+  return `${kind}-${document.document_number.toLowerCase()}.pdf`;
 }
 
 export function renderLearningDocumentSvg(document: LearningDocument) {
   const recipient = escapeXml(document.recipient_name);
-  const title = escapeXml(titleFor(document));
-  const achievement = escapeXml(achievementFor(document));
-  const issuedAt = escapeXml(formatDate(document.issued_at));
+  const title = escapeXml(learningDocumentTitle(document));
+  const achievement = escapeXml(learningDocumentAchievement(document));
+  const issuedAt = escapeXml(learningDocumentIssuedAt(document));
   const number = escapeXml(document.document_number);
   const passName = escapeXml(ANNUAL_PASS_NAME);
   const isCertificate = document.document_kind === "final_certificate";
@@ -100,4 +101,3 @@ export function renderLearningDocumentSvg(document: LearningDocument) {
   <text x="800" y="962" text-anchor="middle" font-family="Georgia,serif" font-size="17" fill="#f6d4a2">IRÉNÉE</text>
 </svg>`;
 }
-

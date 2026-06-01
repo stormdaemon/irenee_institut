@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { renderLearningDocumentPdf } from "./learning-document-pdf";
 import { learningDocumentFilename, renderLearningDocumentSvg, type LearningDocument } from "./learning-documents";
 
 const certificate: LearningDocument = {
@@ -16,5 +17,12 @@ test("renderLearningDocumentSvg creates a nominative printable certificate", () 
   assert.match(svg, /Certificat nominatif d&apos;apologétique/);
   assert.match(svg, /Anne &amp; Martin/);
   assert.match(svg, /ISI-ABC123/);
-  assert.equal(learningDocumentFilename(certificate), "certificat-apologetique-isi-abc123.svg");
+  assert.equal(learningDocumentFilename(certificate), "certificat-apologetique-isi-abc123.pdf");
+});
+
+test("renderLearningDocumentPdf creates a downloadable PDF certificate", async () => {
+  const pdf = await renderLearningDocumentPdf(certificate);
+
+  assert.equal(Buffer.from(pdf).subarray(0, 5).toString("ascii"), "%PDF-");
+  assert.ok(pdf.length > 1000);
 });

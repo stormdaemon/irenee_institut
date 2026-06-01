@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { learningDocumentFilename, renderLearningDocumentSvg, type LearningDocument } from "@/lib/learning-documents";
+import { renderLearningDocumentPdf } from "@/lib/learning-document-pdf";
+import { learningDocumentFilename, type LearningDocument } from "@/lib/learning-documents";
 import { getSystemSettings } from "@/lib/settings";
 import { createServerClient } from "@/lib/supabase";
 
@@ -43,23 +44,23 @@ export async function GET(request: Request) {
 
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
 
-  const jobs = (data || []).map(row => {
+  const jobs = await Promise.all((data || []).map(async row => {
     const document = row as LearningDocument;
     const email = Array.isArray(row.profiles) ? row.profiles[0]?.email : row.profiles?.email;
     const isCertificate = document.document_kind === "final_certificate";
-    const svg = renderLearningDocumentSvg(document);
+    const pdf = await renderLearningDocumentPdf(document);
     return {
-      attachmentBase64: Buffer.from(svg, "utf8").toString("base64"),
-      attachmentMimeType: "image/svg+xml",
+      attachmentBase64: Buffer.from(pdf).toString("base64"),
+      attachmentMimeType: "application/pdf",
       documentId: document.id,
       filename: learningDocumentFilename(document),
       htmlBody: `<p>Bonjour ${escapeHtml(document.recipient_name)},</p><p>Votre ${isCertificate ? "certificat nominatif d'apologétique" : "parchemin de connaissance"} délivré par l'Institut d'apologétique saint Irénée est joint à cet email.</p><p>Vous pouvez également le retrouver dans votre espace étudiant.</p>`,
       subject: isCertificate ? "Votre certificat nominatif d'apologétique" : "Votre parchemin de connaissance",
       to: String(email || "")
     };
-  }).filter(job => job.to);
+  }));
 
-  return NextResponse.json({ ok: true, jobs });
+  return NextResponse.json({ ok: true, jobs: jobs.filter(job => job.to) });
 }
 
 export async function POST(request: Request) {

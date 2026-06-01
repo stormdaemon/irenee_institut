@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { learningDocumentFilename, renderLearningDocumentSvg, type LearningDocument } from "@/lib/learning-documents";
+import { renderLearningDocumentPdf } from "@/lib/learning-document-pdf";
+import { learningDocumentFilename, type LearningDocument } from "@/lib/learning-documents";
 import { createServerClient } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -24,11 +25,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 
   const document = data as LearningDocument;
-  return new NextResponse(renderLearningDocumentSvg(document), {
+  return new NextResponse(Buffer.from(await renderLearningDocumentPdf(document)), {
     headers: {
       "Content-Disposition": `inline; filename="${learningDocumentFilename(document)}"`,
-      "Content-Type": "image/svg+xml; charset=utf-8"
+      "Content-Type": "application/pdf"
     }
   });
 }
-
