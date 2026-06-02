@@ -27,6 +27,28 @@ type Resource = {
 
 const unsafeCssPattern = /@import|url\s*\(|expression\s*\(|behavior\s*:|-moz-binding|javascript\s*:/i;
 
+const moduleFrameThemeCss = `
+  body { color: #f0dfc2; }
+  .module-content { color: #f0dfc2 !important; }
+  .module-content h2,
+  .module-content h3,
+  .module-content h4 { color: #f0cf8a !important; }
+  .module-content a { color: #f0cf8a !important; }
+  .module-content ul.styled-list li::before { color: #f0cf8a !important; }
+  .module-content :is(.definition-box, .quote-box, .biblical-quote, .note-box, .warning-box, .success-box, .example-box) {
+    color: #182235 !important;
+  }
+  .module-content :is(.definition-box, .quote-box, .biblical-quote, .note-box, .warning-box, .success-box, .example-box)
+    :is(h2, h3, h4, p, li, strong, em, span) {
+    color: inherit !important;
+  }
+  .module-content .comparison-table,
+  .module-content .comparison-table tbody,
+  .module-content .comparison-table td { color: #182235 !important; }
+  .module-content .comparison-table thead,
+  .module-content .comparison-table th { color: #ffffff !important; }
+`;
+
 function getSafeModuleCss(html: string) {
   return [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)]
     .map(match => match[1])
@@ -57,6 +79,7 @@ function ModuleHtmlContent({ html, title }: { html: string; title: string }) {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>html,body{margin:0;padding:0;background:transparent}body{overflow-wrap:anywhere}table{max-width:100%}</style>
     <style>${sanitizedCss}</style>
+    <style>${moduleFrameThemeCss}</style>
   </head>
   <body>${sanitizedHtml}</body>
 </html>`;

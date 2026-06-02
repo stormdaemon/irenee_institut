@@ -30,6 +30,14 @@ test("fixed chrome keeps the radio player dark and the desktop network rail belo
   assert.match(styles, /\.floating-network\s*\{[^}]*top:\s*calc\(132px \+ var\(--radio-bar-height\)\)/);
 });
 
+test("module iframe applies its night theme after the saved lesson styles", () => {
+  const modulePage = source("app/cours/[slug]/modules/[moduleId]/page.tsx");
+  assert.match(modulePage, /const moduleFrameThemeCss = `/);
+  assert.match(modulePage, /<style>\$\{sanitizedCss\}<\/style>\s*<style>\$\{moduleFrameThemeCss\}<\/style>/);
+  assert.match(modulePage, /\.module-content \{\s*color: #f0dfc2 !important;/);
+  assert.match(modulePage, /\.module-content :is\(\.definition-box, \.quote-box, \.biblical-quote, \.note-box, \.warning-box, \.success-box, \.example-box\)/);
+});
+
 test("SEO surfaces keep the established canonical page while adding the no-apostrophe school query", () => {
   const seo = source("lib/seo.ts");
   const schoolPage = source("app/ecole-apologetique-en-ligne/page.tsx");
