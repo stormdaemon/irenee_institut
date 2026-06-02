@@ -19,7 +19,7 @@ test("homepage exposes the library and in-person session feature cards", () => {
 });
 
 test("fixed Heaven Radio player uses the requested RadioKing stream", () => {
-  assert.match(source("components/RadioPlayer.tsx"), /https:\/\/listen\.radioking\.com\/radio\/666997\/stream\/1/);
+  assert.match(source("components/RadioPlayer.tsx"), /https:\/\/play\.radioking\.io\/heavenradio\/731077/);
   assert.match(source("app/layout.tsx"), /<RadioPlayer \/>/);
 });
 
