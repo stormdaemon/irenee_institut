@@ -57,7 +57,11 @@ function getSafeModuleCss(html: string) {
 }
 
 function sanitizeModuleHtml(html: string) {
-  const document = new DOMParser().parseFromString(DOMPurify.sanitize(html), "text/html");
+  const normalizedHtml = html.replace(
+    /<div(\s+[^>]*class=["'][^"']*\bcomparison-table\b[^"']*["'][^>]*)>/gi,
+    "<table$1>"
+  );
+  const document = new DOMParser().parseFromString(DOMPurify.sanitize(normalizedHtml), "text/html");
   document.querySelectorAll<HTMLElement>("[style]").forEach(element => {
     if (unsafeCssPattern.test(element.getAttribute("style") || "")) {
       element.removeAttribute("style");
