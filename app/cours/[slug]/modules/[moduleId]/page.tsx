@@ -63,6 +63,9 @@ function sanitizeModuleHtml(html: string) {
       element.removeAttribute("style");
     }
   });
+  document.querySelectorAll<HTMLElement>(".comparison-table:not(table)").forEach(element => {
+    element.classList.remove("comparison-table");
+  });
   return document.body.innerHTML;
 }
 

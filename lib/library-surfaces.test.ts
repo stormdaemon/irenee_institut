@@ -36,6 +36,7 @@ test("module iframe applies its night theme after the saved lesson styles", () =
   assert.match(modulePage, /<style>\$\{sanitizedCss\}<\/style>\s*<style>\$\{moduleFrameThemeCss\}<\/style>/);
   assert.match(modulePage, /\.module-content \{\s*color: #f0dfc2 !important;/);
   assert.match(modulePage, /\.module-content :is\(\.definition-box, \.quote-box, \.biblical-quote, \.note-box, \.warning-box, \.success-box, \.example-box\)/);
+  assert.match(modulePage, /querySelectorAll<HTMLElement>\("\.comparison-table:not\(table\)"\)/);
 });
 
 test("SEO surfaces keep the established canonical page while adding the no-apostrophe school query", () => {
