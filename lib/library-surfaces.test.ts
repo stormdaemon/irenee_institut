@@ -22,6 +22,13 @@ test("fixed Heaven Radio player uses the requested RadioKing stream", () => {
   assert.match(source("app/layout.tsx"), /<RadioPlayer \/>/);
 });
 
+test("fixed chrome keeps the radio player dark and the desktop network rail below it", () => {
+  const styles = source("app/globals.css");
+  assert.match(styles, /--radio-bar-height:\s*44px/);
+  assert.match(styles, /\.radio-bar\s*\{[^}]*height:\s*var\(--radio-bar-height\)[^}]*linear-gradient\(180deg,\s*#071724 0%,\s*#03111f 100%\)/);
+  assert.match(styles, /\.floating-network\s*\{[^}]*top:\s*calc\(132px \+ var\(--radio-bar-height\)\)/);
+});
+
 test("SEO surfaces keep the established canonical page while adding the no-apostrophe school query", () => {
   const seo = source("lib/seo.ts");
   const schoolPage = source("app/ecole-apologetique-en-ligne/page.tsx");
