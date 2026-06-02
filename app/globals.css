@@ -2224,16 +2224,6 @@ label {
   text-align: center;
 }
 
-.hero-cross {
-  display: inline-grid;
-  place-items: center;
-  color: var(--gold-2);
-  font-size: 2.1rem;
-  line-height: 1;
-  margin-bottom: 14px;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, .5);
-}
-
 .hero-eyebrow {
   display: block;
   color: var(--gold-2);
@@ -2706,11 +2696,6 @@ label {
 @media (max-height: 760px) and (min-width: 901px) {
   .home-hero {
     padding: 54px 0 156px;
-  }
-
-  .hero-cross {
-    margin-bottom: 12px;
-    font-size: 2rem;
   }
 
   .hero-eyebrow {

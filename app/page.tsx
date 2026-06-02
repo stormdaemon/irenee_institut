@@ -70,7 +70,6 @@ export default async function HomePage() {
       <section className="hero-band home-hero">
         <div className="container">
           <div className="hero-content">
-            <span className="hero-cross" aria-hidden="true">✝</span>
             <span className="hero-eyebrow">Rentrée académique 2026 · inscriptions ouvertes</span>
             <h1 className="font-display hero-title">
               <span className="hero-title-desktop">Institut d'Apologétique<br /><span>Saint Irénée</span></span>

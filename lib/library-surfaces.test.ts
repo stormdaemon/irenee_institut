@@ -15,6 +15,7 @@ test("homepage exposes the library and in-person session feature cards", () => {
   assert.match(homepage, /Bibliothèque d'école apologétique/);
   assert.match(homepage, /Sessions apologétiques en présentiel/);
   assert.match(homepage, /Rentrée académique 2026/);
+  assert.doesNotMatch(homepage, /hero-cross/);
 });
 
 test("fixed Heaven Radio player uses the requested RadioKing stream", () => {
