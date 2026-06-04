@@ -4,7 +4,13 @@
  * Create a time-based trigger for sendQueuedLearningDocuments after deployment.
  */
 const LEARNING_DOCUMENTS_API_URL = "https://irenee-institut.org/api/automation/learning-documents";
+const ANNUAL_PASS_EMAILS_API_URL = "https://irenee-institut.org/api/automation/annual-pass-emails";
 const LEARNING_DOCUMENTS_MAX_ATTACHMENTS_PER_EMAIL = 20;
+
+function sendInstitutQueuedEmails() {
+  sendQueuedLearningDocuments();
+  sendQueuedAnnualPassEmails();
+}
 
 function sendQueuedLearningDocuments() {
   var queueResponse = UrlFetchApp.fetch(LEARNING_DOCUMENTS_API_URL, {
@@ -73,5 +79,58 @@ function acknowledgeLearningDocument(documentId, ok, error) {
     method: "post",
     muteHttpExceptions: true,
     payload: JSON.stringify({ documentId: documentId, error: error, ok: ok })
+  });
+}
+
+function sendQueuedAnnualPassEmails() {
+  sendAnnualPassEmailQueue_(ANNUAL_PASS_EMAILS_API_URL);
+}
+
+function sendAnnualPassEmailsForLaurentRouh() {
+  sendAnnualPassEmailQueue_(ANNUAL_PASS_EMAILS_API_URL + "?email=" + encodeURIComponent("laurent.rh@hotmail.fr"));
+}
+
+function sendAnnualPassEmailQueue_(url) {
+  var queueResponse = UrlFetchApp.fetch(url, {
+    headers: { Authorization: "Bearer " + WEBHOOK_SECRET },
+    muteHttpExceptions: true
+  });
+  var queue = JSON.parse(queueResponse.getContentText() || "{}");
+  if (queueResponse.getResponseCode() !== 200 || queue.ok !== true) {
+    throw new Error(queue.error || "Unable to load the annual pass mail queue.");
+  }
+
+  (queue.jobs || []).forEach(function (job) {
+    sendAnnualPassEmailJob_(job);
+  });
+}
+
+function sendAnnualPassEmailJob_(job) {
+  try {
+    var sent = GmailApp.sendEmail(job.to, job.subject, job.textBody || job.subject, {
+      htmlBody: job.htmlBody,
+      name: "Institut d'apologetique saint Irenee"
+    });
+    acknowledgeAnnualPassEmail_(job, true, "", sent && sent.getId ? sent.getId() : "");
+  } catch (error) {
+    acknowledgeAnnualPassEmail_(job, false, String(error), "");
+  }
+}
+
+function acknowledgeAnnualPassEmail_(job, ok, error, providerId) {
+  UrlFetchApp.fetch(ANNUAL_PASS_EMAILS_API_URL, {
+    contentType: "application/json",
+    headers: { Authorization: "Bearer " + WEBHOOK_SECRET },
+    method: "post",
+    muteHttpExceptions: true,
+    payload: JSON.stringify({
+      audience: job.audience,
+      error: error,
+      jobId: job.jobId,
+      ok: ok,
+      passId: job.passId,
+      providerId: providerId,
+      to: job.to
+    })
   });
 }
