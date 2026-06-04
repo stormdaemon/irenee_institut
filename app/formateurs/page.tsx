@@ -44,7 +44,10 @@ export default async function FormateursPage() {
               <div className="about-director-photo">
                 <Image src="/images/abbe-de-tanouarn.jpg" alt="Abbé Guillaume de Tanoüarn" fill sizes="150px" style={{ objectFit: "cover", objectPosition: "55% 28%" }} />
               </div>
-              <span className="badge">Directeur administratif</span>
+              <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                <span className="badge">Directeur administratif</span>
+                <span className="badge">Institut du bon pasteur</span>
+              </div>
               <h3>Abbé de Tanoüarn</h3>
               <p className="muted">Directeur administratif, engagé dans l'organisation et l'accompagnement des étudiants.</p>
               <small className="muted">
