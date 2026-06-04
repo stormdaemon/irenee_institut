@@ -134,3 +134,14 @@ function acknowledgeAnnualPassEmail_(job, ok, error, providerId) {
     })
   });
 }
+
+function installAnnualPassEmailTrigger() {
+  var handler = "sendQueuedAnnualPassEmails";
+  var exists = ScriptApp.getProjectTriggers().some(function (trigger) {
+    return trigger.getHandlerFunction && trigger.getHandlerFunction() === handler;
+  });
+
+  if (!exists) {
+    ScriptApp.newTrigger(handler).timeBased().everyMinutes(10).create();
+  }
+}
