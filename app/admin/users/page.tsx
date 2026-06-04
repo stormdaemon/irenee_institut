@@ -1,6 +1,7 @@
 "use client";
 
 import type { Course, Profile, Role } from "@/lib/types";
+import type { AdminAccessAudit } from "@/lib/admin-access";
 import { Calendar, Mail, Plus, Search, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ActionNotice } from "@/components/ActionNotice";
@@ -9,6 +10,7 @@ import { authenticatedFetch } from "@/lib/authenticated-fetch";
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<Profile[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [accessAudit, setAccessAudit] = useState<AdminAccessAudit | null>(null);
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<"all" | Role>("all");
   const [selected, setSelected] = useState<Profile | null>(null);
@@ -20,13 +22,32 @@ export default function AdminUsersPage() {
   useEffect(() => {
     authenticatedFetch("/api/users").then(response => response.json()).then(setUsers).catch(() => setUsers([]));
     authenticatedFetch("/api/courses").then(response => response.json()).then(setCourses).catch(() => setCourses([]));
+    refreshAccessAudit();
   }, []);
+
+  const accessByUser = useMemo(() => new Map((accessAudit?.students || []).map(student => [student.id, student])), [accessAudit]);
 
   const filtered = useMemo(() => users.filter(user => {
     const matchText = !query || `${user.prenom} ${user.nom} ${user.email}`.toLowerCase().includes(query.toLowerCase());
     const matchRole = role === "all" || user.role === role;
     return matchText && matchRole;
   }), [users, query, role]);
+
+  async function refreshAccessAudit() {
+    const data = await authenticatedFetch("/api/admin/access").then(response => response.json()).catch(() => null);
+    if (data?.students) {
+      setAccessAudit(data);
+      return data as AdminAccessAudit;
+    }
+    return null;
+  }
+
+  async function openCourseModal(user: Profile) {
+    const latestAudit = accessAudit || await refreshAccessAudit();
+    const currentAccess = latestAudit?.students.find(student => student.id === user.id) || accessByUser.get(user.id);
+    setSelected(user);
+    setAssigned(currentAccess?.courses.map(enrollment => enrollment.course_id) || []);
+  }
 
   async function updateRole(id: string, nextRole: Role) {
     setStatus("saving");
@@ -42,6 +63,7 @@ export default function AdminUsersPage() {
       setUsers(users.map(user => user.id === id ? { ...user, role: nextRole } : user));
       setSuccessMessage("Rôle mis à jour.");
       setStatus("success");
+      refreshAccessAudit();
     } else {
       setError(data.error || "Le rôle n'a pas pu être enregistré.");
       setStatus("error");
@@ -64,6 +86,7 @@ export default function AdminUsersPage() {
       setAssigned([]);
       setSuccessMessage("Cours attribués.");
       setStatus("success");
+      refreshAccessAudit();
     } else {
       setError(data.error || "L'assignation des cours n'a pas pu être enregistrée.");
       setStatus("error");
@@ -74,8 +97,13 @@ export default function AdminUsersPage() {
     <section className="section">
       <div className="container">
         <a href="/admin">← Retour au tableau de bord</a>
-        <h1 className="title" style={{ marginTop: 28 }}>Gestion des utilisateurs</h1>
-        <p className="subtitle">Étudiants, formateurs et directeurs</p>
+        <div className="admin-page-head">
+          <div>
+            <h1 className="title">Gestion des utilisateurs</h1>
+            <p className="subtitle">Étudiants, formateurs et directeurs</p>
+          </div>
+          <a className="btn btn-outline" href="/admin/access">Accès étudiants</a>
+        </div>
         <ActionNotice status={status} success={successMessage || "Modification enregistrée."} error={error} />
         <div className="grid-2" style={{ margin: "30px 0" }}>
           <div style={{ position: "relative" }}>
@@ -108,9 +136,9 @@ export default function AdminUsersPage() {
                     </select>
                   </td>
                   <td><Calendar size={15} /> {new Date(user.created_at || Date.now()).toLocaleDateString("fr-FR")}</td>
-                  <td style={{ display: "flex", gap: 8 }}>
-                    <button className="btn btn-outline" onClick={() => setSelected(user)}><Plus size={16} /> Cours</button>
-                    <button className="btn btn-outline" onClick={() => setUsers(users.filter(item => item.id !== user.id))}><Trash2 size={16} /></button>
+                  <td className="table-actions">
+                    <button className="btn btn-outline" type="button" onClick={() => openCourseModal(user)}><Plus size={16} /> Cours</button>
+                    <button className="btn btn-outline" type="button" aria-label={`Retirer ${user.prenom} ${user.nom} de cette vue`} onClick={() => setUsers(users.filter(item => item.id !== user.id))}><Trash2 size={16} /></button>
                   </td>
                 </tr>
               ))}
@@ -118,19 +146,30 @@ export default function AdminUsersPage() {
           </table>
         </div>
         {selected && (
-          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", display: "grid", placeItems: "center", zIndex: 50 }}>
-            <div className="card" style={{ width: "min(680px, calc(100% - 30px))", padding: 28 }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <div><h2 className="font-display" style={{ color: "var(--navy)", margin: 0 }}>Assigner des cours</h2><p>{selected.prenom} {selected.nom}</p></div>
-                <button className="btn btn-outline" onClick={() => setSelected(null)}><X size={16} /></button>
+          <div className="admin-course-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="admin-course-modal-title">
+            <div className="admin-course-modal">
+              <div className="admin-course-modal-head">
+                <div>
+                  <h2 className="font-display" id="admin-course-modal-title">Assigner des cours</h2>
+                  <p>{selected.prenom} {selected.nom}</p>
+                </div>
+                <button className="modal-close" type="button" aria-label="Fermer" onClick={() => setSelected(null)}><X size={18} /></button>
               </div>
-              {courses.map(course => (
-                <label key={course.id} style={{ display: "flex", gap: 12, padding: 14, background: "#f7f9fc", marginTop: 8 }}>
-                  <input type="checkbox" checked={assigned.includes(course.id)} onChange={() => setAssigned(assigned.includes(course.id) ? assigned.filter(id => id !== course.id) : [...assigned, course.id])} />
-                  {course.titre}
-                </label>
-              ))}
-              <p style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><span>{assigned.length} cours sélectionné{assigned.length > 1 ? "s" : ""}</span><button className="btn btn-primary" onClick={saveCourses}>Enregistrer</button></p>
+              <div className="admin-course-list" aria-label="Cours disponibles">
+                {courses.map(course => {
+                  const checked = assigned.includes(course.id);
+                  return (
+                    <label className={`admin-course-option ${checked ? "selected" : ""}`} key={course.id}>
+                      <input type="checkbox" checked={checked} onChange={() => setAssigned(checked ? assigned.filter(id => id !== course.id) : [...assigned, course.id])} />
+                      <span>{course.titre}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <div className="admin-course-modal-actions">
+                <span>{assigned.length} cours sélectionné{assigned.length > 1 ? "s" : ""}</span>
+                <button className="btn btn-primary" type="button" onClick={saveCourses} disabled={status === "saving"}>Enregistrer</button>
+              </div>
             </div>
           </div>
         )}
