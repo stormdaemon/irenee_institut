@@ -74,21 +74,6 @@ const staticTeamMembers: TeamMember[] = [
     },
     tags: ["Christologie", "Théologie", "Transmission"],
     title: "Module christologie"
-  },
-  {
-    achievements: [
-      "Suivi des inscriptions",
-      "Développement complet de la plateforme",
-      "Mise en place des tags, automatisations et outils administratifs"
-    ],
-    description:
-      "Théo Lafont assure le suivi opérationnel des inscriptions et le développement complet de la plateforme de l'institut, des parcours étudiants aux outils d'administration.",
-    email: "tlafont49@gmail.com",
-    image: "/images/theo-lafont.jpg",
-    imagePosition: "50% 18%",
-    name: "Théo Lafont",
-    tags: ["Inscriptions", "Plateforme", "Développement", "Administration"],
-    title: "Suivi des inscriptions et plateforme"
   }
 ];
 
@@ -125,6 +110,14 @@ export default async function FormateursPage() {
               <span className="badge">Directeur</span>
               <h3>Samuel Armanios</h3>
               <p className="muted">Diplômé en théologie à l'Université de la Sainte-Croix.</p>
+            </article>
+            <article className="card about-director-card">
+              <div className="about-director-photo">
+                <Image src="/images/theo-lafont.jpg" alt="Théo Lafont" fill sizes="150px" style={{ objectFit: "cover", objectPosition: "50% 18%" }} />
+              </div>
+              <span className="badge">Directeur du développement</span>
+              <h3>Théo Lafont</h3>
+              <p className="muted">Assure le suivi opérationnel des inscriptions et le développement complet de la plateforme de l'institut.</p>
             </article>
           </div>
         </div>
