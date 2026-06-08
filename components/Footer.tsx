@@ -20,7 +20,7 @@ export function Footer() {
             <p><Link href="/blog">Blog apologétique</Link></p>
             <p><Link href="/ressources-apologetique">Ressources</Link></p>
             <p><Link href="/bibliotheque-apologetique">Bibliothèque</Link></p>
-            <p><Link href="/formateurs">Notre équipe</Link></p>
+            <p><Link href="/equipe">Notre équipe</Link></p>
             <p><Link href="/formations">Tarifs</Link></p>
             <p><Link href="/espace-etudiant">Espace étudiant</Link></p>
           </div>

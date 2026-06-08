@@ -97,14 +97,13 @@ export const metadata: Metadata = {
   description:
     "Découvrez la direction et les formateurs de l'Institut d'Apologétique Saint Irénée au service d'une transmission catholique rigoureuse et accessible.",
   alternates: {
-    canonical: "/formateurs"
+    canonical: "/equipe"
   }
 };
 
 export default async function FormateursPage() {
   const trainers = await getTrainers();
   const samuelPhotoUrl = "https://bilan-previsionnel.fr/wp-content/uploads/2020/11/Bilan-Previsionnel-presentation-portrait-img-1.jpg";
-
   return (
     <>
       <section className="page-hero">
@@ -126,20 +125,6 @@ export default async function FormateursPage() {
               <span className="badge">Directeur</span>
               <h3>Samuel Armanios</h3>
               <p className="muted">Diplômé en théologie à l'Université de la Sainte-Croix.</p>
-            </article>
-            <article className="card about-director-card">
-              <div className="about-director-photo">
-                <Image src="/images/abbe-de-tanouarn.jpg" alt="Abbé Guillaume de Tanoüarn" fill sizes="150px" style={{ objectFit: "cover", objectPosition: "55% 28%" }} />
-              </div>
-              <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                <span className="badge">Directeur administratif</span>
-                <span className="badge">Institut du bon pasteur</span>
-              </div>
-              <h3>Abbé de Tanoüarn</h3>
-              <p className="muted">Directeur administratif, engagé dans l'organisation, l'accompagnement spirituel de l'institut et l'accompagnement des étudiants.</p>
-              <small className="muted">
-                Photo : <a href="https://commons.wikimedia.org/wiki/File:Paris_-_Abb%C3%A9_Guillaume_de_Tano%C3%BCarn_-_3.jpg" target="_blank" rel="noreferrer">Peter Potrowl, CC BY-SA 4.0</a>
-              </small>
             </article>
           </div>
         </div>

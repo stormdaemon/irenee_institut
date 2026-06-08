@@ -28,7 +28,7 @@ type RawModule = {
 
 function isExcludedPublicName(name: string) {
   const normalizedName = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  return normalizedName.includes("raffray") || normalizedName.includes("rafray");
+  return normalizedName.includes("raffray") || normalizedName.includes("rafray") || normalizedName.includes("nezchristos") || normalizedName.includes("tanouarn");
 }
 
 function isLegacyBalzaacProfile(profile: Profile) {

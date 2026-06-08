@@ -11,7 +11,7 @@ const links = [
   { href: "/", label: "Accueil" },
   { href: "/formations", label: "Formations" },
   { href: "/blog", label: "Blog" },
-  { href: "/formateurs", label: "Équipe" },
+  { href: "/equipe", label: "Équipe" },
   { href: "/a-propos", label: "À propos" },
   { href: "/contact", label: "Contact" }
 ];

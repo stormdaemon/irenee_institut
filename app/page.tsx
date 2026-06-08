@@ -40,7 +40,7 @@ const features = [
     icon: "/images/irenee-feature-medallion-teacher.png",
     iconLeft: "50%",
     iconPosition: "50% 50%",
-    href: "/formateurs"
+    href: "/equipe"
   },
   {
     title: "Une mission claire",

@@ -14,7 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/bibliotheque-apologetique",
     "/formations",
     "/blog",
-    "/formateurs",
+    "/equipe",
     "/a-propos",
     "/contact",
     "/mentions-legales",
