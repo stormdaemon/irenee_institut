@@ -26,17 +26,61 @@ type Resource = {
 };
 
 const unsafeCssPattern = /@import|url\s*\(|expression\s*\(|behavior\s*:|-moz-binding|javascript\s*:/i;
+const hostileInlineStylePattern = /(?:^|;)\s*(?:color|background(?:-color)?|width|min-width|max-width|font-size|line-height|white-space|overflow|display)\s*:[^;]*/gi;
 
 const moduleFrameThemeCss = `
-  body { color: #f0dfc2; }
-  .module-content { color: #f0dfc2 !important; }
+  html { background: #fffaf0; }
+  body {
+    color: #172033;
+    background: #fffaf0;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 18px;
+    line-height: 1.72;
+    padding: 30px;
+  }
+  .module-content,
+  .module-content *,
+  body > * { color: #172033 !important; }
   .module-content h2,
   .module-content h3,
-  .module-content h4 { color: #f0cf8a !important; }
-  .module-content a { color: #f0cf8a !important; }
-  .module-content ul.styled-list li::before { color: #f0cf8a !important; }
+  .module-content h4,
+  h1, h2, h3, h4 {
+    color: #071d49 !important;
+    line-height: 1.18;
+    overflow-wrap: anywhere;
+  }
+  p, li, blockquote, td, th, span, strong, em {
+    color: #172033 !important;
+  }
+  a {
+    color: #7a1717 !important;
+    font-weight: 800;
+  }
+  img, video, iframe {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  table {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto;
+    border-collapse: collapse;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    box-shadow: inset -14px 0 12px -12px rgba(7,29,73,.35);
+  }
+  table::-webkit-scrollbar { height: 6px; }
+  table::-webkit-scrollbar-thumb { background: #b88a3a; border-radius: 3px; }
+  th, td {
+    min-width: clamp(96px, 26vw, 160px);
+    overflow-wrap: anywhere;
+  }
+  .module-content ul.styled-list li::before { color: #7a1717 !important; }
   .module-content :is(.definition-box, .quote-box, .biblical-quote, .note-box, .warning-box, .success-box, .example-box) {
-    color: #182235 !important;
+    color: #172033 !important;
+    background: #fff3d8 !important;
+    border-color: #b88a3a !important;
   }
   .module-content :is(.definition-box, .quote-box, .biblical-quote, .note-box, .warning-box, .success-box, .example-box)
     :is(h2, h3, h4, p, li, strong, em, span) {
@@ -46,7 +90,67 @@ const moduleFrameThemeCss = `
   .module-content .comparison-table tbody,
   .module-content .comparison-table td { color: #182235 !important; }
   .module-content .comparison-table thead,
-  .module-content .comparison-table th { color: #ffffff !important; }
+  .module-content .comparison-table th { color: #ffffff !important; background: #071d49 !important; }
+  @media (max-width: 640px) {
+    body {
+      font-size: 17px;
+      line-height: 1.68;
+      padding: 20px;
+    }
+    h1 { font-size: 1.8rem !important; }
+    h2 { font-size: 1.5rem !important; }
+    h3 { font-size: 1.25rem !important; }
+    p, li { overflow-wrap: anywhere; }
+    .module-responsive-table,
+    .module-responsive-table thead,
+    .module-responsive-table tbody,
+    .module-responsive-table tr,
+    .module-responsive-table th,
+    .module-responsive-table td {
+      display: block !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+    }
+    .module-responsive-table {
+      overflow: visible !important;
+      border: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    .module-responsive-table thead {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      overflow: hidden !important;
+      clip-path: inset(50%) !important;
+      white-space: nowrap !important;
+    }
+    .module-responsive-table tbody tr {
+      margin: 0 0 18px !important;
+      border: 1px solid #d9c28f !important;
+      border-radius: 10px !important;
+      background: #fffdf7 !important;
+      overflow: hidden !important;
+    }
+    .module-responsive-table td {
+      padding: 16px 18px !important;
+      border: 0 !important;
+      border-top: 1px solid #eadbb7 !important;
+      background: transparent !important;
+    }
+    .module-responsive-table td:first-child {
+      border-top: 0 !important;
+    }
+    .module-responsive-table td::before {
+      content: attr(data-label);
+      display: block;
+      margin-bottom: 7px;
+      color: #071d49;
+      font-weight: 800;
+      font-style: normal;
+    }
+  }
 `;
 
 function getSafeModuleCss(html: string) {
@@ -63,12 +167,33 @@ function sanitizeModuleHtml(html: string) {
   );
   const document = new DOMParser().parseFromString(DOMPurify.sanitize(normalizedHtml), "text/html");
   document.querySelectorAll<HTMLElement>("[style]").forEach(element => {
-    if (unsafeCssPattern.test(element.getAttribute("style") || "")) {
+    const style = element.getAttribute("style") || "";
+    if (unsafeCssPattern.test(style)) {
+      element.removeAttribute("style");
+      return;
+    }
+    const cleanedStyle = style
+      .replace(hostileInlineStylePattern, "")
+      .replace(/;{2,}/g, ";")
+      .replace(/^;+|;+$/g, "")
+      .trim();
+    if (cleanedStyle) {
+      element.setAttribute("style", cleanedStyle);
+    } else {
       element.removeAttribute("style");
     }
   });
   document.querySelectorAll<HTMLElement>(".comparison-table:not(table)").forEach(element => {
     element.classList.remove("comparison-table");
+  });
+  document.querySelectorAll<HTMLTableElement>("table").forEach(table => {
+    table.classList.add("module-responsive-table");
+    const headers = Array.from(table.querySelectorAll("thead th")).map(header => header.textContent?.trim() || "");
+    table.querySelectorAll<HTMLTableRowElement>("tbody tr").forEach(row => {
+      Array.from(row.children).forEach((cell, index) => {
+        if (headers[index]) cell.setAttribute("data-label", headers[index]);
+      });
+    });
   });
   return document.body.innerHTML;
 }
@@ -84,7 +209,7 @@ function ModuleHtmlContent({ html, title }: { html: string; title: string }) {
     <meta charset="utf-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; media-src https:; style-src 'unsafe-inline'; font-src 'none'; form-action 'none'" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>html,body{margin:0;padding:0;background:transparent}body{overflow-wrap:anywhere}table{max-width:100%}</style>
+    <style>html,body{margin:0;padding:0}body{overflow-wrap:anywhere}table{max-width:100%}</style>
     <style>${sanitizedCss}</style>
     <style>${moduleFrameThemeCss}</style>
   </head>
@@ -103,14 +228,22 @@ function ModuleHtmlContent({ html, title }: { html: string; title: string }) {
   useEffect(() => {
     const frame = frameRef.current;
     if (!frame) return;
+    const doc = frame.contentDocument;
     const observer = new ResizeObserver(syncHeight);
-    observer.observe(frame);
+    if (doc?.body) observer.observe(doc.body);
+    if (doc?.documentElement) observer.observe(doc.documentElement);
+    doc?.querySelectorAll("img").forEach(image => {
+      if (!image.complete) image.addEventListener("load", syncHeight, { once: true });
+    });
+    doc?.fonts?.ready.then(syncHeight).catch(() => undefined);
+    const delayedSync = window.setTimeout(syncHeight, 300);
     window.addEventListener("resize", syncHeight);
     return () => {
+      window.clearTimeout(delayedSync);
       observer.disconnect();
       window.removeEventListener("resize", syncHeight);
     };
-  }, [syncHeight]);
+  }, [syncHeight, document]);
 
   return (
     <iframe
@@ -287,15 +420,15 @@ export default function ModulePage() {
   }
 
   return (
-    <section className="section">
-      <div className="container" style={{ maxWidth: 880 }}>
-        <Link href={`/cours/${course.slug}`}>← Retour au cours</Link>
-        <div className="card" style={{ padding: 34, marginTop: 24 }}>
+    <section className="section course-reader-page">
+      <div className="container course-module-container">
+        <Link className="course-back-link" href={`/cours/${course.slug}`}>← Retour au cours</Link>
+        <div className="card course-hero-card">
           <span className="badge">{module.type}</span>
           <h1 className="title">{module.titre}</h1>
           <p className="subtitle">{module.description}</p>
         </div>
-        <div className="card" style={{ padding: 34, marginTop: 28 }}>
+        <div className="card module-reading-card">
           {module.contenu_html ? (
             <ModuleHtmlContent html={module.contenu_html} title={module.titre} />
           ) : module.contenu ? (
@@ -307,7 +440,7 @@ export default function ModulePage() {
             </>
           )}
         </div>
-        <div className="card" style={{ padding: 34, marginTop: 28 }}>
+        <div className="card course-resource-card">
           <h2 className="font-display" style={{ color: "var(--navy)" }}>Ressources téléchargeables</h2>
           {resources.length ? resources.map(resource => (
             <a className="btn btn-outline" href={resource.url} key={resource.url} target="_blank" rel="noreferrer">
@@ -316,7 +449,7 @@ export default function ModulePage() {
           )) : <p className="muted">Aucune ressource n'est encore publiée pour ce module.</p>}
         </div>
         {Array.isArray(module.quiz) && module.quiz.length > 0 && (
-          <div className="card" style={{ padding: 34, marginTop: 28 }}>
+          <div className="card course-resource-card">
             <h2 className="font-display" style={{ color: "var(--navy)" }}>Quiz de validation</h2>
             {module.quiz.map((question, index) => (
               <div className="soft-card" style={{ padding: 18, marginTop: 14 }} key={`${question.question}-${index}`}>
@@ -326,7 +459,7 @@ export default function ModulePage() {
             ))}
           </div>
         )}
-        <div className="card center" style={{ padding: 34, marginTop: 28 }}>
+        <div className="card center course-complete-card">
           {isComplete ? (
             <p><CheckCircle2 size={17} color="#22c55e" /> Module terminé.</p>
           ) : (

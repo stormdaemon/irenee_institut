@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
-import { ArrowRight, ExternalLink } from "lucide-react";
+import { ArrowRight, ExternalLink, Newspaper } from "lucide-react";
 import { getCourses } from "@/lib/server-data";
 import { siteDescription } from "@/lib/seo";
 
@@ -25,36 +25,40 @@ export const metadata: Metadata = {
 
 const features = [
   {
+    title: "L'EIDM devient l'Institut Saint Irénée",
+    text: "L'élan de l'EIDM se poursuit dans un institut structuré pour former, accompagner et transmettre la foi catholique avec clarté.",
+    image: "/images/eidm-institut-saint-irenee.png",
+    imagePosition: "50% 42%",
+    icon: "/images/irenee-feature-medallion-teacher.png",
+    iconLeft: "50%",
+    iconPosition: "50% 50%",
+    href: "/institut-apologetique"
+  },
+  {
     title: "Bibliothèque d'école apologétique",
     text: "Une bibliothèque réservée aux étudiants pour demander le livre apologétique de leur choix après une adhésion annuelle de 15 EUR.",
     image: "/images/irenee-feature-1.png",
+    imagePosition: "50% 50%",
     icon: "/images/irenee-feature-medallion-library.png",
     iconLeft: "50%",
     iconPosition: "50% 50%",
     href: "/bibliotheque-apologetique"
   },
   {
-    title: "Enseignants qualifiés",
-    text: "Des formateurs catholiques reconnus pour leur expertise et leur fidélité à l'enseignement de l'Église.",
-    image: "/images/irenee-feature-2.png",
-    icon: "/images/irenee-feature-medallion-teacher.png",
-    iconLeft: "50%",
-    iconPosition: "50% 50%",
-    href: "/equipe"
-  },
-  {
-    title: "Une mission claire",
-    text: "Former des apôtres et témoins capables de répondre aux objections et d'annoncer la vérité avec charité.",
+    title: "Formation en direct chaque semaine",
+    text: "Un soir par semaine, les étudiants retrouvent une séance en visio depuis le site pour travailler, questionner et progresser ensemble.",
     image: "/images/irenee-feature-3.png",
+    imagePosition: "50% 50%",
     icon: "/images/irenee-feature-medallion-3.png",
     iconLeft: "50%",
     iconPosition: "50% 50%",
-    href: "/institut-apologetique"
+    href: "/formations"
   },
   {
-    title: "Sessions apologétiques en présentiel",
-    text: "Des sessions dans une abbaye avec un expert pour approfondir une question, échanger et progresser ensemble.",
-    image: "/images/irenee-feature-4.png",
+    title: "Sessions patristiques en abbaye",
+    text: "Des sessions de 5 jours autour d'un thème différent, des conciles et des Pères de l'Église, pour étudier avec un expert.",
+    image: "/images/cloitre-sessions-patristiques.png",
+    imagePosition: "50% 50%",
     icon: "/images/irenee-feature-medallion-abbey.png",
     iconLeft: "50%",
     iconPosition: "50% 50%",
@@ -102,7 +106,11 @@ export default async function HomePage() {
               <article
                 className="card feature-card"
                 key={feature.title}
-                style={{ "--card-image": `url(${feature.image})`, "--feature-icon-left": feature.iconLeft } as CSSProperties}
+                style={{
+                  "--card-image": `url(${feature.image})`,
+                  "--card-image-position": feature.imagePosition,
+                  "--feature-icon-left": feature.iconLeft
+                } as CSSProperties}
               >
                 <span className="feature-icon">
                   <Image src={feature.icon} alt="" fill sizes="72px" style={{ objectFit: "cover", objectPosition: feature.iconPosition }} />
@@ -117,10 +125,41 @@ export default async function HomePage() {
           </div>
           <div className="quote-banner">
             <blockquote>
-              “Soyez toujours prêts à rendre compte de l'espérance qui est en vous.”
+              "Soyez toujours prêts à rendre compte de l'espérance qui est en vous."
               <cite>1 Pierre 3,15</cite>
             </blockquote>
           </div>
+        </div>
+      </section>
+
+      <section className="section home-press-section">
+        <div className="container">
+          <article className="press-home-card">
+            <div className="press-home-image">
+              <Image
+                src="/images/presse-liberation-institut-saint-irenee.png"
+                alt="Revue de presse de l'Institut Saint Irénée"
+                fill
+                sizes="(max-width: 900px) 100vw, 42vw"
+              />
+            </div>
+            <div className="press-home-content">
+              <span className="hero-eyebrow"><Newspaper size={16} /> Dans la presse nationale</span>
+              <h2 className="font-display">Libération parle de l'Institut Saint Irénée</h2>
+              <p>
+                Un article publié le 17 juin 2026 met l'Institut Saint Irénée au cœur du débat sur
+                l'apologétique catholique, la formation chrétienne et la place du catholicisme dans l'espace public.
+              </p>
+              <div className="press-home-actions">
+                <Link className="btn btn-gold" href="/presse/liberation-institut-saint-irenee-2026">
+                  Lire notre résumé <ArrowRight size={17} />
+                </Link>
+                <a className="btn btn-outline" href="https://www.liberation.fr/societe/religions/avec-linstitut-saint-irenee-le-catholicisme-identitaire-se-met-en-ordre-de-bataille-20260617_64O26CD53FD5DOSYZZBIKXWRUA/" target="_blank" rel="noreferrer">
+                  Article original <ExternalLink size={17} />
+                </a>
+              </div>
+            </div>
+          </article>
         </div>
       </section>
 
@@ -133,6 +172,14 @@ export default async function HomePage() {
             étudier les sources et répondre aux objections contemporaines. L'objectif n'est pas de gagner des
             querelles, mais de servir la vérité avec précision, patience et charité.
           </p>
+          <div className="live-training-note">
+            <strong>Proposition d'intégration visio</strong>
+            <p>
+              Les séances hebdomadaires peuvent être lancées depuis l'espace étudiant : le site authentifie
+              l'étudiant, affiche la séance du soir et ouvre la salle intégrée ou une fenêtre sécurisée, sans
+              demander un second compte à l'utilisateur.
+            </p>
+          </div>
           <Link className="btn btn-outline" href="/institut-apologetique">
             Découvrir l'Institut d'Apologétique <ArrowRight size={17} />
           </Link>

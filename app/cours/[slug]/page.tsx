@@ -123,23 +123,23 @@ export default function CoursePage() {
   }
 
   return (
-    <section className="section">
+    <section className="section course-reader-page">
       <div className="container">
-        <Link href="/espace-etudiant">← Retour à l'espace étudiant</Link>
-        <div className="card" style={{ padding: 34, marginTop: 18, marginBottom: 46 }}>
+        <Link className="course-back-link" href="/espace-etudiant">← Retour à l'espace étudiant</Link>
+        <div className="card course-hero-card">
           <h1 className="title">{course.titre}</h1>
           <p className="subtitle">{course.description}</p>
-          <p style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+          <p className="course-meta-row">
             <span className="badge">{course.niveau}</span>
             <span><BookOpen size={16} /> {course.modules.length} modules</span>
             <span><Clock size={16} /> {formatDuration(course.duree_totale)} de contenu</span>
             <span><Award size={16} /> Certificat</span>
           </p>
-          <div className="soft-card" style={{ padding: 18, background: "#eaf3ff", color: "#315da9", boxShadow: "none" }}>
+          <div className="course-welcome">
             Bon retour, {payload.profile.prenom || payload.profile.email}
           </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(260px, 340px)", gap: 34, alignItems: "start" }}>
+        <div className="course-reader-layout">
           <div>
             <h2 className="font-display" style={{ color: "var(--navy)" }}>Contenu de la formation</h2>
             {course.modules.map((module, index) => {
@@ -147,16 +147,16 @@ export default function CoursePage() {
               const progress = moduleProgress?.complete ? 100 : Number(moduleProgress?.progression || 0);
               const isComplete = progress >= 100;
               return (
-                <article className="card" key={module.id} style={{ padding: 28, marginBottom: 22 }}>
-                  <div style={{ display: "flex", gap: 18 }}>
-                    <div>{isComplete ? <CheckCircle2 color="#22c55e" /> : <PlayCircle color="var(--navy)" />}</div>
-                    <div style={{ flex: 1 }}>
+                <article className="card course-module-card" key={module.id}>
+                  <div className="course-module-row">
+                    <div className="course-module-icon">{isComplete ? <CheckCircle2 color="#55d66f" /> : <PlayCircle color="var(--gold-2)" />}</div>
+                    <div className="course-module-body">
                       <small>Module {index + 1}</small>
                       <h3 className="font-display" style={{ color: "var(--navy)", fontSize: "1.35rem", marginTop: 4 }}>{module.titre}</h3>
                       <p className="muted">{module.description}</p>
-                      <p><Clock size={15} /> {module.duree} min <span className="badge">{module.type}</span></p>
-                      <div style={{ height: 6, background: "#e2e8f0", borderRadius: 99, overflow: "hidden", margin: "14px 0" }}>
-                        <div style={{ width: `${progress}%`, height: "100%", background: "var(--navy)" }} />
+                      <p className="course-module-meta"><Clock size={15} /> {module.duree} min <span className="badge">{module.type}</span></p>
+                      <div className="course-progress-track">
+                        <div style={{ width: `${progress}%` }} />
                       </div>
                       <Link className="btn btn-outline" href={`/cours/${course.slug}/modules/${module.id}`}>{isComplete ? "Revoir" : "Commencer"}</Link>
                     </div>
@@ -165,7 +165,7 @@ export default function CoursePage() {
               );
             })}
           </div>
-          <aside className="card" style={{ padding: 26, position: "sticky", top: 110 }}>
+          <aside className="card course-objectives-card">
             <h3 className="font-display" style={{ color: "var(--navy)" }}>Objectifs de la formation</h3>
             {course.objectifs.length ? course.objectifs.map(item => <p key={item}><CheckCircle2 size={17} color="#22c55e" /> {item}</p>) : <p className="muted">Aucun objectif publié pour ce cours.</p>}
           </aside>

@@ -61,9 +61,9 @@ export default async function AdminPage() {
           ))}
         </div>
 
-        <div className="grid-2" style={{ marginTop: 58, alignItems: "start" }}>
+        <div className="admin-dashboard-split">
           <section>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center" }}>
+            <div className="admin-inline-head">
               <h2 className="font-display" style={{ color: "var(--navy)" }}>Cours récents</h2>
               <Link className="btn btn-primary" href="/admin/courses">+ Nouveau cours</Link>
             </div>

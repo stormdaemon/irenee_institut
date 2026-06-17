@@ -10,10 +10,12 @@ function source(path: string) {
   return readFileSync(join(root, path), "utf8");
 }
 
-test("homepage exposes the library and in-person session feature cards", () => {
+test("homepage exposes the EIDM, library, live training and patristic session feature cards", () => {
   const homepage = source("app/page.tsx");
+  assert.match(homepage, /L'EIDM devient l'Institut Saint Irénée/);
   assert.match(homepage, /Bibliothèque d'école apologétique/);
-  assert.match(homepage, /Sessions apologétiques en présentiel/);
+  assert.match(homepage, /Formation en direct chaque semaine/);
+  assert.match(homepage, /Sessions patristiques en abbaye/);
   assert.match(homepage, /Rentrée académique 2026/);
   assert.doesNotMatch(homepage, /hero-cross/);
 });
@@ -34,7 +36,7 @@ test("module iframe applies its night theme after the saved lesson styles", () =
   const modulePage = source("app/cours/[slug]/modules/[moduleId]/page.tsx");
   assert.match(modulePage, /const moduleFrameThemeCss = `/);
   assert.match(modulePage, /<style>\$\{sanitizedCss\}<\/style>\s*<style>\$\{moduleFrameThemeCss\}<\/style>/);
-  assert.match(modulePage, /\.module-content \{\s*color: #f0dfc2 !important;/);
+  assert.match(modulePage, /\.module-content,\s*\.module-content \*,\s*body > \* \{ color: #172033 !important;/);
   assert.match(modulePage, /\.module-content :is\(\.definition-box, \.quote-box, \.biblical-quote, \.note-box, \.warning-box, \.success-box, \.example-box\)/);
   assert.match(modulePage, /const normalizedHtml = html\.replace\(/);
   assert.match(modulePage, /DOMPurify\.sanitize\(normalizedHtml\)/);

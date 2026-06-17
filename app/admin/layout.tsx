@@ -5,5 +5,5 @@ export const metadata = privatePageMetadata;
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireDirectorPage();
-  return children;
+  return <div className="admin-shell">{children}</div>;
 }
