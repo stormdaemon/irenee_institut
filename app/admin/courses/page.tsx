@@ -132,6 +132,14 @@ export default function AdminCoursesPage() {
     refreshCourses();
   }, []);
 
+  useEffect(() => {
+    const requestedCourse = new URLSearchParams(window.location.search).get("course");
+    if (!requestedCourse || !courses.length || draft.id === requestedCourse) return;
+
+    const course = courses.find(item => item.id === requestedCourse || item.slug === requestedCourse);
+    if (course) selectCourse(course, false);
+  }, [courses, draft.id]);
+
   async function refreshCourses() {
     const next = await authenticatedFetch("/api/courses").then(response => response.json()).catch(() => []);
     const normalized = Array.isArray(next) ? next : [];
@@ -186,11 +194,11 @@ export default function AdminCoursesPage() {
     });
   }
 
-  function selectCourse(course: Course) {
+  function selectCourse(course: Course, shouldScroll = true) {
     setDraft(draftFromCourse(course));
     setStatus("idle");
     setError("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (shouldScroll) window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function newCourse() {
@@ -298,8 +306,6 @@ export default function AdminCoursesPage() {
               <div
                 className="module-editor"
                 key={module.id || index}
-                draggable
-                onDragStart={() => setDraggedModule(index)}
                 onDragOver={event => event.preventDefault()}
                 onDrop={() => {
                   if (draggedModule !== null) moveModule(draggedModule, index);
@@ -308,7 +314,14 @@ export default function AdminCoursesPage() {
                 onDragEnd={() => setDraggedModule(null)}
               >
                 <div className="module-editor-top">
-                  <span className="badge"><GripVertical size={14} /> Module {index + 1}</span>
+                  <span
+                    className="badge module-drag-handle"
+                    draggable
+                    onDragStart={() => setDraggedModule(index)}
+                    title="Déplacer le module"
+                  >
+                    <GripVertical size={14} /> Module {index + 1}
+                  </span>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button type="button" className="icon-button" aria-label="Monter le module" onClick={() => moveModule(index, index - 1)} disabled={index === 0}>↑</button>
                     <button type="button" className="icon-button" aria-label="Descendre le module" onClick={() => moveModule(index, index + 1)} disabled={index === draft.modules.length - 1}>↓</button>

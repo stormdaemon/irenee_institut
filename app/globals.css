@@ -1737,6 +1737,10 @@ h3 {
 .mobile-panel {
   border-top: 1px solid rgba(220, 180, 107, .42);
   background: #04111f;
+  max-height: calc(100dvh - var(--radio-bar-height) - 70px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .floating-network,
@@ -2983,8 +2987,17 @@ label {
 .rich-canvas p,
 .rich-canvas li,
 .rich-canvas blockquote,
-.rich-canvas strong {
+.rich-canvas strong,
+.rich-canvas * {
   color: #182235 !important;
+}
+
+.rich-canvas h2,
+.rich-canvas h3,
+.rich-canvas h4,
+.rich-canvas strong,
+.rich-canvas b {
+  color: #071d49 !important;
 }
 
 .rich-canvas a {
@@ -5022,12 +5035,16 @@ label {
 
   .mobile-panel {
     display: block;
+    max-height: calc(100dvh - var(--radio-bar-height) - 70px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .mobile-panel .container {
     display: grid;
     gap: 8px;
-    padding: 18px 0;
+    padding: 18px 0 calc(28px + env(safe-area-inset-bottom));
   }
 
   .mobile-panel a {
@@ -5058,16 +5075,28 @@ label {
 
   .mobile-user-menu .user-trigger {
     justify-content: space-between;
+    min-height: 52px;
   }
 
   .mobile-user-menu .user-copy {
     display: block;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .mobile-user-menu .user-copy strong,
+  .mobile-user-menu .user-copy small,
+  .mobile-user-menu .user-dropdown-head span {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .mobile-user-menu .user-dropdown {
     position: static;
     width: 100%;
     margin-top: 8px;
+    max-height: none;
+    overflow: visible;
   }
 }
 
@@ -5118,6 +5147,15 @@ label {
   min-width: 0;
 }
 
+.module-drag-handle {
+  cursor: grab;
+  user-select: none;
+}
+
+.module-drag-handle:active {
+  cursor: grabbing;
+}
+
 .module-editor-top > div {
   display: flex;
   flex-wrap: wrap;
@@ -5138,6 +5176,28 @@ label {
 .rich-source {
   max-width: 100%;
   overflow-wrap: anywhere;
+}
+
+.rich-canvas * {
+  max-width: 100%;
+}
+
+.rich-canvas img,
+.rich-canvas video,
+.rich-canvas iframe,
+.rich-canvas table {
+  max-width: 100%;
+}
+
+.rich-canvas img,
+.rich-canvas video,
+.rich-canvas iframe {
+  height: auto;
+}
+
+.rich-canvas table {
+  display: block;
+  overflow-x: auto;
 }
 
 @media (max-width: 1100px) {
@@ -5186,6 +5246,7 @@ label {
 
   .module-editor {
     padding: 14px;
+    cursor: default;
   }
 
   .module-editor-top > div {
@@ -5203,15 +5264,41 @@ label {
   .rich-toolbar {
     flex-wrap: nowrap;
     padding: 8px;
+    gap: 8px;
+    margin: 0 -1px;
+    scroll-snap-type: x proximity;
   }
 
   .toolbar-separator {
     flex: 0 0 1px;
   }
 
+  .toolbar-button {
+    min-width: 40px;
+    height: 40px;
+    scroll-snap-align: start;
+  }
+
+  .toolbar-button.text {
+    min-width: auto;
+    padding: 0 12px;
+  }
+
   .rich-canvas {
     min-height: 220px;
     padding: 16px;
+    font-size: 1rem;
+  }
+
+  .rich-source {
+    min-height: 260px;
+  }
+
+  .course-editor input,
+  .course-editor textarea,
+  .course-editor select,
+  .rich-source {
+    font-size: 16px;
   }
 
   .data-table {

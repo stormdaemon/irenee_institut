@@ -46,7 +46,7 @@ test("module iframe applies its night theme after the saved lesson styles", () =
 test("SEO surfaces keep the established canonical page while adding the no-apostrophe school query", () => {
   const seo = source("lib/seo.ts");
   const schoolPage = source("app/ecole-apologetique-en-ligne/page.tsx");
-  assert.match(seo, /Institut d'Apologétique Saint Irénée : formations catholiques structurées/);
+  assert.match(seo, /L'institut d'Apologétique Saint Irénée propose des formations catholiques structurées/);
   assert.match(schoolPage, /canonical: "\/ecole-apologetique-en-ligne"/);
   assert.match(schoolPage, /école apologétique catholique/);
 });
