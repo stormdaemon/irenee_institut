@@ -271,6 +271,25 @@ label { display: block; font-weight: 700; font-size: .9rem; margin-bottom: 8px; 
   display: grid;
   gap: 10px;
 }
+
+.course-list-loading {
+  min-height: 118px;
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  padding: 20px;
+  color: var(--muted);
+  text-align: center;
+  border: 1px dashed #cbd4e1;
+  border-radius: 8px;
+  background: #f7f9fc;
+  font-weight: 800;
+}
+
+.course-list-loading svg {
+  color: var(--navy);
+}
+
 .course-list-item {
   width: 100%;
   border: 1px solid #e8edf5;
@@ -4655,6 +4674,16 @@ label {
 .admin-shell .admin-course-option.selected {
   background: rgba(242, 208, 140, .16);
   border-color: #ffe2a3;
+}
+
+.admin-shell .course-list-loading {
+  color: var(--admin-muted);
+  border-color: rgba(255, 224, 162, .42);
+  background: rgba(255, 255, 255, .04);
+}
+
+.admin-shell .course-list-loading svg {
+  color: #f2d08c;
 }
 
 @media (max-width: 640px) {

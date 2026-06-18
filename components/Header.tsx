@@ -66,7 +66,7 @@ export function Header() {
             ))}
             <a href="tel:+33171681538"><Phone size={16} /> 01.71.68.15.38</a>
             <div className="mobile-user-menu">
-              <UserMenu />
+              <UserMenu onNavigate={() => setMobileOpen(false)} />
             </div>
           </div>
         </div>

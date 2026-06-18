@@ -28,7 +28,11 @@ function avatarSrc(profile: Profile | null) {
   return "";
 }
 
-export function UserMenu() {
+type UserMenuProps = {
+  onNavigate?: () => void;
+};
+
+export function UserMenu({ onNavigate }: UserMenuProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [open, setOpen] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
@@ -70,16 +74,22 @@ export function UserMenu() {
   }, []);
 
   async function signOut() {
+    onNavigate?.();
     const supabase = createBrowserClient();
     await supabase?.auth.signOut();
     window.location.href = "/";
   }
 
+  function closeAfterNavigate() {
+    setOpen(false);
+    onNavigate?.();
+  }
+
   if (!profile) {
     return (
       <>
-        <Link href="/auth/login" className="btn btn-outline">Se connecter</Link>
-        <Link href="/auth/signup" className="btn btn-primary">S'inscrire</Link>
+        <Link href="/auth/login" className="btn btn-outline" onClick={onNavigate}>Se connecter</Link>
+        <Link href="/auth/signup" className="btn btn-primary" onClick={onNavigate}>S'inscrire</Link>
       </>
     );
   }
@@ -111,10 +121,10 @@ export function UserMenu() {
             <span>{profile.email}</span>
             <small>{profile.role}</small>
           </div>
-          <Link href="/espace-etudiant" onClick={() => setOpen(false)}><BookOpen size={16} /> Mes cours</Link>
-          <Link href={isStaff ? "/admin/homework" : "/devoirs"} onClick={() => setOpen(false)}><ClipboardList size={16} /> Devoirs</Link>
-          {isStaff && <Link href="/admin" onClick={() => setOpen(false)}><LayoutDashboard size={16} /> Administration</Link>}
-          <Link href="/parametres" onClick={() => setOpen(false)}><Settings size={16} /> Paramètres</Link>
+          <Link href="/espace-etudiant" onClick={closeAfterNavigate}><BookOpen size={16} /> Mes cours</Link>
+          <Link href={isStaff ? "/admin/homework" : "/devoirs"} onClick={closeAfterNavigate}><ClipboardList size={16} /> Devoirs</Link>
+          {isStaff && <Link href="/admin" onClick={closeAfterNavigate}><LayoutDashboard size={16} /> Administration</Link>}
+          <Link href="/parametres" onClick={closeAfterNavigate}><Settings size={16} /> Paramètres</Link>
           <button type="button" onClick={signOut}><LogOut size={16} /> Déconnexion</button>
         </div>
       )}

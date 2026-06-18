@@ -1,7 +1,7 @@
 "use client";
 
 import type { Course, CourseModule } from "@/lib/types";
-import { Check, FileText, GripVertical, Plus, Save, Trash2, X } from "lucide-react";
+import { Check, FileText, GripVertical, Loader2, Plus, Save, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ActionNotice } from "@/components/ActionNotice";
 import { RichHtmlEditor } from "@/components/RichHtmlEditor";
@@ -121,6 +121,7 @@ function cleanList(values: string[]) {
 
 export default function AdminCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
   const [draft, setDraft] = useState<CourseDraft>(emptyDraft);
   const [saving, setSaving] = useState(false);
   const [draggedModule, setDraggedModule] = useState<number | null>(null);
@@ -141,10 +142,15 @@ export default function AdminCoursesPage() {
   }, [courses, draft.id]);
 
   async function refreshCourses() {
-    const next = await authenticatedFetch("/api/courses").then(response => response.json()).catch(() => []);
-    const normalized = Array.isArray(next) ? next : [];
-    setCourses(normalized);
-    return normalized as Course[];
+    setCoursesLoading(true);
+    try {
+      const next = await authenticatedFetch("/api/courses").then(response => response.json()).catch(() => []);
+      const normalized = Array.isArray(next) ? next : [];
+      setCourses(normalized);
+      return normalized as Course[];
+    } finally {
+      setCoursesLoading(false);
+    }
   }
 
   function update<K extends keyof CourseDraft>(key: K, value: CourseDraft[K]) {
@@ -353,13 +359,25 @@ export default function AdminCoursesPage() {
           <aside className="course-list-panel">
             <h2 className="font-display">Cours existants</h2>
             <div className="course-list">
-              {courses.map(course => (
+              {coursesLoading && (
+                <div className="course-list-loading">
+                  <Loader2 className="action-spin" size={22} />
+                  <span>Chargement des cours...</span>
+                </div>
+              )}
+              {!coursesLoading && courses.map(course => (
                 <button className={`course-list-item ${course.id === draft.id ? "active" : ""}`} key={course.id} type="button" onClick={() => selectCourse(course)}>
                   <span className="course-list-title"><FileText size={18} /> {course.titre}</span>
                   <span className="muted">{course.modules?.length || course.nb_modules || 0} modules · {course.statut || "brouillon"}</span>
                   {course.id === draft.id && <Check size={18} />}
                 </button>
               ))}
+              {!coursesLoading && !courses.length && (
+                <div className="course-list-loading">
+                  <FileText size={22} />
+                  <span>Aucun cours pour le moment.</span>
+                </div>
+              )}
             </div>
           </aside>
         </div>
