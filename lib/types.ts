@@ -70,6 +70,7 @@ export type Profile = {
   date_naissance?: string;
   avatar_url?: string;
   avatar_public_id?: string;
+  onboarding_completed_at?: string | null;
   created_at?: string;
 };
 

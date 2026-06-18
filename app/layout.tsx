@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 import { RadioPlayer } from "@/components/RadioPlayer";
 import { FloatingNetworkMenu } from "@/components/FloatingNetworkMenu";
 import { DonationPrompt } from "@/components/DonationPrompt";
+import { OnboardingGate } from "@/components/OnboardingGate";
 import { organizationJsonLd, serializeJsonLd, siteDescription, siteName, siteUrl, websiteJsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </div>
         <FloatingNetworkMenu />
         <DonationPrompt />
+        <OnboardingGate />
         <main>{children}</main>
         <Footer />
       </body>
