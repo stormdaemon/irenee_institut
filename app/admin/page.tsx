@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { BarChart3, BookOpen, ClipboardList, CreditCard, FileText, KeyRound, Settings, Users } from "lucide-react";
+import { BarChart3, BookOpen, ClipboardList, CreditCard, FileText, KeyRound, Radio, Settings, Users } from "lucide-react";
 import { getCourses, getCurrentProfile, getHomework, getPaymentRequests, getProfiles, getStats } from "@/lib/server-data";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +17,7 @@ export default async function AdminPage() {
   const cards: [LucideIcon, string, string, string][] = [
     [BookOpen, "Gérer les cours", "Créer, modifier les modules et publier", "/admin/courses"],
     [ClipboardList, "Devoirs", "Créer, assigner et suivre les devoirs", "/admin/homework"],
+    [Radio, "Séances en direct", "Programmer les visios Daily hebdomadaires", "/admin/live"],
     [CreditCard, "Paiements", "Valider les demandes d'inscription", "/admin/payments"],
     [KeyRound, "Accès étudiants", "Vérifier les cours et pass annuels", "/admin/access"],
     [Users, "Utilisateurs", "Étudiants, formateurs et rôles", "/admin/users"],

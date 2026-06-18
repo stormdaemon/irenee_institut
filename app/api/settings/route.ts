@@ -13,6 +13,8 @@ const defaults = {
   adminEmail: "oeuvrecatholiquefrance@gmail.com",
   googleAppsScriptMailSecret: "",
   googleAppsScriptMailSecretConfigured: false,
+  dailyApiKey: "",
+  dailyApiKeyConfigured: false,
   paypalAppName: "irenee_institut",
   paypalClientId: "",
   paypalClientIdConfigured: false,
@@ -79,7 +81,7 @@ export async function GET(request: Request) {
   const settingsObject = Object.fromEntries(Object.entries(rawSettingsObject).map(([key, value]) => [key, parseSettingValue(value)]));
   const legalObject = Object.fromEntries((legalRows || []).map(item => [item.slug, item.contenu]));
   const rib = String(settingsObject.rib || settingsObject.iban || "");
-  return NextResponse.json({
+  const responseSettings: Record<string, unknown> = {
     ...defaults,
     ...settingsObject,
     rib,
@@ -95,7 +97,14 @@ export async function GET(request: Request) {
     paypalWebhookIdConfigured: Boolean(rawSettingsObject.paypalWebhookId),
     googleAppsScriptMailSecret: "",
     googleAppsScriptMailSecretConfigured: Boolean(rawSettingsObject.googleAppsScriptMailSecret)
-  });
+  };
+
+  for (const key of secretSettingKeys) {
+    responseSettings[key] = "";
+    responseSettings[`${key}Configured`] = Boolean(rawSettingsObject[key]);
+  }
+
+  return NextResponse.json(responseSettings);
 }
 
 export async function POST(request: Request) {

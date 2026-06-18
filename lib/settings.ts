@@ -4,7 +4,8 @@ export const secretSettingKeys = new Set([
   "paypalClientId",
   "paypalClientSecret",
   "paypalWebhookId",
-  "googleAppsScriptMailSecret"
+  "googleAppsScriptMailSecret",
+  "dailyApiKey"
 ]);
 
 export type SystemSettings = Record<string, unknown>;

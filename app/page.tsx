@@ -172,14 +172,6 @@ export default async function HomePage() {
             étudier les sources et répondre aux objections contemporaines. L'objectif n'est pas de gagner des
             querelles, mais de servir la vérité avec précision, patience et charité.
           </p>
-          <div className="live-training-note">
-            <strong>Proposition d'intégration visio</strong>
-            <p>
-              Les séances hebdomadaires peuvent être lancées depuis l'espace étudiant : le site authentifie
-              l'étudiant, affiche la séance du soir et ouvre la salle intégrée ou une fenêtre sécurisée, sans
-              demander un second compte à l'utilisateur.
-            </p>
-          </div>
           <Link className="btn btn-outline" href="/institut-apologetique">
             Découvrir l'Institut d'Apologétique <ArrowRight size={17} />
           </Link>

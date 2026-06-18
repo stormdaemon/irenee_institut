@@ -5,6 +5,7 @@ import { AlertTriangle, Award, BookOpen, CalendarClock, CheckCircle2, ClipboardL
 import { useEffect, useMemo, useState } from "react";
 import { LearningDocumentButton } from "@/components/LearningDocumentButton";
 import { LibraryPanel } from "@/components/LibraryPanel";
+import { NextLiveSession } from "@/components/NextLiveSession";
 import { createBrowserClient } from "@/lib/supabase";
 import { formatDuration } from "@/lib/data";
 import type { BookRequest, Course, Homework, LibraryMembership, Profile } from "@/lib/types";
@@ -198,6 +199,7 @@ export default function StudentSpacePage() {
           </div>
 
           <aside>
+            <NextLiveSession />
             <div className="card" style={{ padding: 24, marginBottom: 22 }}>
               <h2 className="font-display" style={{ color: "var(--navy)", marginTop: 0 }}>À faire</h2>
               {homework.length ? homework.slice(0, 4).map(item => (
