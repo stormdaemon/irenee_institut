@@ -72,7 +72,7 @@ export default async function AdminPage() {
                 <h3 style={{ color: "var(--navy)", marginTop: 0 }}>{course.titre}</h3>
                 <p className="muted">{course.description}</p>
                 <p><BookOpen size={16} /> {course.nb_modules || course.modules.length} modules · {course.nb_etudiants || 0} étudiants <span className="badge">{course.statut || "publie"}</span></p>
-                <Link className="btn btn-outline" href={`/cours/${course.slug}`} style={{ width: "100%" }}>Gérer ce cours</Link>
+                <Link className="btn btn-outline" href={`/admin/courses?course=${course.id}`} style={{ width: "100%" }}>Éditer ce cours</Link>
               </div>
             ))}
           </section>
