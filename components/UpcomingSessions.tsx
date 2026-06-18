@@ -28,7 +28,8 @@ function SessionThumb({ session }: { session: VisioSession }) {
           src={session.image}
           alt={session.imageAlt}
           fill
-          sizes="84px"
+          sizes="(max-width: 640px) 70vw, 220px"
+          quality={95}
           style={{ objectFit: "cover", objectPosition: session.imagePosition }}
           onError={() => setFailed(true)}
         />

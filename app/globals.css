@@ -2534,12 +2534,12 @@ label {
   border-radius: 8px;
   background: linear-gradient(180deg, rgba(12, 31, 52, .92), rgba(6, 19, 34, .96));
   box-shadow: 0 16px 36px rgba(0, 0, 0, .28);
-  transition: transform .2s ease, border-color .2s ease;
+  transition: border-color .2s ease, background .2s ease;
 }
 
 .visio-session:hover {
-  transform: translateY(-2px);
   border-color: rgba(220, 180, 107, .6);
+  background: linear-gradient(180deg, rgba(16, 38, 64, .96), rgba(7, 22, 39, .98));
 }
 
 .visio-chip {
