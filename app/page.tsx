@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import { ArrowRight, ExternalLink, Newspaper } from "lucide-react";
 import { getCourses } from "@/lib/server-data";
 import { siteDescription } from "@/lib/seo";
+import { UpcomingSessions } from "@/components/UpcomingSessions";
 
 export const dynamic = "force-dynamic";
 
@@ -131,6 +132,8 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      <UpcomingSessions />
 
       <section className="section home-press-section">
         <div className="container">

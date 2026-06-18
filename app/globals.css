@@ -2399,28 +2399,318 @@ label {
   text-transform: uppercase;
 }
 
-.live-training-note {
-  width: min(860px, 100%);
-  margin: 0 auto 28px;
-  padding: 18px 22px;
-  border: 1px solid rgba(220, 180, 107, .36);
+.visio-section {
+  position: relative;
+  overflow: hidden;
+  scroll-margin-top: 170px;
+  color: #fff7e8;
+  background:
+    radial-gradient(circle at 12% -10%, rgba(220, 180, 107, .2), transparent 42%),
+    radial-gradient(circle at 82% 24%, rgba(68, 111, 164, .18), transparent 34%),
+    linear-gradient(135deg, #071d49 0%, #061735 54%, #040f24 100%);
+  border-top: 1px solid rgba(220, 180, 107, .5);
+  border-bottom: 1px solid rgba(220, 180, 107, .5);
+}
+
+.visio-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(220, 180, 107, .1) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(220, 180, 107, .08) 1px, transparent 1px);
+  background-size: 92px 92px;
+  mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+}
+
+.visio-section .container {
+  position: relative;
+  z-index: 1;
+}
+
+.visio-head {
+  max-width: 920px;
+  margin: 0 auto 46px;
+  text-align: center;
+}
+
+.visio-head .hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.visio-title {
+  margin: 8px 0 16px;
+  color: #fff9ef;
+  font-size: clamp(1.9rem, 3.4vw, 3rem);
+  line-height: 1.05;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, .38);
+}
+
+.visio-lead {
+  margin: 0 auto;
+  max-width: 760px;
+  color: #e7d8bb;
+  font-size: clamp(1.02rem, 1.3vw, 1.18rem);
+  line-height: 1.6;
+}
+
+.visio-board {
+  display: grid;
+  grid-template-columns: minmax(310px, .72fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.visio-spotlight {
+  position: sticky;
+  top: 118px;
+  align-self: start;
+  overflow: hidden;
+  border: 1px solid rgba(220, 180, 107, .52);
   border-radius: 8px;
-  background: rgba(220, 180, 107, .08);
-  color: #f4e9d6;
-  text-align: left;
+  background: linear-gradient(180deg, rgba(11, 32, 54, .94), rgba(5, 17, 30, .98));
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .34);
 }
 
-.live-training-note strong {
-  display: block;
-  margin-bottom: 6px;
-  color: #fff7e7;
-  font: 700 1.12rem Georgia, "Times New Roman", serif;
+.visio-spotlight-image {
+  position: relative;
+  min-height: 360px;
+  overflow: hidden;
 }
 
-.live-training-note p {
+.visio-spotlight-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 48%, rgba(4, 13, 23, .94));
+}
+
+.visio-spotlight-copy {
+  display: grid;
+  gap: 12px;
+  padding: 26px;
+}
+
+.visio-spotlight-copy h3 {
   margin: 0;
-  color: #eadabd;
-  line-height: 1.55;
+  color: #fff7e7;
+  font-size: clamp(1.55rem, 2.4vw, 2.15rem);
+  line-height: 1.05;
+}
+
+.visio-spotlight-copy p {
+  margin: 0;
+  color: #e9dcc4;
+  line-height: 1.62;
+}
+
+.visio-spotlight-copy strong {
+  color: var(--gold-2);
+  font-size: .95rem;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.visio-schedule {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 14px;
+}
+
+.visio-session {
+  display: grid;
+  grid-template-columns: auto 104px minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+  min-height: 132px;
+  padding: 16px 22px 16px 16px;
+  border: 1px solid rgba(220, 180, 107, .28);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(12, 31, 52, .92), rgba(6, 19, 34, .96));
+  box-shadow: 0 16px 36px rgba(0, 0, 0, .28);
+  transition: transform .2s ease, border-color .2s ease;
+}
+
+.visio-session:hover {
+  transform: translateY(-2px);
+  border-color: rgba(220, 180, 107, .6);
+}
+
+.visio-chip {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 58px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, var(--gold) 0%, #c89a25 100%);
+  color: #081225;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, .35);
+}
+
+.visio-chip strong {
+  font: 800 1.5rem/1 Georgia, "Times New Roman", serif;
+}
+
+.visio-chip span {
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.visio-thumb {
+  position: relative;
+  display: block;
+  width: 104px;
+  height: 92px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(220, 180, 107, .45);
+}
+
+.visio-thumb-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(240, 207, 138, .82);
+  background:
+    radial-gradient(circle at 50% 32%, rgba(220, 180, 107, .2), transparent 70%),
+    linear-gradient(160deg, #123056, #071a30);
+}
+
+.visio-thumb img {
+  position: relative;
+  z-index: 1;
+}
+
+.visio-session-body {
+  min-width: 0;
+}
+
+.visio-when {
+  display: inline-block;
+  margin-bottom: 5px;
+  color: var(--gold-2);
+  font-size: .82rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.visio-session-body h3 {
+  margin: 0 0 6px;
+  color: #fff3dd;
+  font-size: 1.2rem;
+  line-height: 1.22;
+}
+
+.visio-session-body p {
+  margin: 0;
+  color: #d8c8aa;
+  font-size: .96rem;
+  line-height: 1.5;
+}
+
+.visio-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 40px;
+}
+
+.visio-actions .btn-outline {
+  background: transparent;
+  color: #fff7e7;
+  border-color: rgba(220, 180, 107, .62);
+}
+
+.visio-actions .btn-outline:hover {
+  background: rgba(220, 180, 107, .12);
+}
+
+@media (max-width: 980px) {
+  .visio-board {
+    grid-template-columns: 1fr;
+  }
+
+  .visio-spotlight {
+    position: static;
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1500px) {
+  .visio-section .container {
+    padding-left: 188px;
+    padding-right: 96px;
+  }
+
+  .visio-board {
+    grid-template-columns: 1fr;
+  }
+
+  .visio-spotlight {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .visio-board {
+    grid-template-columns: 1fr;
+  }
+
+  .visio-spotlight {
+    position: static;
+  }
+
+  .visio-spotlight-image {
+    min-height: 300px;
+  }
+
+  .visio-spotlight-copy {
+    padding: 20px;
+  }
+
+  .visio-session {
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "chip thumb"
+      "body body";
+    gap: 14px 16px;
+    padding: 16px;
+  }
+
+  .visio-chip {
+    grid-area: chip;
+  }
+
+  .visio-thumb {
+    grid-area: thumb;
+    justify-self: stretch;
+    width: 100%;
+    min-width: 0;
+    height: 92px;
+  }
+
+  .visio-session-body {
+    grid-area: body;
+  }
+
+  .visio-session-body h3 {
+    font-size: 1.12rem;
+  }
+
+  .visio-actions .btn {
+    width: 100%;
+  }
 }
 
 .home-press-section {
