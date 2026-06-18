@@ -33,7 +33,7 @@ const features = [
     icon: "/images/irenee-feature-medallion-teacher.png",
     iconLeft: "50%",
     iconPosition: "50% 50%",
-    href: "/institut-apologetique"
+    href: "https://youtu.be/AsclUFsCoAM?is=Vxx2XTJ5DOkgPGh9"
   },
   {
     title: "Bibliothèque d'école apologétique",
@@ -103,26 +103,35 @@ export default async function HomePage() {
       <section className="home-feature-section">
         <div className="container">
           <div className="home-feature-grid">
-            {features.map((feature) => (
-              <article
-                className="card feature-card"
-                key={feature.title}
-                style={{
-                  "--card-image": `url(${feature.image})`,
-                  "--card-image-position": feature.imagePosition,
-                  "--feature-icon-left": feature.iconLeft
-                } as CSSProperties}
-              >
-                <span className="feature-icon">
-                  <Image src={feature.icon} alt="" fill sizes="72px" style={{ objectFit: "cover", objectPosition: feature.iconPosition }} />
-                </span>
-                <h3>{feature.title}</h3>
-                <p>{feature.text}</p>
-                <Link className="feature-link" href={feature.href}>
-                  En savoir plus <ArrowRight size={14} />
-                </Link>
-              </article>
-            ))}
+            {features.map((feature) => {
+              const isExternal = feature.href.startsWith("http");
+              return (
+                <article
+                  className="card feature-card"
+                  key={feature.title}
+                  style={{
+                    "--card-image": `url(${feature.image})`,
+                    "--card-image-position": feature.imagePosition,
+                    "--feature-icon-left": feature.iconLeft
+                  } as CSSProperties}
+                >
+                  <span className="feature-icon">
+                    <Image src={feature.icon} alt="" fill sizes="72px" style={{ objectFit: "cover", objectPosition: feature.iconPosition }} />
+                  </span>
+                  <h3>{feature.title}</h3>
+                  <p>{feature.text}</p>
+                  {isExternal ? (
+                    <a className="feature-link" href={feature.href} target="_blank" rel="noreferrer">
+                      En savoir plus <ExternalLink size={14} />
+                    </a>
+                  ) : (
+                    <Link className="feature-link" href={feature.href}>
+                      En savoir plus <ArrowRight size={14} />
+                    </Link>
+                  )}
+                </article>
+              );
+            })}
           </div>
           <div className="quote-banner">
             <blockquote>

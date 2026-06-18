@@ -2656,6 +2656,21 @@ label {
   background: rgba(220, 180, 107, .12);
 }
 
+.visio-participate {
+  width: fit-content;
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: .9rem;
+}
+
+.visio-spotlight-copy .visio-participate {
+  margin-top: 4px;
+}
+
+.visio-session-body .visio-participate {
+  margin-top: 12px;
+}
+
 @media (max-width: 980px) {
   .visio-board {
     grid-template-columns: 1fr;
@@ -2728,6 +2743,10 @@ label {
   }
 
   .visio-actions .btn {
+    width: 100%;
+  }
+
+  .visio-participate {
     width: 100%;
   }
 }

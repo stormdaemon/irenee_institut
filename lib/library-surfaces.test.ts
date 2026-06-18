@@ -17,7 +17,21 @@ test("homepage exposes the EIDM, library, live training and patristic session fe
   assert.match(homepage, /Formation en direct chaque semaine/);
   assert.match(homepage, /Sessions patristiques en abbaye/);
   assert.match(homepage, /Rentrée académique 2026/);
+  assert.match(homepage, /https:\/\/youtu\.be\/AsclUFsCoAM\?is=Vxx2XTJ5DOkgPGh9/);
   assert.doesNotMatch(homepage, /hero-cross/);
+});
+
+test("planning cards expose the participation CTA only for connected student profiles", () => {
+  const component = source("components/UpcomingSessions.tsx");
+  const styles = source("app/globals.css");
+
+  assert.match(component, /useConnectedStudent/);
+  assert.match(component, /\.select\("role"\)/);
+  assert.match(component, /\(profile\?\.role \|\| "etudiant"\) === "etudiant"/);
+  assert.match(component, /isConnectedStudent && \(/);
+  assert.match(component, /Je participe/);
+  assert.match(component, /href="\/espace-etudiant"/);
+  assert.match(styles, /\.visio-participate\s*\{/);
 });
 
 test("fixed Heaven Radio player uses the requested RadioKing stream", () => {
