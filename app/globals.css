@@ -5694,3 +5694,34 @@ label {
     padding: 12px 14px;
   }
 }
+
+.admin-shell .rich-editor .rich-canvas {
+  color: #172033 !important;
+  caret-color: #071d49;
+  background: #fffaf0 !important;
+  color-scheme: light;
+}
+
+.admin-shell .rich-editor .rich-canvas,
+.admin-shell .rich-editor .rich-canvas * {
+  color: #172033 !important;
+  -webkit-text-fill-color: #172033 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+}
+
+.admin-shell .rich-editor .rich-canvas :is(h1, h2, h3, h4, h5, h6, strong, b) {
+  color: #071d49 !important;
+  -webkit-text-fill-color: #071d49 !important;
+}
+
+.admin-shell .rich-editor .rich-canvas a {
+  color: #7a1717 !important;
+  -webkit-text-fill-color: #7a1717 !important;
+}
+
+.admin-shell .rich-editor .rich-canvas :is(svg, svg *) {
+  -webkit-text-fill-color: initial !important;
+}

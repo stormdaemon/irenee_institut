@@ -43,6 +43,13 @@ test("module iframe applies its night theme after the saved lesson styles", () =
   assert.match(modulePage, /querySelectorAll<HTMLElement>\("\.comparison-table:not\(table\)"\)/);
 });
 
+test("admin rich editor keeps saved light text readable while editing", () => {
+  const css = source("app/globals.css");
+  assert.match(css, /\.admin-shell \.rich-editor \.rich-canvas,\s*\.admin-shell \.rich-editor \.rich-canvas \*/);
+  assert.match(css, /-webkit-text-fill-color: #172033 !important;/);
+  assert.match(css, /caret-color: #071d49;/);
+});
+
 test("SEO surfaces keep the established canonical page while adding the no-apostrophe school query", () => {
   const seo = source("lib/seo.ts");
   const schoolPage = source("app/ecole-apologetique-en-ligne/page.tsx");
