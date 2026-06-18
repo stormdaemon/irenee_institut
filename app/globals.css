@@ -1403,13 +1403,7 @@ label { display: block; font-weight: 700; font-size: .9rem; margin-bottom: 8px; 
   .nav, .phone-link, .desktop-user-menu, .user-copy { display: none; }
   .mobile-menu-btn { display: inline-flex; }
   .mobile-panel { display: block; }
-  .mobile-panel {
-    max-height: calc(100dvh - var(--radio-bar-height) - 70px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-  .mobile-panel .container { display: grid; gap: 14px; padding: 18px 0 28px; }
+  .mobile-panel .container { display: grid; gap: 14px; padding: 18px 0; }
   .mobile-panel a { display: flex; align-items: center; gap: 8px; font-weight: 700; }
   .mobile-user-menu {
     display: grid;
@@ -1426,25 +1420,14 @@ label { display: block; font-weight: 700; font-size: .9rem; margin-bottom: 8px; 
   .mobile-user-menu .user-trigger {
     width: 100%;
     justify-content: space-between;
-    min-height: 52px;
   }
   .mobile-user-menu .user-copy {
     display: block;
-    min-width: 0;
-    flex: 1 1 auto;
-  }
-  .mobile-user-menu .user-copy strong,
-  .mobile-user-menu .user-copy small,
-  .mobile-user-menu .user-dropdown-head span {
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   .mobile-user-menu .user-dropdown {
     position: static;
     width: 100%;
     margin-top: 8px;
-    max-height: none;
-    overflow: visible;
   }
   .grid-2, .grid-3, .grid-4, .admin-grid, .footer-grid, .kpi-grid, .course-admin-layout { grid-template-columns: 1fr; }
   .footer-bottom { flex-direction: column; }
@@ -4352,28 +4335,6 @@ label {
   background: #fffaf0;
 }
 
-.admin-shell .rich-canvas,
-.admin-shell .rich-canvas * {
-  color: #172033 !important;
-}
-
-.admin-shell .rich-canvas h2,
-.admin-shell .rich-canvas h3,
-.admin-shell .rich-canvas strong,
-.admin-shell .rich-canvas b {
-  color: #071d49 !important;
-}
-
-.admin-shell .rich-canvas a {
-  color: #0b4ba8 !important;
-}
-
-.admin-shell .rich-canvas blockquote {
-  color: #172033 !important;
-  background: #f3f6fb !important;
-  border-left-color: #071d49 !important;
-}
-
 .admin-shell .action-notice,
 .admin-shell .auth-notice {
   color: #fffaf0;
@@ -5179,28 +5140,6 @@ label {
   overflow-wrap: anywhere;
 }
 
-.rich-canvas * {
-  max-width: 100%;
-}
-
-.rich-canvas img,
-.rich-canvas video,
-.rich-canvas iframe,
-.rich-canvas table {
-  max-width: 100%;
-}
-
-.rich-canvas img,
-.rich-canvas video,
-.rich-canvas iframe {
-  height: auto;
-}
-
-.rich-canvas table {
-  display: block;
-  overflow-x: auto;
-}
-
 @media (max-width: 1100px) {
   .course-admin-layout {
     grid-template-columns: minmax(0, 1fr);
@@ -5247,7 +5186,6 @@ label {
 
   .module-editor {
     padding: 14px;
-    cursor: default;
   }
 
   .module-editor-top > div {
@@ -5265,34 +5203,15 @@ label {
   .rich-toolbar {
     flex-wrap: nowrap;
     padding: 8px;
-    gap: 8px;
-    margin: 0 -1px;
-    scroll-snap-type: x proximity;
   }
 
   .toolbar-separator {
     flex: 0 0 1px;
   }
 
-  .toolbar-button {
-    min-width: 40px;
-    height: 40px;
-    scroll-snap-align: start;
-  }
-
-  .toolbar-button.text {
-    min-width: auto;
-    padding: 0 12px;
-  }
-
   .rich-canvas {
     min-height: 220px;
     padding: 16px;
-    font-size: 1rem;
-  }
-
-  .rich-source {
-    min-height: 260px;
   }
 
   .data-table {

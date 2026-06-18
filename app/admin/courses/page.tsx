@@ -2,7 +2,6 @@
 
 import type { Course, CourseModule } from "@/lib/types";
 import { Check, FileText, GripVertical, Plus, Save, Trash2, X } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ActionNotice } from "@/components/ActionNotice";
 import { RichHtmlEditor } from "@/components/RichHtmlEditor";
@@ -121,7 +120,6 @@ function cleanList(values: string[]) {
 }
 
 export default function AdminCoursesPage() {
-  const searchParams = useSearchParams();
   const [courses, setCourses] = useState<Course[]>([]);
   const [draft, setDraft] = useState<CourseDraft>(emptyDraft);
   const [saving, setSaving] = useState(false);
@@ -133,14 +131,6 @@ export default function AdminCoursesPage() {
   useEffect(() => {
     refreshCourses();
   }, []);
-
-  useEffect(() => {
-    const requestedCourse = searchParams.get("course");
-    if (!requestedCourse || !courses.length || draft.id === requestedCourse) return;
-
-    const course = courses.find(item => item.id === requestedCourse || item.slug === requestedCourse);
-    if (course) selectCourse(course, false);
-  }, [courses, draft.id, searchParams]);
 
   async function refreshCourses() {
     const next = await authenticatedFetch("/api/courses").then(response => response.json()).catch(() => []);
@@ -196,11 +186,11 @@ export default function AdminCoursesPage() {
     });
   }
 
-  function selectCourse(course: Course, shouldScroll = true) {
+  function selectCourse(course: Course) {
     setDraft(draftFromCourse(course));
     setStatus("idle");
     setError("");
-    if (shouldScroll) window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function newCourse() {
