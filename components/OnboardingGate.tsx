@@ -1,9 +1,9 @@
 "use client";
 
 import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, HandHeart, Loader2, Sparkles } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { createBrowserClient } from "@/lib/supabase";
-import type { Profile } from "@/lib/types";
 
 const donationUrl = "https://www.paypal.com/ncp/payment/4TJJK3C697B9A";
 
@@ -121,6 +121,13 @@ const slides: Slide[] = [
 ];
 
 type GateStatus = "checking" | "hidden" | "visible";
+type OnboardingStatusPayload = {
+  ok?: boolean;
+  needsOnboarding?: boolean;
+};
+
+const sessionTimeoutMs = 4500;
+const onboardingStatusTimeoutMs = 8000;
 
 function WordReveal({ text }: { text: string }) {
   return (
@@ -144,12 +151,56 @@ function shouldForcePreview() {
   return new URLSearchParams(window.location.search).get("onboarding") === "preview";
 }
 
+function isPassiveOnboardingPath(pathname: string | null) {
+  return Boolean(
+    pathname?.startsWith("/auth") ||
+    pathname?.startsWith("/paiement") ||
+    pathname?.startsWith("/paypal_checkout_valid")
+  );
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T) {
+  return new Promise<T>(resolve => {
+    const timer = window.setTimeout(() => resolve(fallback), timeoutMs);
+    promise.then(
+      value => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      () => {
+        window.clearTimeout(timer);
+        resolve(fallback);
+      }
+    );
+  });
+}
+
+async function fetchOnboardingStatus(token: string) {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), onboardingStatusTimeoutMs);
+
+  try {
+    const response = await fetch("/api/onboarding/status", {
+      cache: "no-store",
+      headers: { Authorization: `Bearer ${token}` },
+      signal: controller.signal
+    });
+    const payload = await response.json().catch(() => null) as OnboardingStatusPayload | null;
+    return { response, payload };
+  } catch {
+    return { response: null, payload: null };
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
 export function OnboardingGate() {
-  const [status, setStatus] = useState<GateStatus>("checking");
+  const [status, setStatus] = useState<GateStatus>("hidden");
   const [active, setActive] = useState(0);
   const [direction, setDirection] = useState<"next" | "back">("next");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const pathname = usePathname();
   const preview = useMemo(shouldForcePreview, []);
   const slide = slides[active];
   const isLast = active === slides.length - 1;
@@ -165,26 +216,28 @@ export function OnboardingGate() {
         return;
       }
 
-      if (!supabase) {
+      if (!supabase || isPassiveOnboardingPath(pathname)) {
         if (mounted) setStatus("hidden");
         return;
       }
 
-      const { data } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+      const { data } = await withTimeout(
+        supabase.auth.getSession().catch(() => ({ data: { session: null } })),
+        sessionTimeoutMs,
+        { data: { session: null } }
+      );
       if (!data.session?.access_token) {
         if (mounted) setStatus("hidden");
         return;
       }
 
-      const response = await fetch("/api/me", {
-        headers: { Authorization: `Bearer ${data.session.access_token}` }
-      }).catch(() => null);
-      const payload = await response?.json().catch(() => null);
-      const nextProfile = payload?.profile as Profile | undefined;
+      if (mounted) setStatus("checking");
+
+      const { response, payload } = await fetchOnboardingStatus(data.session.access_token);
 
       if (!mounted) return;
 
-      if (!response?.ok || !payload?.ok || !nextProfile || nextProfile.role !== "etudiant" || nextProfile.onboarding_completed_at) {
+      if (!response?.ok || payload?.ok !== true || payload.needsOnboarding !== true) {
         setStatus("hidden");
         return;
       }
@@ -200,6 +253,10 @@ export function OnboardingGate() {
     }
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (isPassiveOnboardingPath(pathname)) {
+        setStatus("hidden");
+        return;
+      }
       if (!session) {
         setStatus("hidden");
         return;
@@ -211,7 +268,7 @@ export function OnboardingGate() {
       mounted = false;
       listener.subscription.unsubscribe();
     };
-  }, [preview]);
+  }, [pathname, preview]);
 
   useEffect(() => {
     if (status !== "visible") return;
