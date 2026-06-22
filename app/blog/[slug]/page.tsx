@@ -71,11 +71,11 @@ export default async function BlogArticlePage({ params }: BlogArticlePageProps) 
     dateModified: article.date,
     author: {
       "@type": "Organization",
-      name: "Institut Irénée"
+      name: "Institut Saint Irénée"
     },
     publisher: {
       "@type": "Organization",
-      name: "Institut Irénée",
+      name: "Institut Saint Irénée",
       logo: {
         "@type": "ImageObject",
         url: "https://irenee-institut.org/images/logo_without_text.png"
@@ -168,7 +168,7 @@ export default async function BlogArticlePage({ params }: BlogArticlePageProps) 
               </section>
 
               <section className="blog-source-panel">
-                <h2>Se former avec l'Institut Irénée</h2>
+                <h2>Se former avec l'Institut Saint Irénée</h2>
                 <p>
                   Vous souhaitez relier ces repères à un parcours structuré ? Découvrez l'Institut d'Apologétique
                   Irénée et les formations accessibles en ligne.

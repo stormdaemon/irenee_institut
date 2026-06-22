@@ -6,12 +6,12 @@ import { blogArticles, blogCategories, formatArticleDate, getFeaturedArticles } 
 
 export const metadata: Metadata = {
   title: "Blog apologétique catholique",
-  description: "Articles de l'Institut Irénée, premier Institut d'Apologétique en France, pour approfondir la foi catholique et apprendre à en rendre compte.",
+  description: "Articles de l'Institut Saint Irénée, premier Institut d'Apologétique en France, pour approfondir la foi catholique et apprendre à en rendre compte.",
   alternates: {
     canonical: "/blog"
   },
   openGraph: {
-    title: "Blog apologétique catholique | Institut Irénée",
+    title: "Blog apologétique catholique | Institut Saint Irénée",
     description: "Approfondir la foi, répondre aux objections et se former à l'école du Bon Pasteur.",
     url: "/blog",
     images: [
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
         url: "/images/blog/institut-apologetique-france.png",
         width: 1024,
         height: 1024,
-        alt: "Blog de l'Institut Irénée"
+        alt: "Blog de l'Institut Saint Irénée"
       }
     ]
   }
@@ -64,7 +64,7 @@ export default function BlogPage() {
               <h2 className="section-title">Les grands repères</h2>
             </div>
             <p className="subtitle">
-              Une sélection pour entrer dans l'esprit de l'Institut Irénée : raison, sources, mission et suite du Bon Pasteur.
+              Une sélection pour entrer dans l'esprit de l'Institut Saint Irénée : raison, sources, mission et suite du Bon Pasteur.
             </p>
           </div>
 

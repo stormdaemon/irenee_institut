@@ -6,12 +6,12 @@ import { serializeJsonLd, siteUrl } from "@/lib/seo";
 export const metadata: Metadata = {
   title: "Ressources d'apologétique catholique",
   description:
-    "Explorez les ressources d'apologétique catholique de l'Institut Irénée : guides, articles, sources doctrinales et parcours de lecture.",
+    "Explorez les ressources d'apologétique catholique de l'Institut Saint Irénée : guides, articles, sources doctrinales et parcours de lecture.",
   alternates: {
     canonical: "/ressources-apologetique"
   },
   openGraph: {
-    title: "Ressources d'apologétique catholique | Institut Irénée",
+    title: "Ressources d'apologétique catholique | Institut Saint Irénée",
     description:
       "Des parcours de lecture pour approfondir la foi, travailler les sources et répondre avec méthode.",
     url: "/ressources-apologetique"

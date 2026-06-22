@@ -12,7 +12,7 @@ export const courses: Course[] = [
     nb_modules: 5,
     prix: 9900,
     prix_reduit: 9900,
-    auteur_nom: "Institut Irénée",
+    auteur_nom: "Institut Saint Irénée",
     objectifs: [
       "Maîtriser les fondements bibliques et historiques de l'apologétique chrétienne",
       "Connaître les trois grandes approches apologétiques",

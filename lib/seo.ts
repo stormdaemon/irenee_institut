@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 
 export const siteUrl = "https://irenee-institut.org";
 export const siteName = "Institut d'Apologétique Saint Irénée";
-export const organizationName = "Institut Irénée";
+export const organizationName = "Institut Saint Irénée";
 export const siteDescription =
-  "L'institut d'Apologétique Saint Irénée propose des formations catholiques structurées en ligne pour comprendre, défendre et transmettre la foi avec rigueur et charité.";
+  "L'Institut Saint Irénée propose des formations catholiques structurées en ligne pour comprendre, défendre et transmettre la foi avec rigueur et charité.";
 
 export const privatePageMetadata: Metadata = {
   robots: {

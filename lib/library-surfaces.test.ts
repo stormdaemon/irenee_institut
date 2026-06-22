@@ -67,7 +67,7 @@ test("admin rich editor keeps saved light text readable while editing", () => {
 test("SEO surfaces keep the established canonical page while adding the no-apostrophe school query", () => {
   const seo = source("lib/seo.ts");
   const schoolPage = source("app/ecole-apologetique-en-ligne/page.tsx");
-  assert.match(seo, /L'institut d'Apologétique Saint Irénée propose des formations catholiques structurées/);
+  assert.match(seo, /L'Institut Saint Irénée propose des formations catholiques structurées/);
   assert.match(schoolPage, /canonical: "\/ecole-apologetique-en-ligne"/);
   assert.match(schoolPage, /école apologétique catholique/);
 });

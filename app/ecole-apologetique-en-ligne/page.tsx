@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     canonical: "/ecole-apologetique-en-ligne"
   },
   openGraph: {
-    title: "École d'Apologétique en ligne | Institut Irénée",
+    title: "École d'Apologétique en ligne | Institut Saint Irénée",
     description:
       "Une formation catholique progressive et accessible à distance pour comprendre, répondre et transmettre.",
     url: "/ecole-apologetique-en-ligne"
@@ -101,7 +101,7 @@ export default function EcoleApologetiqueEnLignePage() {
             morale ne relèvent pas toutes du même raisonnement.
           </p>
           <p className="subtitle">
-            L'Institut Irénée propose un parcours accessible en ligne. Cette modalité convient à ceux qui veulent
+            L'Institut Saint Irénée propose un parcours accessible en ligne. Cette modalité convient à ceux qui veulent
             progresser régulièrement depuis leur lieu de vie, reprendre un module important et relier l'étude à
             leurs conversations réelles : en famille, en paroisse, au travail ou sur internet.
           </p>

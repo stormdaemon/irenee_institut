@@ -10,14 +10,14 @@ const questions = [
       "L'apologétique catholique consiste à exposer les raisons de croire, à étudier les sources et à répondre aux objections avec rigueur et charité. Elle ne remplace ni la foi ni la vie spirituelle : elle aide à rendre l'espérance chrétienne intelligible."
   },
   {
-    question: "À qui s'adressent les formations de l'Institut Irénée ?",
+    question: "À qui s'adressent les formations de l'Institut Saint Irénée ?",
     answer:
       "Les parcours s'adressent aux catholiques qui souhaitent approfondir leur foi et mieux la transmettre : étudiants, jeunes professionnels, catéchistes, missionnaires et créateurs de contenu."
   },
   {
     question: "Peut-on se former en ligne ?",
     answer:
-      "Oui. Les formations de l'Institut Irénée sont accessibles en ligne et structurées par modules pour permettre une progression régulière, avec des contenus, des exercices et un accompagnement pédagogique."
+      "Oui. Les formations de l'Institut Saint Irénée sont accessibles en ligne et structurées par modules pour permettre une progression régulière, avec des contenus, des exercices et un accompagnement pédagogique."
   },
   {
     question: "Quels sujets sont abordés ?",
@@ -120,7 +120,7 @@ export default function InstitutApologetiquePage() {
             et pastorales, puis à chercher les sources adaptées avant de répondre.
           </p>
           <p className="subtitle">
-            L'Institut Irénée inscrit ce travail dans la tradition catholique. Ses parcours relient l'Écriture, la
+            L'Institut Saint Irénée inscrit ce travail dans la tradition catholique. Ses parcours relient l'Écriture, la
             Tradition apostolique, le Magistère, l'histoire de l'Église et les grandes questions contemporaines. La
             formation reste orientée vers la mission : parler clairement sans humilier, argumenter sans perdre la
             charité et reconnaître ce qui demande encore du travail.
@@ -203,7 +203,7 @@ export default function InstitutApologetiquePage() {
 
       <section className="section">
         <div className="container">
-          <h2 className="section-title">Approfondir avec l'Institut Irénée</h2>
+          <h2 className="section-title">Approfondir avec l'Institut Saint Irénée</h2>
           <div className="grid-3" style={{ marginTop: 34 }}>
             {[
               ["École d'Apologétique en ligne", "Comprendre la méthode d'apprentissage à distance.", "/ecole-apologetique-en-ligne"],
@@ -228,7 +228,7 @@ export default function InstitutApologetiquePage() {
             Commencer à se former en apologétique
           </h2>
           <p style={{ color: "#f0dfc2" }}>
-            Explorez les parcours ou découvrez les premiers repères dans le blog de l'Institut Irénée.
+            Explorez les parcours ou découvrez les premiers repères dans le blog de l'Institut Saint Irénée.
           </p>
           <div className="hero-actions">
             <Link className="btn btn-gold" href="/formations">Découvrir les formations</Link>

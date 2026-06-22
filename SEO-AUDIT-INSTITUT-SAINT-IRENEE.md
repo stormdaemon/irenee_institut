@@ -1,4 +1,4 @@
-# Audit SEO concurrentiel - Institut Irénée
+# Audit SEO concurrentiel - Institut Saint Irénée
 
 Date de l'audit : 31 mai 2026
 
@@ -14,7 +14,7 @@ Le concurrent est actuellement le premier résultat visible dans Google sur la r
 - seule sa page d'accueil ressortait dans les recherches `site:` effectuées pendant l'audit ;
 - sa page d'accueil cible en revanche très directement la requête : nom de domaine proche, balise `title`, nom d'organisation, texte d'introduction et citations externes récentes.
 
-Le site `irenee-institut.org` possède une base plus forte à moyen terme : domaine enregistré le 25 octobre 2025, sitemap XML, blog thématique et 59 URL exposées avant cet audit. Son défaut principal était plus simple : la page d'accueil s'intitulait seulement `Institut Irénée`, plusieurs pages publiques héritaient du même titre générique et des écrans applicatifs pouvaient être proposés à l'indexation.
+Le site `irenee-institut.org` possède une base plus forte à moyen terme : domaine enregistré le 25 octobre 2025, sitemap XML, blog thématique et 59 URL exposées avant cet audit. Son défaut principal était plus simple : la page d'accueil s'intitulait seulement `Institut Saint Irénée`, plusieurs pages publiques héritaient du même titre générique et des écrans applicatifs pouvaient être proposés à l'indexation.
 
 ## Chronologie vérifiable
 
@@ -31,7 +31,7 @@ La chronologie est un signal utile, mais elle ne suffit pas seule à établir ju
 
 ### 1. Une page d'accueil parfaitement alignée sur la requête
 
-Le concurrent utilise `Institut d'Apologétique Saint-Irénée` comme titre de page et comme nom d'entité. Google reprend ce titre dans le résultat. Avant correction, notre accueil affichait seulement `Institut Irénée`.
+Le concurrent utilise `Institut d'Apologétique Saint-Irénée` comme titre de page et comme nom d'entité. Google reprend ce titre dans le résultat. Avant correction, notre accueil affichait seulement `Institut Saint Irénée`.
 
 Google explique que les titres de résultats peuvent être construits à partir de la balise `title`, du titre visible principal et d'autres textes proéminents de la page : [Title links](https://developers.google.com/search/docs/appearance/title-link).
 

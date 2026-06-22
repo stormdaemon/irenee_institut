@@ -64,7 +64,7 @@ function normalizePublicTrainer(profile: Profile): Profile {
 function normalizeCourse(course: RawCourse, modules: CourseModule[] = []): Course {
   return {
     ...course,
-    auteur_nom: course.auteur_nom && isExcludedPublicName(course.auteur_nom) ? "Institut Irénée" : course.auteur_nom,
+    auteur_nom: course.auteur_nom && isExcludedPublicName(course.auteur_nom) ? "Institut Saint Irénée" : course.auteur_nom,
     description: course.description || "",
     niveau: course.niveau || "debutant",
     duree_totale: Number(course.duree_totale_minutes || course.duree_totale || course.duree || 0),

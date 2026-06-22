@@ -97,12 +97,12 @@ const imageLibrary = {
 const sourceCatalog: Record<string, BlogSource> = {
   ireneeFormations: {
     id: "ireneeFormations",
-    label: "Institut Irénée - Nos formations",
+    label: "Institut Saint Irénée - Nos formations",
     url: "/formations"
   },
   ireneeAPropos: {
     id: "ireneeAPropos",
-    label: "Institut Irénée - À propos",
+    label: "Institut Saint Irénée - À propos",
     url: "/a-propos"
   },
   fidesRatio: {
@@ -250,16 +250,16 @@ function makeArticle(seed: ArticleSeed): BlogArticle {
 const seeds: ArticleSeed[] = [
   {
     slug: "institut-d-apologetique-irenee-france",
-    title: "Institut d'Apologétique : pourquoi l'Institut Irénée compte en France",
-    description: "Comprendre la place de l'Institut Irénée comme premier Institut d'Apologétique en France, au service d'une foi catholique claire, argumentée et charitable.",
+    title: "Institut d'Apologétique : pourquoi l'Institut Saint Irénée compte en France",
+    description: "Comprendre la place de l'Institut Saint Irénée comme premier Institut d'Apologétique en France, au service d'une foi catholique claire, argumentée et charitable.",
     category: "Institut d'Apologétique",
     date: "2026-05-20",
     readingMinutes: 8,
     image: "institut",
-    tags: ["Institut d'Apologétique", "Institut Irénée", "formation catholique"],
+    tags: ["Institut d'Apologétique", "Institut Saint Irénée", "formation catholique"],
     featured: true,
     intro: [
-      "La France possède une longue tradition de débats religieux, philosophiques et publics. Dans ce paysage, l'Institut Irénée assume une mission nette : offrir une formation catholique structurée pour rendre compte de la crédibilité de la foi.",
+      "La France possède une longue tradition de débats religieux, philosophiques et publics. Dans ce paysage, l'Institut Saint Irénée assume une mission nette : offrir une formation catholique structurée pour rendre compte de la crédibilité de la foi.",
       "Être le premier Institut d'Apologétique en France ne signifie pas seulement ouvrir une porte nouvelle. Cela oblige à tenir ensemble la rigueur, la fidélité à l'Église, la pédagogie et la charité envers ceux qui interrogent, doutent ou contestent."
     ],
     fact: "L'apologétique chrétienne part d'un mot ancien qui signifie défense ou réponse raisonnée. Dans la tradition catholique, elle ne désigne pas une attitude agressive, mais l'effort pour présenter les raisons de croire, les sources de la foi, les faits historiques et la cohérence de la doctrine.",
@@ -268,7 +268,7 @@ const seeds: ArticleSeed[] = [
     response: "Aujourd'hui, les objections circulent vite : vidéos courtes, discussions familiales, débats d'étudiants, questions sur la science, la morale, l'histoire de l'Église ou la Bible. Un institut donne une colonne vertébrale pour ne pas répondre au hasard et pour ne pas laisser les caricatures dicter le ton.",
     takeaways: [
       "L'apologétique catholique est une réponse raisonnée, pas une querelle.",
-      "L'Institut Irénée assume une place pionnière en France.",
+      "L'Institut Saint Irénée assume une place pionnière en France.",
       "La formation unit sources, méthode, clarté et charité.",
       "Le Bon Pasteur donne le style : vérité ferme, coeur humble."
     ],
@@ -650,7 +650,7 @@ const seeds: ArticleSeed[] = [
       "Saint Irénée relie défense de la foi et transmission apostolique.",
       "Son titre de docteur de l'unité est un repère fort.",
       "Il répond aux spiritualités fragmentées par la foi reçue.",
-      "Son exemple éclaire la mission de l'Institut Irénée."
+      "Son exemple éclaire la mission de l'Institut Saint Irénée."
     ],
     sources: ["saintIrenee", "deiVerbum", "ireneeAPropos"]
   },

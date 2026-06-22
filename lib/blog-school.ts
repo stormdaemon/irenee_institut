@@ -3,7 +3,7 @@ import type { BlogArticle, BlogSource } from "./blog";
 const sourceCatalog: Record<string, BlogSource> = {
   ireneeFormations: {
     id: "ireneeFormations",
-    label: "Institut Irénée - Formations",
+    label: "Institut Saint Irénée - Formations",
     url: "/formations"
   },
   fidesRatio: {
@@ -177,7 +177,7 @@ export const schoolArticles: BlogArticle[] = [
         heading: "Un chemin pour aujourd'hui",
         paragraphs: [
           "Croire sans éteindre l'intelligence, c'est accepter de lire, de comparer, de vérifier, de prier et de demander conseil. C'est aussi accepter que certaines réponses deviennent claires peu à peu.",
-          "L'Institut Irénée veut servir ce chemin : former des catholiques qui n'aient pas peur de penser, parce qu'ils savent que toute vérité vient de Dieu."
+          "L'Institut Saint Irénée veut servir ce chemin : former des catholiques qui n'aient pas peur de penser, parce qu'ils savent que toute vérité vient de Dieu."
         ]
       }
     ],

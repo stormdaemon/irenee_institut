@@ -180,7 +180,7 @@ export default async function HomePage() {
           <span className="hero-eyebrow">Comprendre, répondre, transmettre</span>
           <h2 className="section-title">Un institut d'apologétique catholique accessible en ligne</h2>
           <p className="subtitle" style={{ maxWidth: 930, margin: "0 auto 26px" }}>
-            L'Institut Irénée propose une formation structurée pour apprendre à présenter les raisons de croire,
+            L'Institut Saint Irénée propose une formation structurée pour apprendre à présenter les raisons de croire,
             étudier les sources et répondre aux objections contemporaines. L'objectif n'est pas de gagner des
             querelles, mais de servir la vérité avec précision, patience et charité.
           </p>
@@ -194,7 +194,7 @@ export default async function HomePage() {
         <div className="container center">
           <h2 className="section-title">Notre mission : former les <span style={{ color: "var(--gold-2)" }}>apologètes de demain</span></h2>
           <p className="subtitle" style={{ maxWidth: 820, margin: "0 auto 42px" }}>
-            L'Institut Irénée accompagne les jeunes adultes dans l'approfondissement de leur foi catholique et les forme à en rendre compte avec intelligence, précision et charité.
+            L'Institut Saint Irénée accompagne les jeunes adultes dans l'approfondissement de leur foi catholique et les forme à en rendre compte avec intelligence, précision et charité.
           </p>
           <div className="grid-3" style={{ textAlign: "left" }}>
             {[

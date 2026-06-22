@@ -58,7 +58,7 @@ export function DonationPrompt() {
         <div className="donation-popup-icon">
           <HandHeart size={30} aria-hidden="true" />
         </div>
-        <p className="donation-popup-kicker">Soutenir l'Institut Irénée</p>
+        <p className="donation-popup-kicker">Soutenir l'Institut Saint Irénée</p>
         <h2 id="donation-popup-title" className="font-display">Aidez-nous à former les apologètes de demain</h2>
         <p>
           Votre don permet de rendre les formations plus accessibles et de faire grandir cette oeuvre de transmission au service de la foi.

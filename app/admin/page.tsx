@@ -32,7 +32,7 @@ export default async function AdminPage() {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
           <div>
             <h1 className="title">Dashboard Administration</h1>
-            <p className="subtitle">Accès complet à la plateforme Institut Irénée</p>
+            <p className="subtitle">Accès complet à la plateforme Institut Saint Irénée</p>
           </div>
           <Link href="/" className="btn btn-outline">Déconnexion</Link>
         </div>

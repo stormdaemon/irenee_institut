@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Formations en apologétique catholique en ligne",
   description:
-    "Découvrez les formations en apologétique catholique de l'Institut Irénée : foi et raison, Écritures, histoire, science, philosophie et dialogue.",
+    "Découvrez les formations en apologétique catholique de l'Institut Saint Irénée : foi et raison, Écritures, histoire, science, philosophie et dialogue.",
   alternates: {
     canonical: "/formations"
   }
@@ -22,7 +22,7 @@ const formationQuestions = [
   {
     question: "Comment suivre une formation en apologétique catholique en ligne ?",
     answer:
-      "Les formations de l'Institut Irénée sont organisées en modules accessibles en ligne. Chaque parcours permet d'étudier un thème, de progresser à son rythme et de retrouver les ressources pédagogiques dans l'espace étudiant."
+      "Les formations de l'Institut Saint Irénée sont organisées en modules accessibles en ligne. Chaque parcours permet d'étudier un thème, de progresser à son rythme et de retrouver les ressources pédagogiques dans l'espace étudiant."
   },
   {
     question: "Quel cours d'apologétique choisir pour commencer ?",
@@ -45,7 +45,7 @@ export default async function FormationsPage() {
     url: `${siteUrl}/formations`,
     name: "Formations en apologétique catholique en ligne",
     description:
-      "Parcours et cours en ligne de l'Institut Irénée pour comprendre, défendre et transmettre la foi catholique.",
+      "Parcours et cours en ligne de l'Institut Saint Irénée pour comprendre, défendre et transmettre la foi catholique.",
     isPartOf: {
       "@id": `${siteUrl}/#website`
     },
@@ -94,7 +94,7 @@ export default async function FormationsPage() {
           <p className="subtitle">
             L'apologétique ne se résume pas à quelques réponses mémorisées. Une formation solide commence par les
             fondements, puis approfondit les questions bibliques, historiques, philosophiques et contemporaines.
-            L'Institut Irénée propose plusieurs portes d'entrée afin que chacun puisse construire un parcours
+            L'Institut Saint Irénée propose plusieurs portes d'entrée afin que chacun puisse construire un parcours
             cohérent.
           </p>
           <div className="grid-3" style={{ marginTop: 30 }}>
@@ -152,7 +152,7 @@ export default async function FormationsPage() {
               <p style={{ display: "flex", gap: 14, flexWrap: "wrap", color: "var(--muted)" }}>
                 <span><Clock size={16} /> {formatDuration(course.duree_totale)}</span>
                 <span><BookOpen size={16} /> {course.nb_modules} modules</span>
-                <span><User size={16} /> {course.auteur_nom || "Institut Irénée"}</span>
+                <span><User size={16} /> {course.auteur_nom || "Institut Saint Irénée"}</span>
                 <span><Award size={16} /> Certificat</span>
               </p>
               <div className="course-card-actions">

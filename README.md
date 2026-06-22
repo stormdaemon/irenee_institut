@@ -1,4 +1,4 @@
-# Institut Irénée rebuild
+# Institut Saint Irénée rebuild
 
 Reconstruction Next.js depuis le build `old_build`.
 

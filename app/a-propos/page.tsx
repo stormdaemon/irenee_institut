@@ -2,7 +2,7 @@ import Image from "next/image";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "À propos de l'Institut Irénée",
+  title: "À propos de l'Institut Saint Irénée",
   description:
     "Découvrez la direction, les valeurs et la mission de l'Institut d'Apologétique Saint Irénée au service de la formation catholique.",
   alternates: {

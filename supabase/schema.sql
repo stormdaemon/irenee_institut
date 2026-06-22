@@ -1,4 +1,4 @@
--- Schema aligned with the recovered Institut Irénée Supabase project.
+-- Schema aligned with the recovered Institut Saint Irénée Supabase project.
 -- It documents the live tables the Next.js app now reads/writes.
 -- Apply the versioned files in supabase/migrations after this recovered baseline.
 

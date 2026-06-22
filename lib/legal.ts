@@ -3,10 +3,10 @@ export type LegalPageKey = "mentions-legales" | "politique-confidentialite" | "c
 export const legalPages: Record<LegalPageKey, { title: string; intro: string; content: string }> = {
   "mentions-legales": {
     title: "Mentions légales",
-    intro: "Informations légales de l'Institut Irénée et de l'association Parole et Partage.",
+    intro: "Informations légales de l'Institut Saint Irénée et de l'association Parole et Partage.",
     content: `Éditeur du site
 
-Institut Irénée est une initiative de l'association Parole et Partage.
+Institut Saint Irénée est une initiative de l'association Parole et Partage.
 SIREN : 841 890 692
 Siège : Paris, France
 Email : oeuvrecatholiquefrance@gmail.com
@@ -14,11 +14,11 @@ Téléphone : 01.71.68.15.38
 
 Responsable de publication
 
-La direction de publication est assurée par l'équipe administrative de l'Institut Irénée.
+La direction de publication est assurée par l'équipe administrative de l'Institut Saint Irénée.
 
 Objet du site
 
-Le site présente les formations, contenus pédagogiques, inscriptions, devoirs, espaces étudiants et outils administratifs de l'Institut Irénée.
+Le site présente les formations, contenus pédagogiques, inscriptions, devoirs, espaces étudiants et outils administratifs de l'Institut Saint Irénée.
 
 Propriété intellectuelle
 
@@ -26,7 +26,7 @@ Les textes, supports pédagogiques, vidéos, documents, logos, marques, élémen
 
 Responsabilité
 
-L'Institut Irénée veille à l'exactitude des informations publiées, sans garantir l'absence totale d'erreur ou d'interruption. Les liens externes sont fournis à titre informatif.`
+L'Institut Saint Irénée veille à l'exactitude des informations publiées, sans garantir l'absence totale d'erreur ou d'interruption. Les liens externes sont fournis à titre informatif.`
   },
   "politique-confidentialite": {
     title: "Politique de confidentialité",
@@ -41,7 +41,7 @@ Ces données servent à créer le compte utilisateur, gérer l'accès aux format
 
 Base légale
 
-Les traitements reposent sur l'exécution du contrat de formation, l'intérêt légitime de l'Institut Irénée, le consentement lorsque nécessaire et les obligations légales applicables.
+Les traitements reposent sur l'exécution du contrat de formation, l'intérêt légitime de l'Institut Saint Irénée, le consentement lorsque nécessaire et les obligations légales applicables.
 
 Conservation
 
@@ -60,7 +60,7 @@ Vous pouvez demander l'accès, la rectification, l'opposition, la limitation ou 
     intro: "Conditions applicables aux inscriptions, paiements et accès aux formations.",
     content: `Objet
 
-Les présentes conditions encadrent l'inscription aux formations proposées par l'Institut Irénée, l'accès aux contenus en ligne et les services pédagogiques associés.
+Les présentes conditions encadrent l'inscription aux formations proposées par l'Institut Saint Irénée, l'accès aux contenus en ligne et les services pédagogiques associés.
 
 Inscription
 

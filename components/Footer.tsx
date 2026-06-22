@@ -8,7 +8,7 @@ export function Footer() {
         <div className="footer-mark" aria-hidden="true">✝</div>
         <div className="footer-grid">
           <div>
-            <h3>Institut Irénée</h3>
+            <h3>Institut Saint Irénée</h3>
             <p>Rendre compte de la crédibilité de la foi catholique auprès des jeunes générations.</p>
             <p>Une initiative de l'association <strong>Parole et Partage</strong><br />SIREN : 841 890 692</p>
           </div>
@@ -39,7 +39,7 @@ export function Footer() {
           </div>
         </div>
         <div className="footer-bottom">
-          <span>© 2026 Parole et Partage - Institut Irénée. Tous droits réservés.</span>
+          <span>© 2026 Parole et Partage - Institut Saint Irénée. Tous droits réservés.</span>
           <span className="footer-links">
             <Link href="/mentions-legales">Mentions légales</Link>
             <Link href="/politique-confidentialite">Politique de confidentialité</Link>

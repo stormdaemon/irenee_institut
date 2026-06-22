@@ -8,7 +8,7 @@ const faqs = [
   {
     category: "Inscription",
     items: [
-      ["Qui peut s'inscrire à l'Institut Irénée ?", "Toute personne souhaitant approfondir la foi catholique et apprendre à la défendre avec intelligence et charité peut s'inscrire."],
+      ["Qui peut s'inscrire à l'Institut Saint Irénée ?", "Toute personne souhaitant approfondir la foi catholique et apprendre à la défendre avec intelligence et charité peut s'inscrire."],
       ["Y a-t-il des prérequis pour s'inscrire au Semestre 2 ?", "Oui, le Semestre 2 suppose d'avoir validé ou maîtrisé les bases du premier semestre."],
     ],
   },
@@ -17,7 +17,7 @@ const faqs = [
     items: [
       ["Quel est le niveau requis pour suivre la formation ?", "Aucun prérequis académique strict. Les modules introduisent progressivement les notions et les méthodes."],
       ["Quelle est la durée de la formation complète ?", "Le parcours complet est structuré en deux semestres avec un accès en ligne aux contenus."],
-      ["Est-ce que la formation est diplômante ?", "Elle donne lieu à un certificat de formation délivré par l'Institut Irénée."],
+      ["Est-ce que la formation est diplômante ?", "Elle donne lieu à un certificat de formation délivré par l'Institut Saint Irénée."],
       ["Puis-je suivre la formation à mon rythme ?", "Oui, les contenus sont consultables en ligne et conçus pour s'adapter à votre rythme."],
       ["Puis-je reprendre un module si je ne réussis pas l'évaluation ?", "Oui, vous pouvez reprendre un module et consolider les notions avant de repasser l'évaluation."],
       ["Comment se déroulent les examens ?", "Les examens et devoirs sont transmis depuis l'espace étudiant, avec correction et suivi pédagogique."],
@@ -60,7 +60,7 @@ export default function ContactPage() {
       <section className="section" style={{ background: "white" }}>
         <div className="container grid-2">
           <form className="soft-card" style={{ padding: 30 }} action="https://formspree.io/f/mjgzlojl" method="POST">
-            <input type="hidden" name="_subject" value="Nouveau message depuis le site Institut Irenee" />
+            <input type="hidden" name="_subject" value="Nouveau message depuis le site Institut Saint Irenee" />
             <h2 className="font-display" style={{ color: "var(--navy)" }}>Envoyez-nous un message</h2>
             <div className="grid-2">
               <div><label>Prénom *</label><input className="input" name="prenom" required /></div>

@@ -1,4 +1,4 @@
-# Matrice SEO - Institut Irénée
+# Matrice SEO - Institut Saint Irénée
 
 Mesure initiale : 31 mai 2026
 
