@@ -20,7 +20,13 @@ export default function LoginPage() {
   const [status, setStatus] = useState<"idle" | "submitting" | "error">("idle");
   const [notice, setNotice] = useState<AuthErrorCopy | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [signupHref, setSignupHref] = useState("/auth/signup");
   const noticeRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const next = getSafeNextPath();
+    setSignupHref(next === "/espace-etudiant" ? "/auth/signup" : `/auth/signup?next=${encodeURIComponent(next)}`);
+  }, []);
 
   useEffect(() => {
     if (!notice || status === "submitting") return;
@@ -154,7 +160,7 @@ export default function LoginPage() {
         </button>
 
         <p className="auth-switch">
-          Pas encore de compte ? <Link href="/auth/signup"><strong>S'inscrire</strong></Link>
+          Pas encore de compte ? <Link href={signupHref}><strong>S'inscrire</strong></Link>
         </p>
       </form>
 

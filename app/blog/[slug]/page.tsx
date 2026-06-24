@@ -133,6 +133,18 @@ export default async function BlogArticlePage({ params }: BlogArticlePageProps) 
                 ))}
               </div>
 
+              <section className="blog-conversion-panel">
+                <span className="blog-kicker">Formation structurée</span>
+                <h2>Passer de l'article au cursus complet</h2>
+                <p>
+                  Le pass annuel donne accès aux cours d'apologétique, aux modules progressifs, aux séances en direct
+                  et aux validations de parcours dans l'espace étudiant.
+                </p>
+                <Link className="btn btn-gold" href="/formations?checkout=annual-pass">
+                  Obtenir le pass annuel <ArrowRight size={17} />
+                </Link>
+              </section>
+
               {article.sections.map(section => (
                 <section key={section.heading}>
                   <h2>{section.heading}</h2>

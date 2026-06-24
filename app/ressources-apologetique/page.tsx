@@ -151,7 +151,7 @@ export default function RessourcesApologetiquePage() {
             ))}
           </div>
           <p className="center" style={{ marginTop: 34 }}>
-            <Link className="btn btn-gold" href="/formations">
+            <Link className="btn btn-gold" href="/formations?checkout=annual-pass">
               Passer des ressources à la formation <ArrowRight size={17} />
             </Link>
           </p>

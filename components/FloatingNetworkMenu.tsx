@@ -3,6 +3,7 @@
 import type { LucideIcon } from "lucide-react";
 import { HandHeart } from "lucide-react";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 type FloatingLink = {
@@ -75,7 +76,9 @@ const contactLinks: FloatingLink[] = [
   }
 ];
 
-const mobileLinks = [...networkLinks, ...contactLinks];
+function isConversionPath(pathname: string | null) {
+  return Boolean(pathname === "/" || pathname?.startsWith("/formations") || pathname?.startsWith("/auth") || pathname?.startsWith("/paiement"));
+}
 
 function FloatingIcon({ link, size }: { link: FloatingLink; size: number }) {
   if (link.icon) return <Image src={link.icon} alt="" width={size} height={size} />;
@@ -90,6 +93,10 @@ export function FloatingNetworkMenu() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileClosing, setMobileClosing] = useState(false);
   const closingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pathname = usePathname();
+  const isConversion = isConversionPath(pathname);
+  const visibleContactLinks = isConversion ? contactLinks.filter(link => !link.featured) : contactLinks;
+  const mobileLinks = isConversion ? visibleContactLinks : [...networkLinks, ...visibleContactLinks];
 
   useEffect(() => {
     return () => {
@@ -122,39 +129,43 @@ export function FloatingNetworkMenu() {
 
   return (
     <>
-      <aside className="floating-network" aria-label="Sites amis">
-        <div className="floating-network-inner">
-          {networkLinks.map(link => (
-            <a className="network-link" href={link.href} target="_blank" rel="noreferrer" key={link.href}>
-              <span className="network-icon">
-                <FloatingIcon link={link} size={64} />
-              </span>
-              <span>{link.label}</span>
-            </a>
-          ))}
-        </div>
-      </aside>
+      {!isConversion && (
+        <aside className="floating-network" aria-label="Sites amis">
+          <div className="floating-network-inner">
+            {networkLinks.map(link => (
+              <a className="network-link" href={link.href} target="_blank" rel="noreferrer" key={link.href}>
+                <span className="network-icon">
+                  <FloatingIcon link={link} size={64} />
+                </span>
+                <span>{link.label}</span>
+              </a>
+            ))}
+          </div>
+        </aside>
+      )}
 
-      <aside className="floating-contact" aria-label="Contact rapide">
-        <div className="floating-contact-inner">
-          {contactLinks.map(link => (
-            <a
-              className={`contact-float-link ${link.featured ? "is-featured" : ""}`}
-              href={link.href}
-              target={link.external ? "_blank" : undefined}
-              rel={link.external ? "noreferrer" : undefined}
-              key={link.href}
-            >
-              <span className="contact-float-icon">
-                <FloatingIcon link={link} size={64} />
-              </span>
-              <span>{link.label}</span>
-            </a>
-          ))}
-        </div>
-      </aside>
+      {!isConversion && (
+        <aside className="floating-contact" aria-label="Contact rapide">
+          <div className="floating-contact-inner">
+            {visibleContactLinks.map(link => (
+              <a
+                className={`contact-float-link ${link.featured ? "is-featured" : ""}`}
+                href={link.href}
+                target={link.external ? "_blank" : undefined}
+                rel={link.external ? "noreferrer" : undefined}
+                key={link.href}
+              >
+                <span className="contact-float-icon">
+                  <FloatingIcon link={link} size={64} />
+                </span>
+                <span>{link.label}</span>
+              </a>
+            ))}
+          </div>
+        </aside>
+      )}
 
-      <div className={`mobile-float-hub ${mobileOpen ? "is-open" : ""} ${mobileClosing ? "is-closing" : ""}`}>
+      <div className={`mobile-float-hub ${isConversion ? "is-conversion" : ""} ${mobileOpen ? "is-open" : ""} ${mobileClosing ? "is-closing" : ""}`}>
         <button
           className="mobile-float-scrim"
           type="button"

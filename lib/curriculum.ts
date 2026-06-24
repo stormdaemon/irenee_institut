@@ -1,4 +1,4 @@
-export const ANNUAL_PASS_NAME = "Pass annuel de l'institut d'apologétique saint Irénée";
+export const ANNUAL_PASS_NAME = "Pass annuel de l'Institut d'Apologétique Saint Irénée";
 export const ANNUAL_PASS_PRODUCT_ID = "annual-pass-saint-irenee";
 export const ANNUAL_PASS_SLUG = "pass-annuel-institut-apologetique-saint-irenee";
 export const ANNUAL_PASS_DURATION_DAYS = 365;
@@ -123,4 +123,3 @@ export const FINAL_EXAM_QUESTIONS: FinalExamQuestion[] = [
     answer: 1
   }
 ];
-

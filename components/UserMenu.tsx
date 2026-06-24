@@ -36,11 +36,24 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [open, setOpen] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
+  const [loginHref, setLoginHref] = useState("/auth/login");
   const menuRef = useRef<HTMLDivElement | null>(null);
   const src = useMemo(() => avatarSrc(profile), [profile]);
 
   useEffect(() => {
     const client = createBrowserClient();
+    const params = new URLSearchParams(window.location.search);
+    const currentPathWithQuery = `${window.location.pathname}${window.location.search}`;
+    const nextParam = params.get("next");
+
+    setLoginHref(
+      nextParam
+        ? `/auth/login?next=${encodeURIComponent(nextParam)}`
+        : currentPathWithQuery.includes("checkout=annual-pass")
+          ? `/auth/login?next=${encodeURIComponent(currentPathWithQuery)}`
+          : "/auth/login"
+    );
+
     if (!client) return;
 
     async function loadProfile(supabase: SupabaseBrowserClient) {
@@ -88,8 +101,8 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
   if (!profile) {
     return (
       <>
-        <Link href="/auth/login" className="btn btn-outline" onClick={onNavigate}>Se connecter</Link>
-        <Link href="/auth/signup" className="btn btn-primary" onClick={onNavigate}>S'inscrire</Link>
+        <Link href={loginHref} className="btn btn-outline" onClick={onNavigate}>Se connecter</Link>
+        <Link href="/formations?checkout=annual-pass" className="btn btn-primary" onClick={onNavigate}>Pass annuel</Link>
       </>
     );
   }

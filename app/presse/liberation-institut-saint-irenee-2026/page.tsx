@@ -54,7 +54,7 @@ export default function LiberationPressPage() {
             <a className="btn btn-gold" href={liberationUrl} target="_blank" rel="noreferrer">
               Lire l'article sur Libération <ExternalLink size={17} />
             </a>
-            <Link className="btn btn-outline" href="/formations">
+            <Link className="btn btn-outline" href="/formations?checkout=annual-pass">
               Découvrir nos formations <ArrowRight size={17} />
             </Link>
           </div>

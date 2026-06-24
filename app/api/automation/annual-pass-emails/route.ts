@@ -108,7 +108,7 @@ function emailShell({ body, eyebrow, preview, title }: { body: string; eyebrow: 
 function studentHtml(pass: AnnualPassRow, profile: ProfileRow) {
   const name = recipientName(profile);
   return emailShell({
-    eyebrow: "Pass annuel active",
+    eyebrow: "Pass annuel activé",
     preview: "Votre pass annuel Institut Saint Irenee est actif.",
     title: "Bienvenue dans le cursus annuel",
     body: `

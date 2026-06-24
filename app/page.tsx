@@ -89,11 +89,11 @@ export default async function HomePage() {
               Approfondissez votre foi catholique et apprenez à la défendre avec rigueur et bienveillance grâce à nos formations en ligne dispensées par des experts catholiques.
             </p>
             <div className="hero-actions">
-              <Link className="btn btn-primary" href="/formations">
-                Découvrir les formations <ArrowRight size={18} />
+              <Link className="btn btn-primary" href="/formations?checkout=annual-pass">
+                Obtenir le pass annuel <ArrowRight size={18} />
               </Link>
-              <Link className="btn btn-outline" href="/contact">
-                Nous contacter
+              <Link className="btn btn-outline" href="/programme-apologetique">
+                Voir le programme
               </Link>
             </div>
           </div>
@@ -221,7 +221,7 @@ export default async function HomePage() {
                 <span className="badge">{course.niveau}</span>
                 <h3 style={{ color: "#fff7e7", fontSize: "1.7rem" }}>{course.titre}</h3>
                 <p className="muted">{course.description}</p>
-                <Link className="btn btn-outline" href={`/cours/${course.slug}`}>Voir le cours <ArrowRight size={16} /></Link>
+                <Link className="btn btn-outline" href="/programme-apologetique">Voir le programme <ArrowRight size={16} /></Link>
               </article>
             ))}
             {!courses.length && <p>Aucune formation disponible pour le moment.</p>}
@@ -256,7 +256,7 @@ export default async function HomePage() {
         <div className="container">
           <h2 className="font-display" style={{ fontSize: "2.7rem", margin: 0 }}>Prêt à approfondir votre foi ?</h2>
           <p style={{ color: "#f0dfc2" }}>Rejoignez notre prochaine promotion et découvrez les richesses de l'apologétique catholique.</p>
-          <Link href="/auth/signup" className="btn btn-gold">S'inscrire maintenant <ArrowRight size={18} /></Link>
+          <Link href="/formations?checkout=annual-pass" className="btn btn-gold">Obtenir le pass annuel <ArrowRight size={18} /></Link>
         </div>
       </section>
     </>

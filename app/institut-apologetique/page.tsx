@@ -180,7 +180,7 @@ export default function InstitutApologetiquePage() {
             ))}
           </div>
           <div className="center" style={{ marginTop: 36 }}>
-            <Link className="btn btn-gold" href="/formations">
+            <Link className="btn btn-gold" href="/formations?checkout=annual-pass">
               Voir les formations <ArrowRight size={17} />
             </Link>
           </div>
@@ -231,7 +231,7 @@ export default function InstitutApologetiquePage() {
             Explorez les parcours ou découvrez les premiers repères dans le blog de l'Institut Saint Irénée.
           </p>
           <div className="hero-actions">
-            <Link className="btn btn-gold" href="/formations">Découvrir les formations</Link>
+            <Link className="btn btn-gold" href="/formations?checkout=annual-pass">Obtenir le pass annuel</Link>
             <Link className="btn btn-outline" href="/blog/qu-est-ce-que-l-apologetique-catholique">
               Lire l'introduction
             </Link>

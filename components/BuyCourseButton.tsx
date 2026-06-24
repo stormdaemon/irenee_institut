@@ -1,6 +1,7 @@
 "use client";
 
 import { BookOpen, CreditCard, Loader2, X } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { capturePayPalOrderAction, createPayPalOrderAction, getPayPalCheckoutConfigAction } from "@/app/actions/payments";
@@ -47,6 +48,8 @@ export function BuyCourseButton({
   label = "Obtenir le pass annuel",
   className = "btn btn-primary"
 }: BuyCourseButtonProps) {
+  const searchParams = useSearchParams();
+  const checkoutParam = searchParams.get("checkout");
   const stableId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const paypalContainerId = useMemo(() => `paypal-buttons-${stableId}`, [stableId]);
   const [status, setStatus] = useState<"idle" | "checking" | "ready" | "loading" | "capturing" | "success" | "error">("idle");
@@ -61,6 +64,7 @@ export function BuyCourseButton({
   const amountRef = useRef(amount);
   const bookRequestedRef = useRef(bookRequested);
   const bookTitleRef = useRef(bookTitle);
+  const autoStartedRef = useRef(false);
 
   async function startCheckout() {
     setStatus("checking");
@@ -68,15 +72,15 @@ export function BuyCourseButton({
 
     const supabase = createBrowserClient();
     if (!supabase) {
-      setError("Paiement momentanement indisponible. Reessayez dans quelques instants.");
+      setError("Paiement momentanément indisponible. Réessayez dans quelques instants.");
       setStatus("error");
       return;
     }
 
     const { data } = await supabase.auth.getSession();
     if (!data.session?.access_token) {
-      const next = encodeURIComponent(window.location.pathname + window.location.search);
-      window.location.href = `/auth/login?next=${next}`;
+      const next = encodeURIComponent("/formations?checkout=annual-pass");
+      window.location.href = `/auth/signup?next=${next}`;
       return;
     }
 
@@ -85,7 +89,7 @@ export function BuyCourseButton({
 
     const checkoutConfig = await getPayPalCheckoutConfigAction();
     if (!checkoutConfig.ok || !checkoutConfig.clientId) {
-      setError(checkoutConfig.error || "Le paiement PayPal n'a pas pu etre prepare.");
+      setError(checkoutConfig.error || "Le paiement PayPal n'a pas pu être préparé.");
       setStatus("error");
       return;
     }
@@ -97,6 +101,19 @@ export function BuyCourseButton({
     });
     setStatus("ready");
   }
+
+  useEffect(() => {
+    if (typeof window === "undefined" || autoStartedRef.current) return;
+    if (checkoutParam !== "annual-pass") return;
+
+    autoStartedRef.current = true;
+    const nextParams = new URLSearchParams(window.location.search);
+    nextParams.delete("checkout");
+    const nextQuery = nextParams.toString();
+    const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash}`;
+    window.history.replaceState(null, "", nextUrl);
+    startCheckout();
+  }, [checkoutParam]);
 
   function closeModal() {
     if (status === "loading" || status === "capturing") return;
@@ -130,7 +147,7 @@ export function BuyCourseButton({
     script.dataset.paypalSrc = src;
     script.onload = () => setSdkReady(true);
     script.onerror = () => {
-      setError("Le module PayPal n'a pas pu etre charge.");
+      setError("Le module PayPal n'a pas pu être chargé.");
       setStatus("error");
     };
     document.body.appendChild(script);
@@ -166,7 +183,7 @@ export function BuyCourseButton({
           setError("");
           if (bookRequestedRef.current && !bookTitleRef.current.trim()) {
             setStatus("ready");
-            throw new Error("Indiquez le titre du livre souhaite.");
+            throw new Error("Indiquez le titre du livre souhaité.");
           }
           const result = await createPayPalOrderAction({
             amount: amountRef.current,
@@ -182,14 +199,14 @@ export function BuyCourseButton({
           }
 
           if (!result.ok || !result.orderId) {
-            throw new Error(result.error || "PayPal n'a pas pu creer la commande.");
+            throw new Error(result.error || "PayPal n'a pas pu créer la commande.");
           }
 
           setStatus("ready");
           return result.orderId;
         },
         onApprove: async (data, actions) => {
-          if (!data.orderID) throw new Error("PayPal n'a pas renvoye de reference de commande.");
+          if (!data.orderID) throw new Error("PayPal n'a pas renvoyé de référence de commande.");
 
           setStatus("capturing");
           setError("");
@@ -201,7 +218,7 @@ export function BuyCourseButton({
               setStatus("ready");
               return;
             }
-            throw new Error(result.error || "Le paiement n'a pas pu etre confirme.");
+            throw new Error(result.error || "Le paiement n'a pas pu être confirmé.");
           }
 
           setStatus("success");
@@ -209,16 +226,16 @@ export function BuyCourseButton({
         },
         onCancel: () => {
           setStatus("ready");
-          setError("Paiement annule. Vous pouvez relancer PayPal quand vous voulez.");
+          setError("Paiement annulé. Vous pouvez relancer PayPal quand vous voulez.");
         },
         onError: (paypalError) => {
-          setError(paypalError instanceof Error ? paypalError.message : "Le paiement PayPal a echoue.");
+          setError(paypalError instanceof Error ? paypalError.message : "Le paiement PayPal a échoué.");
           setStatus("error");
         }
       });
       buttons.render(`#${paypalContainerId}`);
     } catch (paypalError) {
-      setError(paypalError instanceof Error ? paypalError.message : "Le bouton PayPal n'a pas pu etre affiche.");
+      setError(paypalError instanceof Error ? paypalError.message : "Le bouton PayPal n'a pas pu être affiché.");
       setStatus("error");
     }
 
@@ -232,7 +249,7 @@ export function BuyCourseButton({
     <span className="buy-course">
       <button className={className} type="button" onClick={startCheckout} disabled={status === "checking" || status === "loading" || status === "capturing"}>
         {status === "checking" || status === "loading" || status === "capturing" ? <Loader2 className="action-spin" size={18} /> : <CreditCard size={18} />}
-        {status === "checking" ? "Preparation..." : status === "capturing" ? "Validation..." : label}
+        {status === "checking" ? "Préparation..." : status === "capturing" ? "Validation..." : label}
       </button>
       {error && !open && <small className="field-error" role="alert">{error}</small>}
       {open && createPortal((
@@ -241,14 +258,14 @@ export function BuyCourseButton({
             <div className="paypal-modal-header">
               <div>
                 <span className="badge"><CreditCard size={14} /> PayPal</span>
-                <h2 id={`${paypalContainerId}-title`} className="font-display">Paiement libre</h2>
+                <h2 id={`${paypalContainerId}-title`} className="font-display">Pass annuel</h2>
               </div>
               <button className="modal-close" type="button" onClick={closeModal} aria-label="Fermer le paiement">
                 <X size={18} />
               </button>
             </div>
             <p className="paypal-checkout-intro">
-              Le prix conseille est de 99 euros, mais vous choisissez librement le montant verse pour votre année scolaire.
+              Le prix conseillé est de 99 euros, mais vous choisissez librement le montant versé pour votre année scolaire.
               Le pass annuel donne accès à l'ensemble du cursus dès que PayPal confirme le paiement.
             </p>
             <label className="paypal-amount-field">
@@ -277,17 +294,17 @@ export function BuyCourseButton({
                 disabled={status === "loading" || status === "capturing"}
               />
               <span>
-                <strong><BookOpen size={16} /> Demander le livre d'apologetique</strong>
-                <small>La demande sera transmise a la direction, qui validera ensuite l'acceptation.</small>
+                <strong><BookOpen size={16} /> Demander le livre d'apologétique</strong>
+                <small>La demande sera transmise à la direction, qui validera ensuite l'acceptation.</small>
               </span>
             </label>
             {bookRequested && (
               <label className="paypal-book-title">
-                <span>Titre du livre souhaite</span>
+                <span>Titre du livre souhaité</span>
                 <input
                   className="input"
                   maxLength={180}
-                  placeholder="Ex : Mere de Dieu de Brant Pitre"
+                  placeholder="Ex : Mère de Dieu de Brant Pitre"
                   required
                   value={bookTitle}
                   onChange={event => {

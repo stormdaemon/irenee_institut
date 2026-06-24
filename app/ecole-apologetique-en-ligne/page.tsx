@@ -153,8 +153,8 @@ export default function EcoleApologetiqueEnLignePage() {
             ))}
           </div>
           <div className="center" style={{ marginTop: 36 }}>
-            <Link className="btn btn-gold" href="/formations">
-              Découvrir les formations <ArrowRight size={17} />
+            <Link className="btn btn-gold" href="/formations?checkout=annual-pass">
+              Obtenir le pass annuel <ArrowRight size={17} />
             </Link>
           </div>
         </div>

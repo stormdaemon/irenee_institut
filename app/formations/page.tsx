@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight, Award, BookOpen, CheckCircle2, Clock, User } from "lucide-react";
+import { ArrowRight, Award, BookOpen, CheckCircle2, Clock, CreditCard, ShieldCheck, User } from "lucide-react";
 import { formatDuration, formatPrice } from "@/lib/data";
 import { getCourses } from "@/lib/server-data";
 import { BuyCourseButton } from "@/components/BuyCourseButton";
@@ -20,6 +20,31 @@ export const metadata: Metadata = {
 
 const formationQuestions = [
   {
+    question: "Que contient le pass annuel de l'Institut Saint Irénée ?",
+    answer:
+      "Le pass annuel donne accès pendant 365 jours à l'ensemble du cursus d'apologétique : les cours déjà publiés, les nouveaux contenus ajoutés pendant l'année, les validations de progression, les parchemins de connaissance, l'examen final et le certificat nominatif lorsque les conditions sont remplies."
+  },
+  {
+    question: "Que se passe-t-il juste après le paiement ?",
+    answer:
+      "Après confirmation PayPal, le pass est activé automatiquement sur votre compte. Vous êtes redirigé vers votre espace étudiant, où les cours du cursus apparaissent avec votre progression, les séances en direct et les documents pédagogiques."
+  },
+  {
+    question: "Pourquoi le prix est-il indiqué comme participation libre ?",
+    answer:
+      "Le prix conseillé est de 99 euros pour l'année scolaire. La participation libre permet aux étudiants de contribuer selon leurs moyens tout en soutenant l'accessibilité de la formation."
+  },
+  {
+    question: "Le certificat est-il un diplôme universitaire ?",
+    answer:
+      "Non. Le certificat nominatif atteste l'achèvement du cursus et la réussite des validations prévues par l'Institut Saint Irénée. Il ne s'agit pas d'un diplôme universitaire national ni d'une habilitation professionnelle réglementée."
+  },
+  {
+    question: "Puis-je consulter le programme avant d'acheter ?",
+    answer:
+      "Oui. La page présente les cours inclus dans le pass annuel et renvoie vers le programme d'apologétique pour comprendre la progression pédagogique avant de créer un compte ou de payer."
+  },
+  {
     question: "Comment suivre une formation en apologétique catholique en ligne ?",
     answer:
       "Les formations de l'Institut Saint Irénée sont organisées en modules accessibles en ligne. Chaque parcours permet d'étudier un thème, de progresser à son rythme et de retrouver les ressources pédagogiques dans l'espace étudiant."
@@ -36,8 +61,26 @@ const formationQuestions = [
   }
 ];
 
+const passHighlights = [
+  "Accès complet au cursus pendant 365 jours",
+  "Cours déjà publiés et nouveaux contenus de l'année",
+  "Progression visible dans l'espace étudiant",
+  "Parchemins de connaissance et certificat nominatif",
+  "Séances en direct et ressources pédagogiques"
+];
+
+const reassuranceItems = [
+  ["Paiement sécurisé", "PayPal traite le règlement et confirme automatiquement l'activation du pass."],
+  ["Compte personnel", "Vos cours, validations, documents et certificats restent rattachés à votre espace étudiant."],
+  ["Prix accessible", "99 € conseillés, avec une participation libre pour ne pas bloquer les étudiants motivés."],
+  ["Cadre légal clair", "Mentions légales, CGV, confidentialité, association porteuse et SIREN sont disponibles en pied de page."]
+];
+
 export default async function FormationsPage() {
   const courses = await getCourses();
+  const totalModules = courses.reduce((sum, course) => sum + Number(course.nb_modules || course.modules.length || 0), 0);
+  const totalMinutes = courses.reduce((sum, course) => sum + Number(course.duree_totale || 0), 0);
+  const totalHours = Math.round(totalMinutes / 60);
   const collectionJsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -82,15 +125,97 @@ export default async function FormationsPage() {
           <h1 className="font-display" style={{ fontSize: "clamp(2.7rem, 5vw, 4.6rem)", margin: 0 }}>
             Formations en apologétique catholique en ligne
           </h1>
-          <p style={{ fontSize: "1.3rem", color: "#dce6f6", maxWidth: 760 }}>
-            Des cours structurés par modules pour approfondir la foi, travailler les sources et apprendre à répondre
-            aux objections contemporaines.
+          <p style={{ fontSize: "1.3rem", color: "#dce6f6", maxWidth: 840 }}>
+            Un pass annuel pour accéder au cursus complet : fondements, Écritures, histoire, objections, science,
+            philosophie, morale et dialogue interreligieux.
           </p>
+          <div className="hero-actions formation-hero-actions">
+            <Link className="btn btn-gold" href="/formations?checkout=annual-pass">
+              Obtenir le pass annuel <ArrowRight size={18} />
+            </Link>
+            <Link className="btn btn-outline" href="/programme-apologetique">
+              Voir le programme détaillé
+            </Link>
+          </div>
         </div>
       </section>
+
+      <section className="section annual-pass-section" id="pass-annuel">
+        <div className="container annual-pass-panel">
+          <div className="annual-pass-heading">
+            <span className="badge">Année scolaire complète</span>
+            <h2 className="font-display">{ANNUAL_PASS_NAME}</h2>
+            <p className="annual-pass-lead">
+              Accédez à l'ensemble des cours pendant 365 jours, avancez module après module et retrouvez tous vos
+              contenus dans un espace étudiant personnel dès confirmation du paiement.
+            </p>
+          </div>
+          <aside className="annual-pass-aside" aria-label="Achat du pass annuel">
+            <p className="pass-price">
+              <strong>{formatPrice(9900)}</strong>
+              <span>conseillés / participation libre</span>
+            </p>
+            <BuyCourseButton />
+            <p className="payment-note">
+              <ShieldCheck size={17} /> Paiement sécurisé par PayPal. Activation automatique du pass après confirmation.
+            </p>
+            <p className="payment-note">
+              <CreditCard size={17} /> Vous pouvez ajuster librement le montant dans la fenêtre de paiement selon vos moyens.
+            </p>
+          </aside>
+          <div className="annual-pass-main">
+            <div className="pass-stat-grid" aria-label="Contenu du pass annuel">
+              <span><strong>{courses.length || 10}</strong><small>cours inclus</small></span>
+              <span><strong>{totalModules || 50}</strong><small>modules</small></span>
+              <span><strong>{totalHours || 125}h</strong><small>environ</small></span>
+              <span><strong>365</strong><small>jours d'accès</small></span>
+            </div>
+            <div className="pass-checklist">
+              {passHighlights.map(item => (
+                <span key={item}><CheckCircle2 size={18} /> {item}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section" id="programme-inclus">
+        <div className="container">
+          <div className="programme-head">
+            <span className="hero-eyebrow">Programme inclus dans le pass</span>
+            <h2 className="section-title">Un cursus complet pour comprendre, répondre et transmettre</h2>
+            <p className="subtitle center">
+              Chaque cours est inclus dans le pass annuel. Les cartes ci-dessous vous donnent le périmètre concret
+              avant achat : thème, durée, modules, intervenant et certification associée.
+            </p>
+          </div>
+          <div className="grid-2 course-included-grid">
+            {courses.map(course => (
+              <article className="course-included-card" key={course.id}>
+                <div className="course-included-top">
+                  <span className="badge">{course.niveau}</span>
+                  <strong>Inclus dans le pass</strong>
+                </div>
+                <h3 className="font-display">{course.titre}</h3>
+                <p className="muted">{course.description}</p>
+                <p className="course-included-meta">
+                  <span><Clock size={16} /> {formatDuration(course.duree_totale)}</span>
+                  <span><BookOpen size={16} /> {course.nb_modules} modules</span>
+                  <span><User size={16} /> {course.auteur_nom || "Institut Saint Irénée"}</span>
+                  <span><Award size={16} /> Certificat</span>
+                </p>
+                <Link className="feature-link" href="/formations?checkout=annual-pass">
+                  Accéder avec le pass annuel <ArrowRight size={14} />
+                </Link>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="section">
         <div className="container" style={{ maxWidth: 1040 }}>
-          <h2 className="section-title">Choisir un cours d'apologétique catholique</h2>
+          <h2 className="section-title">Comment le cursus est construit</h2>
           <p className="subtitle">
             L'apologétique ne se résume pas à quelques réponses mémorisées. Une formation solide commence par les
             fondements, puis approfondit les questions bibliques, historiques, philosophiques et contemporaines.
@@ -115,53 +240,27 @@ export default async function FormationsPage() {
           </p>
         </div>
       </section>
-      <section className="section">
-        <div className="container" style={{ maxWidth: 980 }}>
-          <div className="card" style={{ padding: 34 }}>
-            <span className="badge">Année scolaire complète</span>
-            <h2 className="font-display" style={{ color: "var(--navy)", fontSize: "2rem" }}>{ANNUAL_PASS_NAME}</h2>
-            <p className="subtitle">
-              Un accès illimité pendant 365 jours à l'ensemble du cursus, aux cours déjà publiés et aux nouveaux contenus
-              ajoutés pendant votre année scolaire.
-            </p>
-            <p style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-              <span><CheckCircle2 size={17} color="#22c55e" /> Cursus progressif</span>
-              <span><CheckCircle2 size={17} color="#22c55e" /> Parchemins de connaissance</span>
-              <span><CheckCircle2 size={17} color="#22c55e" /> Examen final</span>
-              <span><CheckCircle2 size={17} color="#22c55e" /> Certificat nominatif</span>
-            </p>
-            <div className="course-card-actions">
-              <strong style={{ color: "var(--navy)", fontSize: "1.4rem" }}>{formatPrice(9900)} conseillés / participation libre</strong>
-              <BuyCourseButton />
-            </div>
+
+      <section className="section pass-reassurance-section">
+        <div className="container">
+          <h2 className="section-title">Ce qui sécurise votre inscription</h2>
+          <div className="grid-4 reassurance-grid">
+            {reassuranceItems.map(([title, text]) => (
+              <article className="reassurance-item" key={title}>
+                <ShieldCheck size={26} />
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </article>
+            ))}
           </div>
+          <p className="center" style={{ marginTop: 34 }}>
+            <Link className="btn btn-gold" href="/formations?checkout=annual-pass">
+              Obtenir le pass annuel <ArrowRight size={17} />
+            </Link>
+          </p>
         </div>
       </section>
-      <section className="section">
-        <div className="container grid-2">
-          {courses.map(course => (
-            <div className="card" key={course.id} style={{ padding: 30 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
-                <h2 className="font-display" style={{ color: "var(--navy)", marginTop: 0 }}>{course.titre}</h2>
-                <strong style={{ color: "var(--navy)", fontSize: "1.35rem", textAlign: "right" }}>
-                  Inclus
-                  <small style={{ display: "block", fontSize: ".82rem", color: "var(--muted)", fontWeight: 700 }}>dans le pass annuel</small>
-                </strong>
-              </div>
-              <p className="muted">{course.description}</p>
-              <p style={{ display: "flex", gap: 14, flexWrap: "wrap", color: "var(--muted)" }}>
-                <span><Clock size={16} /> {formatDuration(course.duree_totale)}</span>
-                <span><BookOpen size={16} /> {course.nb_modules} modules</span>
-                <span><User size={16} /> {course.auteur_nom || "Institut Saint Irénée"}</span>
-                <span><Award size={16} /> Certificat</span>
-              </p>
-              <div className="course-card-actions">
-                <Link className="btn btn-outline" href={`/cours/${course.slug}`}>Voir le cours <ArrowRight size={16} /></Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+
       <section className="section">
         <div className="container" style={{ maxWidth: 900 }}>
           <h2 className="section-title">Questions fréquentes sur les formations</h2>

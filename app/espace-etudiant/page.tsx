@@ -153,7 +153,7 @@ export default function StudentSpacePage() {
         {payload.annualPass && (
           <div className="card" style={{ padding: 26, marginBottom: 28 }}>
             <span className="badge">Année scolaire active</span>
-            <h2 className="font-display" style={{ color: "var(--navy)" }}>Pass annuel de l'institut d'apologétique saint Irénée</h2>
+            <h2 className="font-display" style={{ color: "var(--navy)" }}>Pass annuel de l'Institut d'Apologétique Saint Irénée</h2>
             <p className="muted">Accès illimité au cursus jusqu'au {new Date(payload.annualPass.expires_at).toLocaleDateString("fr-FR")}.</p>
             <p><strong>{payload.curriculum?.completedCourses || 0} / {payload.curriculum?.totalCourses || activeCourses.length}</strong> cours entièrement suivis.</p>
             <Link className="btn btn-primary" href="/examen-final"><GraduationCap size={18} /> {payload.finalExam?.eligible ? "Présenter l'examen final" : "Voir les conditions de l'examen"}</Link>

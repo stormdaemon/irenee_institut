@@ -1,16 +1,30 @@
 "use client";
 
 import { HandHeart, X } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const donationUrl = "https://www.paypal.com/ncp/payment/4TJJK3C697B9A";
 const storageKey = "irenee-donation-prompt-dismissed";
-const promptDelay = 15000;
+const promptDelay = 45000;
+
+function isConversionPath(pathname: string | null) {
+  return Boolean(
+    pathname === "/" ||
+    pathname?.startsWith("/formations") ||
+    pathname?.startsWith("/auth") ||
+    pathname?.startsWith("/paiement") ||
+    pathname?.startsWith("/cgv")
+  );
+}
 
 export function DonationPrompt() {
   const [visible, setVisible] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
+    if (isConversionPath(pathname)) return;
+
     try {
       if (sessionStorage.getItem(storageKey)) return;
     } catch {
@@ -19,7 +33,7 @@ export function DonationPrompt() {
 
     const timer = window.setTimeout(() => setVisible(true), promptDelay);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     if (!visible) return;

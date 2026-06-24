@@ -29,7 +29,7 @@ export default async function TermsPage() {
           <article className="card" style={{ padding: 34 }}>
             <div className="legal-content" dangerouslySetInnerHTML={{ __html: markdownToHtml(page.content) }} />
           </article>
-          <p style={{ marginTop: 24 }}><Link href="/auth/signup" className="btn btn-primary">S'inscrire</Link></p>
+          <p style={{ marginTop: 24 }}><Link href="/formations?checkout=annual-pass" className="btn btn-primary">Obtenir le pass annuel</Link></p>
         </div>
       </section>
     </>
