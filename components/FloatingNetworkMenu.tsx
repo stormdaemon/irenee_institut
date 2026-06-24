@@ -96,7 +96,7 @@ export function FloatingNetworkMenu() {
   const pathname = usePathname();
   const isConversion = isConversionPath(pathname);
   const visibleContactLinks = isConversion ? contactLinks.filter(link => !link.featured) : contactLinks;
-  const mobileLinks = isConversion ? visibleContactLinks : [...networkLinks, ...visibleContactLinks];
+  const mobileLinks = [...networkLinks, ...visibleContactLinks];
 
   useEffect(() => {
     return () => {
@@ -129,41 +129,37 @@ export function FloatingNetworkMenu() {
 
   return (
     <>
-      {!isConversion && (
-        <aside className="floating-network" aria-label="Sites amis">
-          <div className="floating-network-inner">
-            {networkLinks.map(link => (
-              <a className="network-link" href={link.href} target="_blank" rel="noreferrer" key={link.href}>
-                <span className="network-icon">
-                  <FloatingIcon link={link} size={64} />
-                </span>
-                <span>{link.label}</span>
-              </a>
-            ))}
-          </div>
-        </aside>
-      )}
+      <aside className="floating-network" aria-label="Sites amis">
+        <div className="floating-network-inner">
+          {networkLinks.map(link => (
+            <a className="network-link" href={link.href} target="_blank" rel="noreferrer" key={link.href}>
+              <span className="network-icon">
+                <FloatingIcon link={link} size={64} />
+              </span>
+              <span>{link.label}</span>
+            </a>
+          ))}
+        </div>
+      </aside>
 
-      {!isConversion && (
-        <aside className="floating-contact" aria-label="Contact rapide">
-          <div className="floating-contact-inner">
-            {visibleContactLinks.map(link => (
-              <a
-                className={`contact-float-link ${link.featured ? "is-featured" : ""}`}
-                href={link.href}
-                target={link.external ? "_blank" : undefined}
-                rel={link.external ? "noreferrer" : undefined}
-                key={link.href}
-              >
-                <span className="contact-float-icon">
-                  <FloatingIcon link={link} size={64} />
-                </span>
-                <span>{link.label}</span>
-              </a>
-            ))}
-          </div>
-        </aside>
-      )}
+      <aside className="floating-contact" aria-label="Contact rapide">
+        <div className="floating-contact-inner">
+          {visibleContactLinks.map(link => (
+            <a
+              className={`contact-float-link ${link.featured ? "is-featured" : ""}`}
+              href={link.href}
+              target={link.external ? "_blank" : undefined}
+              rel={link.external ? "noreferrer" : undefined}
+              key={link.href}
+            >
+              <span className="contact-float-icon">
+                <FloatingIcon link={link} size={64} />
+              </span>
+              <span>{link.label}</span>
+            </a>
+          ))}
+        </div>
+      </aside>
 
       <div className={`mobile-float-hub ${isConversion ? "is-conversion" : ""} ${mobileOpen ? "is-open" : ""} ${mobileClosing ? "is-closing" : ""}`}>
         <button
