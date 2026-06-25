@@ -102,7 +102,7 @@ export default async function FormateursPage() {
       <section className="section about-direction-section">
         <div className="container center">
           <h2 className="section-title">Direction</h2>
-          <div className="grid-2 about-directors">
+          <div className="about-directors">
             <article className="card about-director-card">
               <div className="about-director-photo">
                 <Image src={samuelPhotoUrl} alt="Samuel Armanios" fill sizes="150px" style={{ objectFit: "cover", objectPosition: "52% 14%", transform: "scale(1.62)" }} />
@@ -118,6 +118,14 @@ export default async function FormateursPage() {
               <span className="badge">Directeur du développement</span>
               <h3>Théo Lafont</h3>
               <p className="muted">Assure le suivi opérationnel des inscriptions et le développement complet de la plateforme de l'institut.</p>
+            </article>
+            <article className="card about-director-card">
+              <div className="about-director-photo">
+                <Image src="/images/frere-jean-emmanuel-de-ena.png" alt="Frère Jean Emmanuel" fill sizes="150px" style={{ objectFit: "cover", objectPosition: "50% 50%" }} />
+              </div>
+              <span className="badge">Directeur des études</span>
+              <h3>Frère Jean Emmanuel</h3>
+              <p className="muted">Accompagne l'exigence académique et spirituelle du parcours d'apologétique.</p>
             </article>
           </div>
         </div>

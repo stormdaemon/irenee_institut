@@ -6,11 +6,11 @@ import {
   formatVisioWhen
 } from "./live-sessions";
 
-test("the September schedule lists the five announced sessions", () => {
+test("the December schedule lists the five announced sessions", () => {
   assert.equal(VISIO_SESSIONS.length, 5);
   assert.deepEqual(
     VISIO_SESSIONS.map(session => session.isoDate),
-    ["2026-09-02", "2026-09-09", "2026-09-16", "2026-09-23", "2026-09-30"]
+    ["2026-12-02", "2026-12-09", "2026-12-16", "2026-12-23", "2026-12-30"]
   );
 });
 
@@ -41,11 +41,11 @@ test("the three patristic readings expect dedicated static illustrations", () =>
 });
 
 test("formatVisioDate decomposes an ISO date into French parts", () => {
-  assert.deepEqual(formatVisioDate("2026-09-02"), {
+  assert.deepEqual(formatVisioDate("2026-12-02"), {
     weekday: "mercredi",
     day: 2,
-    month: "septembre",
-    monthShort: "sept"
+    month: "décembre",
+    monthShort: "déc."
   });
 });
 
@@ -56,6 +56,6 @@ test("formatVisioDate rejects malformed dates", () => {
 test("formatVisioWhen renders a capitalized, human-readable label", () => {
   assert.equal(
     formatVisioWhen(VISIO_SESSIONS[0]),
-    "Mercredi 2 septembre · 20h30"
+    "Mercredi 2 décembre · 20h30"
   );
 });

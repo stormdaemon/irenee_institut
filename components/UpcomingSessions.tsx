@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BookOpen, Radio, User, Video } from "lucide-react";
+import { ArrowRight, BookOpen, Phone, Radio, User, Video } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   VISIO_SESSIONS,
@@ -96,10 +96,14 @@ export function UpcomingSessions() {
           <span className="hero-eyebrow">
             <Radio size={16} /> En direct &middot; chaque mercredi à 20h30
           </span>
-          <h2 className="visio-title font-display">Les séances en visio reprennent en septembre</h2>
+          <h2 className="visio-title font-display">Les rencontres commenceront en décembre 2026</h2>
           <p className="visio-lead">
             Chaque mercredi soir, la promotion se retrouve en direct depuis le site pour travailler,
-            échanger et lire ensemble les Pères de l&apos;Église. Voici les premières séances de la rentrée.
+            échanger et lire ensemble les Pères de l&apos;Église. Voici les premières rencontres annoncées.
+          </p>
+          <p className="visio-contact-note">
+            <Phone size={17} />
+            <span>Pour toute autre question, appelez le <a href="tel:+33171681538">01.71.68.15.38</a>.</span>
           </p>
         </div>
 

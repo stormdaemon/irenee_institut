@@ -62,11 +62,11 @@ const slides: Slide[] = [
     eyebrow: "Direct",
     title: "Une année accompagnée en direct",
     body:
-      "De septembre à juillet, des sessions en direct rythment l'année. Elles permettent de retrouver les intervenants, poser vos questions, approfondir les thèmes du programme et avancer avec les autres étudiants.",
+      "À partir de décembre 2026, des sessions en direct rythment l'année. Elles permettent de retrouver les intervenants, poser vos questions, approfondir les thèmes du programme et avancer avec les autres étudiants.",
     image: "/images/irenee-feature-3.png",
     imagePosition: "52% 50%",
     proof: "Vous n'avancez pas seul.",
-    highlights: ["Septembre à juillet", "Questions", "Promotion"]
+    highlights: ["Dès décembre 2026", "Questions", "Promotion"]
   },
   {
     eyebrow: "Abbaye",

@@ -61,9 +61,14 @@ function normalizePublicTrainer(profile: Profile): Profile {
   };
 }
 
+function cleanPublicCourseTitle(title: string) {
+  return title.replace(/\s+et ses fractures\b/iu, "").trim();
+}
+
 function normalizeCourse(course: RawCourse, modules: CourseModule[] = []): Course {
   return {
     ...course,
+    titre: cleanPublicCourseTitle(course.titre),
     auteur_nom: course.auteur_nom && isExcludedPublicName(course.auteur_nom) ? "Institut Saint Irénée" : course.auteur_nom,
     description: course.description || "",
     niveau: course.niveau || "debutant",
@@ -82,7 +87,7 @@ function normalizeModule(module: RawModule): CourseModule {
   return {
     id: module.id,
     course_id: module.course_id,
-    titre: module.titre,
+    titre: cleanPublicCourseTitle(module.titre),
     description: module.description || "",
     ordre: module.ordre ?? 0,
     duree: Number(module.duree || 0),

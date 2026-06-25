@@ -102,7 +102,7 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
     return (
       <>
         <Link href={loginHref} className="btn btn-outline" onClick={onNavigate}>Se connecter</Link>
-        <Link href="/formations?checkout=annual-pass" className="btn btn-primary" onClick={onNavigate}>Pass annuel</Link>
+        <Link href="/formations?checkout=annual-pass" className="btn btn-primary" onClick={onNavigate}>S'inscrire</Link>
       </>
     );
   }

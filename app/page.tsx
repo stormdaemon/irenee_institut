@@ -75,6 +75,9 @@ export default async function HomePage() {
       <section className="hero-band home-hero">
         <div className="container">
           <div className="hero-content">
+            <div className="hero-elearning-logo" aria-label="E-learning">
+              <Image src="/images/logo-elearning.png" alt="Logo e-learning" width={220} height={189} priority />
+            </div>
             <span className="hero-eyebrow">Rentrée académique 2026 · inscriptions ouvertes</span>
             <h1 className="font-display hero-title">
               <span className="hero-title-desktop">Institut d'Apologétique<br /><span>Saint Irénée</span></span>
@@ -88,6 +91,10 @@ export default async function HomePage() {
             <p className="hero-lead">
               Approfondissez votre foi catholique et apprenez à la défendre avec rigueur et bienveillance grâce à nos formations en ligne dispensées par des experts catholiques.
             </p>
+            <div className="hero-proof-points" aria-label="Points clés de la formation">
+              <span>Première formation francophone en apologétique</span>
+              <span>Rencontres en direct à partir de décembre 2026</span>
+            </div>
             <div className="hero-actions">
               <Link className="btn btn-primary" href="/formations?checkout=annual-pass">
                 Obtenir le pass annuel <ArrowRight size={18} />

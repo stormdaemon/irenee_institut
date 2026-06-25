@@ -62,6 +62,8 @@ const formationQuestions = [
 ];
 
 const passHighlights = [
+  "Première formation francophone en apologétique",
+  "Rencontres en direct à partir de décembre 2026",
   "Accès complet au cursus pendant 365 jours",
   "Cours déjà publiés et nouveaux contenus de l'année",
   "Progression visible dans l'espace étudiant",
@@ -129,6 +131,10 @@ export default async function FormationsPage() {
             Un pass annuel pour accéder au cursus complet : fondements, Écritures, histoire, objections, science,
             philosophie, morale et dialogue interreligieux.
           </p>
+          <div className="formation-hero-highlights">
+            <span>Première formation francophone en apologétique</span>
+            <span>Rencontres en direct dès décembre 2026</span>
+          </div>
           <div className="hero-actions formation-hero-actions">
             <Link className="btn btn-gold" href="/formations?checkout=annual-pass">
               Obtenir le pass annuel <ArrowRight size={18} />

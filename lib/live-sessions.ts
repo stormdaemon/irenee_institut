@@ -1,4 +1,4 @@
-// Planning éditorial des séances en visio hebdomadaires de la rentrée.
+// Planning éditorial des séances en visio hebdomadaires de décembre 2026.
 // Données statiques : ces dates sont annoncées publiquement sur la page d'accueil.
 // L'accès effectif aux salles se gère via /espace-etudiant (cf. NextLiveSession).
 
@@ -17,6 +17,8 @@ const FR_MONTHS = [
   "novembre",
   "décembre"
 ];
+
+const FR_MONTH_SHORTS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 
 // Photo de Samuel Armanios, identique à celle utilisée sur la page équipe.
 export const SAMUEL_PHOTO_URL =
@@ -39,7 +41,7 @@ export type VisioSession = {
 
 export const VISIO_SESSIONS: VisioSession[] = [
   {
-    isoDate: "2026-09-02",
+    isoDate: "2026-12-02",
     time: "20h30",
     title: "Rentrée et présentation des inscrits",
     description:
@@ -50,7 +52,7 @@ export const VISIO_SESSIONS: VisioSession[] = [
     kind: "person"
   },
   {
-    isoDate: "2026-09-09",
+    isoDate: "2026-12-09",
     time: "20h30",
     title: "Présentation du site et de la plateforme",
     description:
@@ -61,7 +63,7 @@ export const VISIO_SESSIONS: VisioSession[] = [
     kind: "person"
   },
   {
-    isoDate: "2026-09-16",
+    isoDate: "2026-12-16",
     time: "20h30",
     title: "Lecture de la Didachè",
     description:
@@ -72,7 +74,7 @@ export const VISIO_SESSIONS: VisioSession[] = [
     kind: "reading"
   },
   {
-    isoDate: "2026-09-23",
+    isoDate: "2026-12-23",
     time: "20h30",
     title: "Lecture de la Lettre à Diognète",
     description:
@@ -83,7 +85,7 @@ export const VISIO_SESSIONS: VisioSession[] = [
     kind: "reading"
   },
   {
-    isoDate: "2026-09-30",
+    isoDate: "2026-12-30",
     time: "20h30",
     title: "Lecture des lettres de Clément de Rome",
     description:
@@ -115,11 +117,11 @@ export function formatVisioDate(isoDate: string): VisioDateParts {
     weekday: FR_WEEKDAYS[date.getUTCDay()],
     day,
     month: monthName,
-    monthShort: monthName.slice(0, 4)
+    monthShort: FR_MONTH_SHORTS[month - 1]
   };
 }
 
-// Libellé prêt à l'affichage : "Mercredi 2 septembre · 20h30".
+// Libellé prêt à l'affichage : "Mercredi 2 décembre · 20h30".
 export function formatVisioWhen(session: VisioSession): string {
   const { weekday, day, month } = formatVisioDate(session.isoDate);
   const capitalized = weekday.charAt(0).toUpperCase() + weekday.slice(1);
