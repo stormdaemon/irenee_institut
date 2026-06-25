@@ -1836,7 +1836,6 @@ label { display: block; font-weight: 700; font-size: .9rem; margin-bottom: 8px; 
 
 @media (max-width: 1120px) {
   .phone-link { display: none; }
-  .brand span span { display: none; }
 }
 
 @media (max-width: 900px) {
@@ -2008,8 +2007,8 @@ h3 {
 }
 
 .header-row {
-  min-height: 116px;
-  gap: 30px;
+  min-height: 84px;
+  gap: 24px;
 }
 
 .header-ornament {
@@ -2055,56 +2054,62 @@ h3 {
 }
 
 .brand {
-  gap: 18px;
-  flex: 0 1 300px;
+  gap: 12px;
+  flex: 0 0 360px;
+  max-width: 360px;
   min-width: 0;
 }
 
 .brand-copy {
+  display: grid;
+  gap: 3px;
   min-width: 0;
 }
 
 .brand-seal {
   display: grid;
   place-items: center;
-  width: 86px;
-  height: 86px;
+  width: 62px;
+  height: 62px;
   border-radius: 999px;
   background: radial-gradient(circle, rgba(240, 207, 138, .18), rgba(220, 180, 107, .04) 62%, transparent);
 }
 
 .brand img {
-  width: 78px;
-  height: 78px;
+  width: 58px;
+  height: 58px;
   filter: none;
 }
 
 .brand strong {
   color: #fff7e7;
-  font-size: clamp(1.32rem, 1.55vw, 1.72rem);
-  line-height: .98;
-  white-space: normal;
+  overflow: hidden;
+  font-size: clamp(1.24rem, 1.28vw, 1.48rem);
+  line-height: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .brand span {
   color: #e8d8b9;
-  font-size: .92rem;
-  line-height: 1.25;
+  font-size: .74rem;
+  line-height: 1.12;
+  white-space: normal;
 }
 
 .nav {
   flex: 1;
   justify-content: center;
-  gap: clamp(24px, 3.3vw, 56px);
+  gap: clamp(18px, 2.6vw, 42px);
   font-weight: 500;
   color: #fff0d5;
-  font-size: 1.08rem;
+  font-size: 1.02rem;
 }
 
 .nav-link {
-  min-width: 84px;
+  min-width: auto;
   justify-content: center;
-  padding: 14px 0 20px;
+  padding: 12px 0 18px;
   transition: color .18s ease, transform .18s ease;
 }
 
@@ -3851,7 +3856,8 @@ label {
   }
 
   .brand {
-    min-width: auto;
+    flex-basis: 290px;
+    max-width: 290px;
   }
 
   .nav {
@@ -3870,31 +3876,33 @@ label {
   }
 
   .header-row {
+    min-height: 78px;
     gap: 16px;
   }
 
   .brand {
-    flex-basis: 246px;
+    flex-basis: 330px;
+    max-width: 330px;
     min-width: 0;
     gap: 12px;
   }
 
   .brand-seal {
-    width: 70px;
-    height: 70px;
+    width: 58px;
+    height: 58px;
   }
 
   .brand img {
-    width: 66px;
-    height: 66px;
+    width: 54px;
+    height: 54px;
   }
 
   .brand strong {
-    font-size: 1.32rem;
+    font-size: 1.26rem;
   }
 
-  .brand span {
-    font-size: .86rem;
+  .brand-copy > span {
+    font-size: .68rem;
   }
 
   .nav {
@@ -3915,8 +3923,26 @@ label {
   }
 
   .main-header .btn {
-    min-height: 44px;
-    padding: 0 16px;
+    min-height: 42px;
+    padding: 0 14px;
+  }
+}
+
+@media (min-width: 1181px) and (max-width: 1320px) {
+  .brand {
+    flex-basis: 315px;
+    max-width: 315px;
+  }
+
+  .nav {
+    gap: 14px;
+  }
+}
+
+@media (max-width: 1120px) {
+  .floating-network,
+  .floating-contact {
+    display: none;
   }
 }
 
@@ -4456,7 +4482,8 @@ label {
   }
 
   .brand-copy > span {
-    display: none;
+    font-size: .62rem;
+    line-height: 1.08;
   }
 
   .nav-actions {
@@ -5951,7 +5978,6 @@ label {
     text-overflow: ellipsis;
   }
 
-  .brand-copy > span,
   .nav,
   .phone-link,
   .desktop-user-menu,

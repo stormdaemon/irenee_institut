@@ -33,7 +33,7 @@ export function Header() {
             <Image src="/images/logo_without_text.png" alt="Institut Saint Irénée" width={78} height={78} priority />
           </span>
           <span className="brand-copy">
-            <strong>Institut Saint<br />Irénée</strong>
+            <strong>Institut Saint Irénée</strong>
             <span>Rendre compte de la crédibilité<br />de la foi catholique</span>
           </span>
         </Link>
