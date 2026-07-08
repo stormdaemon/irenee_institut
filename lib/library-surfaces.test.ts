@@ -10,6 +10,20 @@ function source(path: string) {
   return readFileSync(join(root, path), "utf8");
 }
 
+function publicAsset(path: string) {
+  return readFileSync(join(root, "public", path));
+}
+
+function pngDimensions(path: string) {
+  const image = publicAsset(path);
+  assert.equal(image.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+
+  return {
+    width: image.readUInt32BE(16),
+    height: image.readUInt32BE(20)
+  };
+}
+
 test("homepage exposes the EIDM, library, live training and patristic session feature cards", () => {
   const homepage = source("app/page.tsx");
   assert.match(homepage, /L'EIDM devient l'Institut Saint Irénée/);
@@ -19,6 +33,36 @@ test("homepage exposes the EIDM, library, live training and patristic session fe
   assert.match(homepage, /Rentrée académique 2026/);
   assert.match(homepage, /https:\/\/youtu\.be\/AsclUFsCoAM\?is=Vxx2XTJ5DOkgPGh9/);
   assert.doesNotMatch(homepage, /hero-cross/);
+});
+
+test("homepage uses the requested e-learning logo asset", () => {
+  const homepage = source("app/page.tsx");
+
+  assert.match(homepage, /src="\/images\/logo-elearning\.png"/);
+  assert.deepEqual(pngDimensions("images/logo-elearning.png"), { width: 1754, height: 861 });
+});
+
+test("team page lists Vivien Hoch with the requested theological specialties", () => {
+  const teamPage = source("app/equipe/page.tsx");
+
+  assert.match(teamPage, /Vivien Hoch/);
+  assert.match(teamPage, /philosophie/i);
+  assert.match(teamPage, /vocabulaire théologique/i);
+  assert.match(teamPage, /nature, substance et personne/i);
+  assert.match(teamPage, /\/images\/vivien-hoch\.jpg/);
+
+  const photo = publicAsset("images/vivien-hoch.jpg");
+  assert.equal(photo[0], 0xff);
+  assert.equal(photo[1], 0xd8);
+});
+
+test("team member cards can shrink without horizontal mobile overflow", () => {
+  const teamPage = source("app/equipe/page.tsx");
+  const styles = source("app/globals.css");
+
+  assert.match(teamPage, /className="card team-member-card"/);
+  assert.match(styles, /\.team-member-card\s*\{[^}]*min-width:\s*0/);
+  assert.match(styles, /\.team-member-card :is\(h2, p, strong, a\)\s*\{[^}]*overflow-wrap:\s*anywhere/);
 });
 
 test("planning cards expose the participation CTA only for connected student profiles", () => {

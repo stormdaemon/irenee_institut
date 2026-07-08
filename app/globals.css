@@ -4693,6 +4693,19 @@ label {
   gap: 14px;
 }
 
+.team-member-card {
+  min-width: 0;
+}
+
+.team-member-card > div:first-child,
+.team-member-card > div:first-child > div {
+  min-width: 0;
+}
+
+.team-member-card :is(h2, p, strong, a) {
+  overflow-wrap: anywhere;
+}
+
 .about-director-photo {
   position: relative;
   width: 150px;

@@ -74,6 +74,20 @@ const staticTeamMembers: TeamMember[] = [
     },
     tags: ["Christologie", "Théologie", "Transmission"],
     title: "Module christologie"
+  },
+  {
+    achievements: [
+      "Philosophie",
+      "Vocabulaire théologique",
+      "Nature, substance et personne"
+    ],
+    description:
+      "Vivien Hoch intervient sur la philosophie et le vocabulaire théologique, en particulier les notions de nature, substance et personne, afin d'aider les étudiants à manier ces distinctions avec précision.",
+    image: "/images/vivien-hoch.jpg",
+    imagePosition: "22% 50%",
+    name: "Vivien Hoch",
+    tags: ["Philosophie", "Vocabulaire théologique", "Nature", "Substance", "Personne"],
+    title: "Philosophie et vocabulaire théologique"
   }
 ];
 
@@ -139,7 +153,7 @@ export default async function FormateursPage() {
           </p>
           <div className="grid-2" style={{ textAlign: "left" }}>
             {trainers.map(trainer => (
-              <article className="card" key={trainer.id} style={{ padding: 28 }}>
+              <article className="card team-member-card" key={trainer.id} style={{ padding: 28 }}>
                 <div style={{ display: "flex", gap: 22, alignItems: "center" }}>
                   <Image
                     src={formatDbAvatar(trainer) || "/images/guillaume-maspero.jpg"}
@@ -164,7 +178,7 @@ export default async function FormateursPage() {
               </article>
             ))}
             {staticTeamMembers.map(member => (
-              <article className="card" key={member.name} style={{ padding: 28 }}>
+              <article className="card team-member-card" key={member.name} style={{ padding: 28 }}>
                 <div style={{ display: "flex", gap: 22, alignItems: "center" }}>
                   <Image
                     src={member.image}
