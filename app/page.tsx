@@ -46,7 +46,7 @@ const features = [
   {
     title: "L'EIDM devient l'Institut Saint Irénée",
     text: "L'élan de l'EIDM se poursuit dans un institut structuré pour former, accompagner et transmettre la foi catholique avec clarté.",
-    image: "/images/eidm-institut-saint-irenee.png",
+    image: "/images/eidm-institut-saint-irenee.webp",
     imagePosition: "50% 42%",
     icon: "/images/irenee-feature-medallion-teacher.png",
     iconLeft: "50%",
@@ -56,7 +56,7 @@ const features = [
   {
     title: "Bibliothèque d'école apologétique",
     text: "Une bibliothèque réservée aux étudiants pour demander le livre apologétique de leur choix après une adhésion annuelle de 15 EUR.",
-    image: "/images/irenee-feature-1.png",
+    image: "/images/irenee-feature-1.webp",
     imagePosition: "50% 50%",
     icon: "/images/irenee-feature-medallion-library.png",
     iconLeft: "50%",
@@ -66,7 +66,7 @@ const features = [
   {
     title: "Formation en direct chaque semaine",
     text: "Un soir par semaine, les étudiants retrouvent une séance en visio depuis le site pour travailler, questionner et progresser ensemble.",
-    image: "/images/irenee-feature-3.png",
+    image: "/images/irenee-feature-3.webp",
     imagePosition: "50% 50%",
     icon: "/images/irenee-feature-medallion-3.png",
     iconLeft: "50%",
@@ -76,7 +76,7 @@ const features = [
   {
     title: "Sessions patristiques en abbaye",
     text: "Des sessions de 5 jours autour d'un thème différent, des conciles et des Pères de l'Église, pour étudier avec un expert.",
-    image: "/images/cloitre-sessions-patristiques.png",
+    image: "/images/cloitre-sessions-patristiques.webp",
     imagePosition: "50% 50%",
     icon: "/images/irenee-feature-medallion-abbey.png",
     iconLeft: "50%",
@@ -90,6 +90,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <link rel="preload" as="image" href="/images/irenee-hero-cathedral.webp" type="image/webp" fetchPriority="high" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(presentationVideoJsonLd) }} />
 
       <section className="hero-band home-hero">

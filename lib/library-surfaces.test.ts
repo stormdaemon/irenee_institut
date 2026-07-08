@@ -14,6 +14,17 @@ function publicAsset(path: string) {
   return readFileSync(join(root, "public", path));
 }
 
+function assetSize(path: string) {
+  return publicAsset(path).length;
+}
+
+function assertWebpAsset(path: string, maxBytes: number) {
+  const image = publicAsset(path);
+  assert.equal(image.subarray(0, 4).toString("utf8"), "RIFF");
+  assert.equal(image.subarray(8, 12).toString("utf8"), "WEBP");
+  assert.ok(image.length <= maxBytes, `${path} is ${image.length} bytes`);
+}
+
 function cssRule(styles: string, selector: string) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return styles.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`))?.[1] || "";
@@ -76,6 +87,38 @@ test("hero proof points read as editorial text instead of button-like pills", ()
   assert.match(proofPointRule, /box-shadow:\s*none/);
   assert.doesNotMatch(proofPointRule, /cursor:\s*pointer/);
   assert.match(styles, /\.hero-proof-points span::before\s*\{[^}]*content:\s*""/);
+});
+
+test("homepage uses optimized WebP assets for heavy visual backgrounds", () => {
+  const homepage = source("app/page.tsx");
+  const styles = source("app/globals.css");
+  const onboarding = source("components/OnboardingGate.tsx");
+
+  for (const asset of [
+    "eidm-institut-saint-irenee",
+    "irenee-feature-1",
+    "irenee-feature-3",
+    "cloitre-sessions-patristiques"
+  ]) {
+    assert.match(homepage, new RegExp(`/images/${asset}\\.webp`));
+    assert.match(onboarding, new RegExp(`/images/${asset}\\.webp`));
+  }
+
+  assert.match(styles, /url\("\/images\/irenee-hero-cathedral\.webp"\)/);
+  assert.match(styles, /url\("\/images\/irenee-parchment-quote-clean\.webp"\)/);
+  assert.match(homepage, /rel="preload"[\s\S]*\/images\/irenee-hero-cathedral\.webp[\s\S]*fetchPriority="high"/);
+  assert.match(onboarding, /\/images\/irenee-hero-cathedral\.webp/);
+  assert.match(onboarding, /\/images\/irenee-parchment-quote-clean\.webp/);
+
+  assertWebpAsset("images/irenee-hero-cathedral.webp", 420_000);
+  assertWebpAsset("images/eidm-institut-saint-irenee.webp", 320_000);
+  assertWebpAsset("images/cloitre-sessions-patristiques.webp", 360_000);
+  assertWebpAsset("images/irenee-parchment-quote-clean.webp", 360_000);
+  assertWebpAsset("images/irenee-feature-1.webp", 170_000);
+  assertWebpAsset("images/irenee-feature-3.webp", 170_000);
+
+  assert.ok(assetSize("images/irenee-hero-cathedral.webp") < assetSize("images/irenee-hero-cathedral.png"));
+  assert.ok(assetSize("images/irenee-parchment-quote-clean.webp") < assetSize("images/irenee-parchment-quote-clean.png"));
 });
 
 test("team page lists Vivien Hoch with the requested theological specialties", () => {

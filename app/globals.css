@@ -2636,7 +2636,7 @@ label {
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(3, 10, 18, .86), rgba(3, 10, 18, .43), rgba(3, 10, 18, .78)),
-    url("/images/irenee-hero-cathedral.png") center / cover no-repeat !important;
+    url("/images/irenee-hero-cathedral.webp") center / cover no-repeat !important;
   border-bottom: 1px solid rgba(220, 180, 107, .5);
 }
 
@@ -3562,7 +3562,7 @@ label {
   padding: 18px 120px;
   color: #2a1708;
   text-align: center;
-  background: url("/images/irenee-parchment-quote-clean.png") center / 100% 100% no-repeat;
+  background: url("/images/irenee-parchment-quote-clean.webp") center / 100% 100% no-repeat;
   filter: drop-shadow(0 20px 30px rgba(0, 0, 0, .28));
 }
 
@@ -3587,7 +3587,7 @@ label {
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(4, 16, 29, .98), rgba(2, 8, 15, 1)),
-    url("/images/irenee-hero-cathedral.png") center bottom / cover no-repeat;
+    url("/images/irenee-hero-cathedral.webp") center bottom / cover no-repeat;
   border-top: 1px solid rgba(220, 180, 107, .55);
 }
 
