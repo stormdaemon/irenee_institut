@@ -91,6 +91,20 @@ const staticTeamMembers: TeamMember[] = [
   },
   {
     achievements: [
+      "Philosophie",
+      "Vocabulaire théologique",
+      "Nature, substance et personne"
+    ],
+    description:
+      "Vivien Hoch intervient sur la philosophie et le vocabulaire théologique, en particulier les notions de nature, substance et personne, afin d'aider les étudiants à manier ces distinctions avec précision.",
+    image: "/images/vivien-hoch.jpg",
+    imagePosition: "22% 50%",
+    name: "Vivien Hoch",
+    tags: ["Philosophie", "Vocabulaire théologique", "Nature", "Substance", "Personne"],
+    title: "Philosophie et vocabulaire théologique"
+  },
+  {
+    achievements: [
       "Module histoire de l'Église",
       "Agrégé d'histoire",
       "Travaux sur l'histoire religieuse du Var et de la Provence"
