@@ -2,12 +2,30 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
-import { ArrowRight, ExternalLink, Newspaper } from "lucide-react";
+import { ArrowRight, ExternalLink, Newspaper, PlayCircle } from "lucide-react";
 import { getCourses } from "@/lib/server-data";
-import { siteDescription } from "@/lib/seo";
+import { serializeJsonLd, siteDescription, siteUrl } from "@/lib/seo";
 import { UpcomingSessions } from "@/components/UpcomingSessions";
 
 export const dynamic = "force-dynamic";
+
+const presentationVideoPath = "/videos/presentation-institut-saint-irenee-samy.mp4";
+const presentationVideoUrl = `${siteUrl}${presentationVideoPath}`;
+const presentationVideoJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  name: "Présentation de l'Institut Saint Irénée",
+  description:
+    "Vidéo de présentation de l'Institut d'Apologétique Saint Irénée et de sa formation catholique en ligne.",
+  contentUrl: presentationVideoUrl,
+  embedUrl: `${siteUrl}/#presentation-video`,
+  thumbnailUrl: [`${siteUrl}/images/og-irenee.png`],
+  uploadDate: "2026-07-08",
+  inLanguage: "fr-FR",
+  publisher: {
+    "@id": `${siteUrl}/#organization`
+  }
+};
 
 export const metadata: Metadata = {
   title: {
@@ -72,6 +90,8 @@ export default async function HomePage() {
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(presentationVideoJsonLd) }} />
+
       <section className="hero-band home-hero">
         <div className="container">
           <div className="hero-content">
@@ -103,6 +123,24 @@ export default async function HomePage() {
                 Voir le programme
               </Link>
             </div>
+            <details className="hero-video-disclosure" id="presentation-video">
+              <summary className="hero-video-toggle">
+                <PlayCircle size={18} aria-hidden="true" />
+                <span>Voir la vidéo de présentation</span>
+              </summary>
+              <div className="hero-video-panel">
+                <video
+                  controls
+                  preload="none"
+                  playsInline
+                  aria-label="Vidéo de présentation de l'Institut Saint Irénée"
+                >
+                  <source src={presentationVideoPath} type="video/mp4" />
+                  Votre navigateur ne peut pas lire cette vidéo.{" "}
+                  <a href={presentationVideoPath}>Ouvrir la vidéo</a>.
+                </video>
+              </div>
+            </details>
           </div>
         </div>
       </section>

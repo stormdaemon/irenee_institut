@@ -42,6 +42,25 @@ test("homepage uses the requested e-learning logo asset", () => {
   assert.deepEqual(pngDimensions("images/logo-elearning.png"), { width: 1754, height: 861 });
 });
 
+test("homepage exposes Samy's presentation video in the hero without forcing autoplay", () => {
+  const homepage = source("app/page.tsx");
+
+  assert.match(homepage, /presentationVideoPath = "\/videos\/presentation-institut-saint-irenee-samy\.mp4"/);
+  assert.match(homepage, /className="hero-video-disclosure"/);
+  assert.match(homepage, /className="hero-video-toggle"/);
+  assert.match(homepage, /@type": "VideoObject"/);
+  assert.match(homepage, /serializeJsonLd\(presentationVideoJsonLd\)/);
+  assert.match(homepage, /<video[\s\S]*controls[\s\S]*preload="none"[\s\S]*playsInline/);
+  assert.doesNotMatch(homepage, /autoPlay/);
+});
+
+test("presentation video asset is available as the uploaded MP4", () => {
+  const video = publicAsset("videos/presentation-institut-saint-irenee-samy.mp4");
+
+  assert.equal(video.subarray(4, 8).toString("utf8"), "ftyp");
+  assert.ok(video.length > 60_000_000);
+});
+
 test("team page lists Vivien Hoch with the requested theological specialties", () => {
   const teamPage = source("app/equipe/page.tsx");
 
