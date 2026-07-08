@@ -2782,24 +2782,39 @@ label {
 .hero-proof-points {
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: 12px 24px;
   flex-wrap: wrap;
-  max-width: 900px;
+  max-width: 940px;
   margin: 0 auto 28px;
 }
 
 .hero-proof-points span {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: 36px;
-  padding: 7px 13px;
-  color: #fff7e7;
-  background: rgba(4, 15, 27, .72);
-  border: 1px solid rgba(240, 207, 138, .62);
+  min-height: auto;
+  padding: 0;
+  color: #f6e7c8;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font-size: .88rem;
+  font-weight: 800;
+  letter-spacing: .01em;
+  line-height: 1.35;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, .46);
+}
+
+.hero-proof-points span::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  margin-right: 10px;
   border-radius: 999px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, .24);
-  font-size: .86rem;
-  font-weight: 900;
+  background: var(--gold-2);
+  box-shadow: 0 0 14px rgba(240, 207, 138, .55);
 }
 
 .hero-actions {
@@ -4680,14 +4695,20 @@ label {
 
   .hero-proof-points {
     max-width: 306px;
+    gap: 8px;
     margin-bottom: 24px;
   }
 
   .hero-proof-points span {
     width: 100%;
-    justify-content: center;
-    border-radius: 8px;
-    text-align: center;
+    justify-content: flex-start;
+    border-radius: 0;
+    text-align: left;
+  }
+
+  .hero-proof-points span::before {
+    margin-top: .42em;
+    align-self: flex-start;
   }
 
   .hero-actions {

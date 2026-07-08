@@ -14,6 +14,11 @@ function publicAsset(path: string) {
   return readFileSync(join(root, "public", path));
 }
 
+function cssRule(styles: string, selector: string) {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return styles.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`))?.[1] || "";
+}
+
 function pngDimensions(path: string) {
   const image = publicAsset(path);
   assert.equal(image.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
@@ -59,6 +64,18 @@ test("presentation video asset is available as the uploaded MP4", () => {
 
   assert.equal(video.subarray(4, 8).toString("utf8"), "ftyp");
   assert.ok(video.length > 60_000_000);
+});
+
+test("hero proof points read as editorial text instead of button-like pills", () => {
+  const styles = source("app/globals.css");
+  const proofPointRule = cssRule(styles, ".hero-proof-points span");
+
+  assert.match(proofPointRule, /background:\s*transparent/);
+  assert.match(proofPointRule, /border:\s*0/);
+  assert.match(proofPointRule, /border-radius:\s*0/);
+  assert.match(proofPointRule, /box-shadow:\s*none/);
+  assert.doesNotMatch(proofPointRule, /cursor:\s*pointer/);
+  assert.match(styles, /\.hero-proof-points span::before\s*\{[^}]*content:\s*""/);
 });
 
 test("team page lists Vivien Hoch with the requested theological specialties", () => {
