@@ -57,9 +57,9 @@ export default function ContactPage() {
           <p style={{ fontSize: "1.25rem", color: "#dce6f6" }}>Une question sur nos formations ? Notre équipe est à votre écoute.</p>
         </div>
       </section>
-      <section className="section" style={{ background: "white" }}>
+      <section className="section contact-section" style={{ background: "white" }}>
         <div className="container grid-2">
-          <form className="soft-card" style={{ padding: 30 }} action="https://formspree.io/f/mjgzlojl" method="POST">
+          <form className="soft-card contact-form-card" style={{ padding: 30 }} action="https://formspree.io/f/mjgzlojl" method="POST">
             <input type="hidden" name="_subject" value="Nouveau message depuis le site Institut Saint Irenee" />
             <h2 className="font-display" style={{ color: "var(--navy)" }}>Envoyez-nous un message</h2>
             <div className="grid-2">
@@ -80,7 +80,7 @@ export default function ContactPage() {
             <p><label>Message *</label><textarea className="input" name="message" rows={7} required placeholder="Décrivez votre demande..." /></p>
             <button className="btn btn-primary" type="submit" style={{ width: "100%" }}>Envoyer le message</button>
           </form>
-          <div>
+          <div className="contact-details">
             <h2 className="font-display" style={{ color: "var(--navy)" }}>Nos coordonnées</h2>
             {([
               [Mail, "Email", "oeuvrecatholiquefrance@gmail.com"],
@@ -88,12 +88,12 @@ export default function ContactPage() {
               [MapPin, "Adresse", "1 rue de Stockholm, 75008 Paris"],
               [Clock, "Horaires", "Lun-Ven : 9h-18h"],
             ] satisfies [LucideIcon, string, string][]).map(([Icon, title, value]) => (
-              <div className="soft-card" key={title} style={{ padding: 22, marginBottom: 18, display: "flex", gap: 18 }}>
+              <div className="soft-card contact-info-card" key={title} style={{ padding: 22, marginBottom: 18, display: "flex", gap: 18 }}>
                 <Icon color="var(--navy)" />
                 <div><strong>{title}</strong><p className="muted">{value}</p></div>
               </div>
             ))}
-            <div className="soft-card" style={{ padding: 24, background: "#f6f8fc" }}>
+            <div className="soft-card contact-info-card" style={{ padding: 24, background: "#f6f8fc" }}>
               <h3>Temps de réponse</h3>
               <p>Nous nous engageons à répondre à votre message sous <strong>48 heures maximum</strong>.</p>
             </div>

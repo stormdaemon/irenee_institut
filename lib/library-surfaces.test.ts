@@ -25,6 +25,13 @@ function assertWebpAsset(path: string, maxBytes: number) {
   assert.ok(image.length <= maxBytes, `${path} is ${image.length} bytes`);
 }
 
+function assertAvifAsset(path: string, maxBytes: number) {
+  const image = publicAsset(path);
+  assert.equal(image.subarray(4, 8).toString("utf8"), "ftyp");
+  assert.ok(["avif", "avis"].includes(image.subarray(8, 12).toString("utf8")));
+  assert.ok(image.length <= maxBytes, `${path} is ${image.length} bytes`);
+}
+
 function cssRule(styles: string, selector: string) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return styles.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`))?.[1] || "";
@@ -78,9 +85,12 @@ test("presentation video asset is available as the uploaded MP4", () => {
 });
 
 test("hero proof points read as editorial text instead of button-like pills", () => {
+  const homepage = source("app/page.tsx");
   const styles = source("app/globals.css");
   const proofPointRule = cssRule(styles, ".hero-proof-points span");
 
+  assert.match(homepage, /Formation hebdomadaire en visio sur cette plateforme à partir de septembre 2026/);
+  assert.doesNotMatch(homepage, /Rencontres en direct à partir de décembre 2026/);
   assert.match(proofPointRule, /background:\s*transparent/);
   assert.match(proofPointRule, /border:\s*0/);
   assert.match(proofPointRule, /border-radius:\s*0/);
@@ -106,7 +116,6 @@ test("homepage uses optimized WebP assets for heavy visual backgrounds", () => {
 
   assert.match(styles, /url\("\/images\/irenee-hero-cathedral\.webp"\)/);
   assert.match(styles, /url\("\/images\/irenee-parchment-quote-clean\.webp"\)/);
-  assert.match(homepage, /rel="preload"[\s\S]*\/images\/irenee-hero-cathedral\.webp[\s\S]*fetchPriority="high"/);
   assert.match(onboarding, /\/images\/irenee-hero-cathedral\.webp/);
   assert.match(onboarding, /\/images\/irenee-parchment-quote-clean\.webp/);
 
@@ -119,6 +128,94 @@ test("homepage uses optimized WebP assets for heavy visual backgrounds", () => {
 
   assert.ok(assetSize("images/irenee-hero-cathedral.webp") < assetSize("images/irenee-hero-cathedral.png"));
   assert.ok(assetSize("images/irenee-parchment-quote-clean.webp") < assetSize("images/irenee-parchment-quote-clean.png"));
+});
+
+test("homepage prioritizes responsive AVIF backgrounds for mobile performance", () => {
+  const homepage = source("app/page.tsx");
+  const styles = source("app/globals.css");
+
+  for (const asset of [
+    "eidm-institut-saint-irenee",
+    "irenee-feature-1",
+    "irenee-feature-3",
+    "cloitre-sessions-patristiques"
+  ]) {
+    assert.match(homepage, new RegExp(`/images/${asset}\\.avif`));
+    assert.match(homepage, new RegExp(`/images/${asset}\\.webp`));
+  }
+
+  assert.match(homepage, /rel="preload"[\s\S]*\/images\/irenee-hero-cathedral-mobile\.avif[\s\S]*media="\(max-width: 700px\)"[\s\S]*fetchPriority="high"/);
+  assert.match(homepage, /rel="preload"[\s\S]*\/images\/irenee-hero-cathedral\.avif[\s\S]*media="\(min-width: 701px\)"[\s\S]*fetchPriority="high"/);
+
+  assert.match(styles, /\.home-hero\s*\{[^}]*image-set\([^}]*irenee-hero-cathedral\.avif[^}]*irenee-hero-cathedral\.webp/s);
+  assert.match(styles, /@media \(max-width: 700px\)\s*\{[^}]*\.home-hero\s*\{[^}]*image-set\([^}]*irenee-hero-cathedral-mobile\.avif[^}]*irenee-hero-cathedral-mobile\.webp/s);
+  assert.match(styles, /\.quote-banner\s*\{[^}]*image-set\([^}]*irenee-parchment-quote-clean\.avif[^}]*irenee-parchment-quote-clean\.webp/s);
+  assert.match(styles, /\.page-hero,\s*\.hero-band:not\(\.home-hero\)\s*\{/);
+  assert.match(styles, /\.page-hero,\s*\.hero-band:not\(\.home-hero\)\s*\{[^}]*image-set\([^}]*irenee-hero-cathedral\.avif[^}]*irenee-hero-cathedral\.webp/s);
+  assert.match(styles, /\.footer\s*\{[^}]*image-set\([^}]*irenee-hero-cathedral\.avif[^}]*irenee-hero-cathedral\.webp/s);
+  assert.doesNotMatch(styles, /\.page-hero,\s*\.hero-band\s*\{[^}]*irenee-hero-cathedral\.webp/s);
+
+  assertAvifAsset("images/irenee-hero-cathedral.avif", 120_000);
+  assertAvifAsset("images/irenee-hero-cathedral-mobile.avif", 80_000);
+  assertAvifAsset("images/eidm-institut-saint-irenee.avif", 42_000);
+  assertAvifAsset("images/cloitre-sessions-patristiques.avif", 115_000);
+  assertAvifAsset("images/irenee-parchment-quote-clean.avif", 80_000);
+  assertAvifAsset("images/irenee-feature-1.avif", 22_000);
+  assertAvifAsset("images/irenee-feature-3.avif", 26_000);
+  assertWebpAsset("images/irenee-hero-cathedral-mobile.webp", 120_000);
+
+  assert.ok(assetSize("images/irenee-hero-cathedral.avif") < assetSize("images/irenee-hero-cathedral.webp"));
+  assert.ok(assetSize("images/irenee-hero-cathedral-mobile.avif") < assetSize("images/irenee-hero-cathedral.webp"));
+  assert.ok(assetSize("images/cloitre-sessions-patristiques.avif") < assetSize("images/cloitre-sessions-patristiques.webp"));
+  assert.ok(assetSize("images/irenee-parchment-quote-clean.avif") < assetSize("images/irenee-parchment-quote-clean.webp"));
+});
+
+test("public homepage chrome avoids unnecessary anonymous network work", () => {
+  const homepage = source("app/page.tsx");
+  const header = source("components/Header.tsx");
+  const userMenu = source("components/UserMenu.tsx");
+
+  const publicHomeLinks = homepage
+    .match(/<Link\b[^>]*href="\/(?!\/)[^"]*"[^>]*>/g) || [];
+  const headerLinks = header.match(/<Link\b[^>]*>/g) || [];
+
+  assert.ok(publicHomeLinks.length > 0);
+  assert.ok(headerLinks.length > 0);
+  for (const link of [...publicHomeLinks, ...headerLinks]) {
+    assert.match(link, /prefetch=\{false\}/, link);
+  }
+
+  assert.doesNotMatch(userMenu, /if \(error \|\| !data\.user\)\s*\{\s*await \w+\(\)/);
+  assert.match(userMenu, /if \(!data\.user\)\s*\{\s*setProfile\(null\);\s*return;\s*\}/);
+});
+
+test("layout defers non-critical floating and onboarding chrome on public pages", () => {
+  const layout = source("app/layout.tsx");
+  const deferredChrome = source("components/DeferredClientChrome.tsx");
+
+  assert.match(layout, /import \{ DeferredClientChrome \} from "@\/components\/DeferredClientChrome"/);
+  assert.doesNotMatch(layout, /import \{ FloatingNetworkMenu \}/);
+  assert.doesNotMatch(layout, /import \{ DonationPrompt \}/);
+  assert.doesNotMatch(layout, /import \{ OnboardingGate \}/);
+  assert.match(deferredChrome, /"use client"/);
+  assert.match(deferredChrome, /dynamic\([\s\S]*import\("@\/components\/FloatingNetworkMenu"\)/);
+  assert.match(deferredChrome, /dynamic\([\s\S]*import\("@\/components\/DonationPrompt"\)/);
+  assert.match(deferredChrome, /dynamic\([\s\S]*import\("@\/components\/OnboardingGate"\)/);
+  assert.match(deferredChrome, /const publicChromeDelayMs = 7000/);
+  assert.match(deferredChrome, /pointerdown/);
+});
+
+test("contact page cards collapse without horizontal overflow on narrow mobiles", () => {
+  const contactPage = source("app/contact/page.tsx");
+  const styles = source("app/globals.css");
+
+  assert.match(contactPage, /className="section contact-section"/);
+  assert.match(contactPage, /className="soft-card contact-form-card"/);
+  assert.match(contactPage, /className="contact-details"/);
+  assert.match(contactPage, /className="soft-card contact-info-card"/);
+  assert.match(styles, /\.contact-section \.grid-2,[\s\S]*\{[^}]*min-width:\s*0/);
+  assert.match(styles, /@media \(max-width: 900px\)\s*\{[^}]*\.contact-section \.grid-2\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*!important/s);
+  assert.match(styles, /@media \(max-width: 520px\)\s*\{[^}]*\.contact-form-card,\s*\.contact-info-card\s*\{[^}]*padding:\s*20px\s*!important/s);
 });
 
 test("team page lists Vivien Hoch with the requested theological specialties", () => {

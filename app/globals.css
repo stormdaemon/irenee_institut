@@ -2630,13 +2630,19 @@ label {
 }
 
 .page-hero,
-.hero-band {
+.hero-band:not(.home-hero) {
   position: relative;
   color: #fff7e8;
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(3, 10, 18, .86), rgba(3, 10, 18, .43), rgba(3, 10, 18, .78)),
     url("/images/irenee-hero-cathedral.webp") center / cover no-repeat !important;
+  background:
+    linear-gradient(90deg, rgba(3, 10, 18, .86), rgba(3, 10, 18, .43), rgba(3, 10, 18, .78)),
+    image-set(
+      url("/images/irenee-hero-cathedral.avif") type("image/avif"),
+      url("/images/irenee-hero-cathedral.webp") type("image/webp")
+    ) center / cover no-repeat !important;
   border-bottom: 1px solid rgba(220, 180, 107, .5);
 }
 
@@ -2679,6 +2685,29 @@ label {
   display: grid;
   align-items: start;
   padding: 58px 0 164px;
+  background:
+    linear-gradient(90deg, rgba(3, 10, 18, .86), rgba(3, 10, 18, .43), rgba(3, 10, 18, .78)),
+    url("/images/irenee-hero-cathedral.webp") center / cover no-repeat !important;
+  background:
+    linear-gradient(90deg, rgba(3, 10, 18, .86), rgba(3, 10, 18, .43), rgba(3, 10, 18, .78)),
+    image-set(
+      url("/images/irenee-hero-cathedral.avif") type("image/avif"),
+      url("/images/irenee-hero-cathedral.webp") type("image/webp")
+    ) center / cover no-repeat !important;
+}
+
+@media (max-width: 700px) {
+  .home-hero {
+    background:
+      linear-gradient(90deg, rgba(3, 10, 18, .86), rgba(3, 10, 18, .43), rgba(3, 10, 18, .78)),
+      url("/images/irenee-hero-cathedral-mobile.webp") center / cover no-repeat !important;
+    background:
+      linear-gradient(90deg, rgba(3, 10, 18, .86), rgba(3, 10, 18, .43), rgba(3, 10, 18, .78)),
+      image-set(
+        url("/images/irenee-hero-cathedral-mobile.avif") type("image/avif"),
+        url("/images/irenee-hero-cathedral-mobile.webp") type("image/webp")
+      ) center / cover no-repeat !important;
+  }
 }
 
 .home-hero .container {
@@ -3563,6 +3592,10 @@ label {
   color: #2a1708;
   text-align: center;
   background: url("/images/irenee-parchment-quote-clean.webp") center / 100% 100% no-repeat;
+  background: image-set(
+    url("/images/irenee-parchment-quote-clean.avif") type("image/avif"),
+    url("/images/irenee-parchment-quote-clean.webp") type("image/webp")
+  ) center / 100% 100% no-repeat;
   filter: drop-shadow(0 20px 30px rgba(0, 0, 0, .28));
 }
 
@@ -3588,6 +3621,12 @@ label {
   background:
     linear-gradient(180deg, rgba(4, 16, 29, .98), rgba(2, 8, 15, 1)),
     url("/images/irenee-hero-cathedral.webp") center bottom / cover no-repeat;
+  background:
+    linear-gradient(180deg, rgba(4, 16, 29, .98), rgba(2, 8, 15, 1)),
+    image-set(
+      url("/images/irenee-hero-cathedral.avif") type("image/avif"),
+      url("/images/irenee-hero-cathedral.webp") type("image/webp")
+    ) center bottom / cover no-repeat;
   border-top: 1px solid rgba(220, 180, 107, .55);
 }
 
@@ -4925,6 +4964,44 @@ label {
   display: block;
   border: 0;
   filter: saturate(.88) contrast(1.03);
+}
+
+.contact-section .container,
+.contact-section .grid-2,
+.contact-form-card,
+.contact-details,
+.contact-info-card {
+  min-width: 0;
+}
+
+.contact-form-card,
+.contact-info-card {
+  overflow-wrap: anywhere;
+}
+
+.contact-info-card {
+  align-items: flex-start;
+}
+
+.contact-info-card svg {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 900px) {
+  .contact-section .grid-2 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .contact-form-card,
+  .contact-info-card {
+    padding: 20px !important;
+  }
+
+  .contact-info-card {
+    gap: 12px !important;
+  }
 }
 
 .avatar-uploader {

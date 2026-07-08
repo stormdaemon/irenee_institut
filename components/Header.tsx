@@ -28,7 +28,7 @@ export function Header() {
       <div className="header-ornament header-ornament-right" aria-hidden="true" />
       <div className="header-crown" aria-hidden="true">✝</div>
       <div className="container header-row">
-        <Link href="/" className="brand" onClick={() => setMobileOpen(false)}>
+        <Link href="/" className="brand" prefetch={false} onClick={() => setMobileOpen(false)}>
           <span className="brand-seal">
             <Image src="/images/logo_without_text.png" alt="Institut Saint Irénée" width={78} height={78} priority />
           </span>
@@ -39,7 +39,7 @@ export function Header() {
         </Link>
         <nav className="nav" aria-label="Navigation principale">
           {links.map(link => (
-            <Link className={`nav-link ${isActive(link.href) ? "active" : ""}`} key={link.href} href={link.href}>
+            <Link className={`nav-link ${isActive(link.href) ? "active" : ""}`} key={link.href} href={link.href} prefetch={false}>
               {link.label}
             </Link>
           ))}
@@ -60,7 +60,7 @@ export function Header() {
         <div className="mobile-panel">
           <div className="container">
             {links.map(link => (
-              <Link className={`nav-link ${isActive(link.href) ? "active" : ""}`} key={link.href} href={link.href} onClick={() => setMobileOpen(false)}>
+              <Link className={`nav-link ${isActive(link.href) ? "active" : ""}`} key={link.href} href={link.href} prefetch={false} onClick={() => setMobileOpen(false)}>
                 {link.label}
               </Link>
             ))}

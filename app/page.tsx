@@ -46,7 +46,7 @@ const features = [
   {
     title: "L'EIDM devient l'Institut Saint Irénée",
     text: "L'élan de l'EIDM se poursuit dans un institut structuré pour former, accompagner et transmettre la foi catholique avec clarté.",
-    image: "/images/eidm-institut-saint-irenee.webp",
+    image: backgroundImageSet("/images/eidm-institut-saint-irenee.avif", "/images/eidm-institut-saint-irenee.webp"),
     imagePosition: "50% 42%",
     icon: "/images/irenee-feature-medallion-teacher.png",
     iconLeft: "50%",
@@ -56,7 +56,7 @@ const features = [
   {
     title: "Bibliothèque d'école apologétique",
     text: "Une bibliothèque réservée aux étudiants pour demander le livre apologétique de leur choix après une adhésion annuelle de 15 EUR.",
-    image: "/images/irenee-feature-1.webp",
+    image: backgroundImageSet("/images/irenee-feature-1.avif", "/images/irenee-feature-1.webp"),
     imagePosition: "50% 50%",
     icon: "/images/irenee-feature-medallion-library.png",
     iconLeft: "50%",
@@ -66,7 +66,7 @@ const features = [
   {
     title: "Formation en direct chaque semaine",
     text: "Un soir par semaine, les étudiants retrouvent une séance en visio depuis le site pour travailler, questionner et progresser ensemble.",
-    image: "/images/irenee-feature-3.webp",
+    image: backgroundImageSet("/images/irenee-feature-3.avif", "/images/irenee-feature-3.webp"),
     imagePosition: "50% 50%",
     icon: "/images/irenee-feature-medallion-3.png",
     iconLeft: "50%",
@@ -76,7 +76,7 @@ const features = [
   {
     title: "Sessions patristiques en abbaye",
     text: "Des sessions de 5 jours autour d'un thème différent, des conciles et des Pères de l'Église, pour étudier avec un expert.",
-    image: "/images/cloitre-sessions-patristiques.webp",
+    image: backgroundImageSet("/images/cloitre-sessions-patristiques.avif", "/images/cloitre-sessions-patristiques.webp"),
     imagePosition: "50% 50%",
     icon: "/images/irenee-feature-medallion-abbey.png",
     iconLeft: "50%",
@@ -85,12 +85,17 @@ const features = [
   }
 ];
 
+function backgroundImageSet(avif: string, webp: string) {
+  return `image-set(url("${avif}") type("image/avif"), url("${webp}") type("image/webp"))`;
+}
+
 export default async function HomePage() {
   const courses = await getCourses();
 
   return (
     <>
-      <link rel="preload" as="image" href="/images/irenee-hero-cathedral.webp" type="image/webp" fetchPriority="high" />
+      <link rel="preload" as="image" href="/images/irenee-hero-cathedral-mobile.avif" type="image/avif" media="(max-width: 700px)" fetchPriority="high" />
+      <link rel="preload" as="image" href="/images/irenee-hero-cathedral.avif" type="image/avif" media="(min-width: 701px)" fetchPriority="high" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(presentationVideoJsonLd) }} />
 
       <section className="hero-band home-hero">
@@ -114,13 +119,13 @@ export default async function HomePage() {
             </p>
             <div className="hero-proof-points" aria-label="Points clés de la formation">
               <span>Première formation francophone en apologétique</span>
-              <span>Rencontres en direct à partir de décembre 2026</span>
+              <span>Formation hebdomadaire en visio sur cette plateforme à partir de septembre 2026</span>
             </div>
             <div className="hero-actions">
-              <Link className="btn btn-primary" href="/formations?checkout=annual-pass">
+              <Link className="btn btn-primary" href="/formations?checkout=annual-pass" prefetch={false}>
                 Obtenir le pass annuel <ArrowRight size={18} />
               </Link>
-              <Link className="btn btn-outline" href="/programme-apologetique">
+              <Link className="btn btn-outline" href="/programme-apologetique" prefetch={false}>
                 Voir le programme
               </Link>
             </div>
@@ -156,7 +161,7 @@ export default async function HomePage() {
                   className="card feature-card"
                   key={feature.title}
                   style={{
-                    "--card-image": `url(${feature.image})`,
+                    "--card-image": feature.image,
                     "--card-image-position": feature.imagePosition,
                     "--feature-icon-left": feature.iconLeft
                   } as CSSProperties}
@@ -171,7 +176,7 @@ export default async function HomePage() {
                       En savoir plus <ExternalLink size={14} />
                     </a>
                   ) : (
-                    <Link className="feature-link" href={feature.href}>
+                    <Link className="feature-link" href={feature.href} prefetch={false}>
                       En savoir plus <ArrowRight size={14} />
                     </Link>
                   )}
@@ -209,7 +214,7 @@ export default async function HomePage() {
                 l'apologétique catholique, la formation chrétienne et la place du catholicisme dans l'espace public.
               </p>
               <div className="press-home-actions">
-                <Link className="btn btn-gold" href="/presse/liberation-institut-saint-irenee-2026">
+                <Link className="btn btn-gold" href="/presse/liberation-institut-saint-irenee-2026" prefetch={false}>
                   Lire notre résumé <ArrowRight size={17} />
                 </Link>
                 <a className="btn btn-outline" href="https://www.liberation.fr/societe/religions/avec-linstitut-saint-irenee-le-catholicisme-identitaire-se-met-en-ordre-de-bataille-20260617_64O26CD53FD5DOSYZZBIKXWRUA/" target="_blank" rel="noreferrer">
@@ -230,7 +235,7 @@ export default async function HomePage() {
             étudier les sources et répondre aux objections contemporaines. L'objectif n'est pas de gagner des
             querelles, mais de servir la vérité avec précision, patience et charité.
           </p>
-          <Link className="btn btn-outline" href="/institut-apologetique">
+          <Link className="btn btn-outline" href="/institut-apologetique" prefetch={false}>
             Découvrir l'Institut d'Apologétique <ArrowRight size={17} />
           </Link>
         </div>
@@ -267,12 +272,12 @@ export default async function HomePage() {
                 <span className="badge">{course.niveau}</span>
                 <h3 style={{ color: "#fff7e7", fontSize: "1.7rem" }}>{course.titre}</h3>
                 <p className="muted">{course.description}</p>
-                <Link className="btn btn-outline" href="/programme-apologetique">Voir le programme <ArrowRight size={16} /></Link>
+                <Link className="btn btn-outline" href="/programme-apologetique" prefetch={false}>Voir le programme <ArrowRight size={16} /></Link>
               </article>
             ))}
             {!courses.length && <p>Aucune formation disponible pour le moment.</p>}
           </div>
-          <Link href="/formations" className="btn btn-gold" style={{ marginTop: 36 }}>
+          <Link href="/formations" className="btn btn-gold" style={{ marginTop: 36 }} prefetch={false}>
             Découvrir toutes les formations <ArrowRight size={18} />
           </Link>
         </div>
@@ -302,7 +307,7 @@ export default async function HomePage() {
         <div className="container">
           <h2 className="font-display" style={{ fontSize: "2.7rem", margin: 0 }}>Prêt à approfondir votre foi ?</h2>
           <p style={{ color: "#f0dfc2" }}>Rejoignez notre prochaine promotion et découvrez les richesses de l'apologétique catholique.</p>
-          <Link href="/formations?checkout=annual-pass" className="btn btn-gold">Obtenir le pass annuel <ArrowRight size={18} /></Link>
+          <Link href="/formations?checkout=annual-pass" className="btn btn-gold" prefetch={false}>Obtenir le pass annuel <ArrowRight size={18} /></Link>
         </div>
       </section>
     </>

@@ -96,7 +96,7 @@ export function UpcomingSessions() {
           <span className="hero-eyebrow">
             <Radio size={16} /> En direct &middot; chaque mercredi à 20h30
           </span>
-          <h2 className="visio-title font-display">Les rencontres commenceront en décembre 2026</h2>
+          <h2 className="visio-title font-display">Premières rencontres en visio conférence à partir de septembre 2026</h2>
           <p className="visio-lead">
             Chaque mercredi soir, la promotion se retrouve en direct depuis le site pour travailler,
             échanger et lire ensemble les Pères de l&apos;Église. Voici les premières rencontres annoncées.

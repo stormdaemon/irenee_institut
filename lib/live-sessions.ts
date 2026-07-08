@@ -1,4 +1,4 @@
-// Planning éditorial des séances en visio hebdomadaires de décembre 2026.
+// Planning éditorial des séances en visio hebdomadaires de septembre 2026.
 // Données statiques : ces dates sont annoncées publiquement sur la page d'accueil.
 // L'accès effectif aux salles se gère via /espace-etudiant (cf. NextLiveSession).
 
@@ -41,7 +41,7 @@ export type VisioSession = {
 
 export const VISIO_SESSIONS: VisioSession[] = [
   {
-    isoDate: "2026-12-02",
+    isoDate: "2026-09-02",
     time: "20h30",
     title: "Rentrée et présentation des inscrits",
     description:
@@ -52,7 +52,7 @@ export const VISIO_SESSIONS: VisioSession[] = [
     kind: "person"
   },
   {
-    isoDate: "2026-12-09",
+    isoDate: "2026-09-09",
     time: "20h30",
     title: "Présentation du site et de la plateforme",
     description:
@@ -63,7 +63,7 @@ export const VISIO_SESSIONS: VisioSession[] = [
     kind: "person"
   },
   {
-    isoDate: "2026-12-16",
+    isoDate: "2026-09-16",
     time: "20h30",
     title: "Lecture de la Didachè",
     description:
@@ -74,7 +74,7 @@ export const VISIO_SESSIONS: VisioSession[] = [
     kind: "reading"
   },
   {
-    isoDate: "2026-12-23",
+    isoDate: "2026-09-23",
     time: "20h30",
     title: "Lecture de la Lettre à Diognète",
     description:
@@ -85,7 +85,7 @@ export const VISIO_SESSIONS: VisioSession[] = [
     kind: "reading"
   },
   {
-    isoDate: "2026-12-30",
+    isoDate: "2026-09-30",
     time: "20h30",
     title: "Lecture des lettres de Clément de Rome",
     description:
@@ -121,7 +121,7 @@ export function formatVisioDate(isoDate: string): VisioDateParts {
   };
 }
 
-// Libellé prêt à l'affichage : "Mercredi 2 décembre · 20h30".
+// Libellé prêt à l'affichage : "Mercredi 2 septembre · 20h30".
 export function formatVisioWhen(session: VisioSession): string {
   const { weekday, day, month } = formatVisioDate(session.isoDate);
   const capitalized = weekday.charAt(0).toUpperCase() + weekday.slice(1);

@@ -63,7 +63,11 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
       };
 
       const { data, error } = await supabase.auth.getUser().catch(() => ({ data: { user: null }, error: new Error("Session invalide") }));
-      if (error || !data.user) {
+      if (!data.user) {
+        setProfile(null);
+        return;
+      }
+      if (error) {
         await resetProfile();
         return;
       }
@@ -101,8 +105,8 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
   if (!profile) {
     return (
       <>
-        <Link href={loginHref} className="btn btn-outline" onClick={onNavigate}>Se connecter</Link>
-        <Link href="/formations?checkout=annual-pass" className="btn btn-primary" onClick={onNavigate}>S'inscrire</Link>
+        <Link href={loginHref} className="btn btn-outline" prefetch={false} onClick={onNavigate}>Se connecter</Link>
+        <Link href="/formations?checkout=annual-pass" className="btn btn-primary" prefetch={false} onClick={onNavigate}>S'inscrire</Link>
       </>
     );
   }
@@ -134,10 +138,10 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
             <span>{profile.email}</span>
             <small>{profile.role}</small>
           </div>
-          <Link href="/espace-etudiant" onClick={closeAfterNavigate}><BookOpen size={16} /> Mes cours</Link>
-          <Link href={isStaff ? "/admin/homework" : "/devoirs"} onClick={closeAfterNavigate}><ClipboardList size={16} /> Devoirs</Link>
-          {isStaff && <Link href="/admin" onClick={closeAfterNavigate}><LayoutDashboard size={16} /> Administration</Link>}
-          <Link href="/parametres" onClick={closeAfterNavigate}><Settings size={16} /> Paramètres</Link>
+          <Link href="/espace-etudiant" prefetch={false} onClick={closeAfterNavigate}><BookOpen size={16} /> Mes cours</Link>
+          <Link href={isStaff ? "/admin/homework" : "/devoirs"} prefetch={false} onClick={closeAfterNavigate}><ClipboardList size={16} /> Devoirs</Link>
+          {isStaff && <Link href="/admin" prefetch={false} onClick={closeAfterNavigate}><LayoutDashboard size={16} /> Administration</Link>}
+          <Link href="/parametres" prefetch={false} onClick={closeAfterNavigate}><Settings size={16} /> Paramètres</Link>
           <button type="button" onClick={signOut}><LogOut size={16} /> Déconnexion</button>
         </div>
       )}
@@ -159,4 +163,3 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
     </div>
   );
 }
-
