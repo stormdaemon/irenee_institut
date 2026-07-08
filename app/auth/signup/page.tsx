@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Loader2, Lock, Mail, UserPlus, UserRound } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { translateAuthError, type AuthErrorCopy } from "@/lib/auth-errors";
+import { annualPassCheckoutPath, cleanAnnualPassSignupPath } from "@/lib/routes";
 import { createBrowserClient } from "@/lib/supabase";
 
 type FieldErrors = Partial<Record<"prenom" | "nom" | "email" | "password" | "passwordConfirm", string>>;
@@ -16,8 +17,14 @@ function getFieldValue(form: FormData, key: string) {
 
 function getSafeNextPath() {
   if (typeof window === "undefined") return "/espace-etudiant";
+  if (window.location.pathname === cleanAnnualPassSignupPath) return annualPassCheckoutPath;
   const next = new URLSearchParams(window.location.search).get("next");
   return next && next.startsWith("/") && !next.startsWith("//") ? next : "/espace-etudiant";
+}
+
+function validationNotice(errors: FieldErrors) {
+  const messages = Object.values(errors).filter(Boolean);
+  return messages.length ? messages.join(" ") : "Corrigez les champs marqués avant de créer le compte.";
 }
 
 export default function SignupPage() {
@@ -59,10 +66,12 @@ export default function SignupPage() {
       setFieldErrors(nextFieldErrors);
       setNotice({
         title: "Informations à corriger",
-        description: "Les champs marqués doivent être corrigés avant de créer le compte.",
+        description: validationNotice(nextFieldErrors),
         field: "form"
       });
       setStatus("error");
+      const firstInvalidField = Object.keys(nextFieldErrors)[0];
+      formElement.querySelector<HTMLInputElement>(`[name="${firstInvalidField}"]`)?.focus();
       return;
     }
 
@@ -114,11 +123,11 @@ export default function SignupPage() {
     if (data.user.identities && data.user.identities.length === 0) {
       await supabase.auth.signOut();
       setNotice({
-        title: "Cette adresse est déjà connue",
-        description: "Un compte existe déjà pour cet email, ou une confirmation est déjà en attente. Connectez-vous, ou confirmez l'email reçu avant de réessayer.",
+        title: "Adresse email déjà utilisée",
+        description: "Un compte existe déjà avec cette adresse. Connectez-vous avec cet email, ou utilisez une autre adresse.",
         field: "email"
       });
-      setFieldErrors({ email: "Cette adresse est déjà associée à un compte ou à une confirmation en attente." });
+      setFieldErrors({ email: "Cette adresse email est déjà utilisée." });
       setStatus("error");
       return;
     }

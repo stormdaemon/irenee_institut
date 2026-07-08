@@ -10,6 +10,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
   const { error: profileError } = await auth.supabase.from("profiles").delete().eq("id", id);
   const deletedUser = await auth.supabase.auth.admin.deleteUser(id);
-  if (profileError || deletedUser.error) return NextResponse.json({ error: profileError?.message || deletedUser.error?.message }, { status: 400 });
+  const deletedUserError = (deletedUser as { error?: { message?: string } | null }).error;
+  if (profileError || deletedUserError) return NextResponse.json({ error: profileError?.message || deletedUserError?.message }, { status: 400 });
   return NextResponse.json({ ok: true });
 }

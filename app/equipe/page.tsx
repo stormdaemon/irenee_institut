@@ -23,6 +23,20 @@ type TeamMember = {
 const staticTeamMembers: TeamMember[] = [
   {
     achievements: [
+      "Module parcours biblique",
+      "Accompagnement biblique du cursus",
+      "Lecture théologique et pastorale des Écritures"
+    ],
+    description:
+      "En plus de sa mission de directeur des études, Frère Jean Emmanuel intervient comme bibliste pour accompagner le module de parcours biblique et aider les étudiants à entrer dans l'intelligence des Écritures.",
+    image: "/images/frere-jean-emmanuel-de-ena.png",
+    imagePosition: "50% 50%",
+    name: "Frère Jean Emmanuel",
+    tags: ["Bible", "Écritures", "Parcours biblique", "Exégèse"],
+    title: "Module parcours biblique"
+  },
+  {
+    achievements: [
       "Module convaincre, argumenter et rhétorique",
       "Pratique de l'argumentation publique",
       "Approche juridique et méthodique du débat"
@@ -74,6 +88,24 @@ const staticTeamMembers: TeamMember[] = [
     },
     tags: ["Christologie", "Théologie", "Transmission"],
     title: "Module christologie"
+  },
+  {
+    achievements: [
+      "Module histoire de l'Église",
+      "Agrégé d'histoire",
+      "Travaux sur l'histoire religieuse du Var et de la Provence"
+    ],
+    description:
+      "Agrégé d'histoire, Alain Vignal apporte son expertise au module d'histoire de l'Église, avec une attention particulière aux sources, aux faits et aux grandes évolutions du christianisme.",
+    image: "/images/alain-vignal.jpg",
+    imagePosition: "50% 42%",
+    name: "Alain Vignal",
+    source: {
+      href: "https://www.capsud-mediterranee.fr/alain-vignal",
+      label: "Profil Cap Sud Méditerranée"
+    },
+    tags: ["Histoire de l'Église", "Christianisme", "Histoire religieuse"],
+    title: "Module histoire de l'Église"
   }
 ];
 

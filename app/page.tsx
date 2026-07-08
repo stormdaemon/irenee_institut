@@ -93,7 +93,7 @@ export default async function HomePage() {
             </p>
             <div className="hero-proof-points" aria-label="Points clés de la formation">
               <span>Première formation francophone en apologétique</span>
-              <span>Rencontres en direct à partir de décembre 2026</span>
+              <span>Premières rencontres en visio conférence à partir de septembre 2026</span>
             </div>
             <div className="hero-actions">
               <Link className="btn btn-primary" href="/formations?checkout=annual-pass">

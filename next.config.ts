@@ -1,9 +1,25 @@
 import type { NextConfig } from "next";
+import { cleanAnnualPassSignupPath } from "./lib/routes";
+import { securityHeaders } from "./lib/security-headers";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
-  typescript: {
-    ignoreBuildErrors: true
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: securityHeaders
+      },
+      {
+        source: cleanAnnualPassSignupPath,
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow, noarchive"
+          }
+        ]
+      }
+    ];
   },
   images: {
     remotePatterns: [

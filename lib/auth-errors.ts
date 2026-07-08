@@ -13,11 +13,15 @@ export function translateAuthError(message?: string | null, fallback = "Une erre
     normalized.includes("already been registered") ||
     normalized.includes("user already") ||
     normalized.includes("email address already") ||
-    normalized.includes("already exists")
+    normalized.includes("already exists") ||
+    normalized.includes("deja utilise") ||
+    normalized.includes("déjà utilis") ||
+    normalized.includes("adresse est deja") ||
+    normalized.includes("adresse est déjà")
   ) {
     return {
-      title: "Cette adresse est déjà connue",
-      description: "Une création de compte existe déjà pour cet email. Si vous venez d'essayer de vous inscrire, la première tentative a probablement été enregistrée. Essayez de vous connecter avec cette adresse.",
+      title: "Adresse email déjà utilisée",
+      description: "Un compte existe déjà avec cette adresse. Connectez-vous avec cet email, ou utilisez une autre adresse.",
       field: "email"
     };
   }

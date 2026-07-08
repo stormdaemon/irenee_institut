@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AlertTriangle, Loader2, Lock, LogIn, Mail } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { translateAuthError, type AuthErrorCopy } from "@/lib/auth-errors";
+import { annualPassCheckoutPath, cleanAnnualPassSignupPath } from "@/lib/routes";
 import { createBrowserClient } from "@/lib/supabase";
 
 type FieldErrors = Partial<Record<"email" | "password", string>>;
@@ -25,7 +26,38 @@ export default function LoginPage() {
 
   useEffect(() => {
     const next = getSafeNextPath();
-    setSignupHref(next === "/espace-etudiant" ? "/auth/signup" : `/auth/signup?next=${encodeURIComponent(next)}`);
+    setSignupHref(
+      next === annualPassCheckoutPath
+        ? cleanAnnualPassSignupPath
+        : next === "/espace-etudiant"
+          ? "/auth/signup"
+          : `/auth/signup?next=${encodeURIComponent(next)}`
+    );
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function continueExistingSession() {
+      const supabase = createBrowserClient();
+      if (!supabase) return;
+
+      const { data } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+      const token = data.session?.access_token;
+      if (!token) return;
+
+      const meResponse = await fetch("/api/me", {
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(() => null);
+      if (!meResponse?.ok || cancelled) return;
+
+      window.location.replace(getSafeNextPath());
+    }
+
+    continueExistingSession();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {

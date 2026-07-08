@@ -64,12 +64,48 @@ test("admin rich editor keeps saved light text readable while editing", () => {
   assert.match(css, /caret-color: #071d49;/);
 });
 
+test("admin role gates let formateurs use pedagogical tools while keeping direction sections restricted", () => {
+  assert.match(source("app/admin/layout.tsx"), /requireAdminPage\(\)/);
+  assert.match(source("app/admin/page.tsx"), /profile\.role === "directeur"/);
+  assert.match(source("app/admin/users/layout.tsx"), /requireDirectorPage\("\/admin\/users"\)/);
+  assert.match(source("app/admin/settings/layout.tsx"), /requireDirectorPage\("\/admin\/settings"\)/);
+  assert.match(source("app/api/admin/live/route.ts"), /\["directeur", "formateur"\]/);
+  assert.match(source("app/api/courses/route.ts"), /\["directeur", "formateur"\]/);
+  assert.match(source("app/api/homework/route.ts"), /\["directeur", "formateur"\]/);
+});
+
 test("SEO surfaces keep the established canonical page while adding the no-apostrophe school query", () => {
   const seo = source("lib/seo.ts");
   const schoolPage = source("app/ecole-apologetique-en-ligne/page.tsx");
   assert.match(seo, /L'Institut Saint Irénée propose des formations catholiques structurées/);
   assert.match(schoolPage, /canonical: "\/ecole-apologetique-en-ligne"/);
   assert.match(schoolPage, /école apologétique catholique/);
+});
+
+test("clean annual pass signup URL stays private and preserves the checkout flow", () => {
+  const routes = source("lib/routes.ts");
+  const nextConfig = source("next.config.ts");
+  const cleanSignupPage = source("app/inscription/page.tsx");
+  const proxy = source("proxy.ts");
+  const signupPage = source("app/auth/signup/page.tsx");
+  const userMenu = source("components/UserMenu.tsx");
+  const buyButton = source("components/BuyCourseButton.tsx");
+  const loginPage = source("app/auth/login/page.tsx");
+
+  assert.match(routes, /annualPassCheckoutPath = "\/formations\?checkout=annual-pass"/);
+  assert.match(routes, /cleanAnnualPassSignupPath = "\/inscription"/);
+  assert.match(nextConfig, /source: cleanAnnualPassSignupPath/);
+  assert.match(nextConfig, /X-Robots-Tag/);
+  assert.match(nextConfig, /noindex, nofollow, noarchive/);
+  assert.match(cleanSignupPage, /import SignupPage from "@\/app\/auth\/signup\/page"/);
+  assert.match(cleanSignupPage, /metadata = privatePageMetadata/);
+  assert.match(proxy, /export function proxy\(request: NextRequest\)/);
+  assert.match(proxy, /request\.nextUrl\.searchParams\.get\("next"\) === annualPassCheckoutPath/);
+  assert.match(proxy, /NextResponse\.redirect\(url, 307\)/);
+  assert.match(signupPage, /window\.location\.pathname === cleanAnnualPassSignupPath/);
+  assert.match(userMenu, /const annualPassSignupHref = cleanAnnualPassSignupPath/);
+  assert.match(buyButton, /window\.location\.href = cleanAnnualPassSignupPath/);
+  assert.match(loginPage, /next === annualPassCheckoutPath/);
 });
 
 test("library migration activates memberships only for an exact 15 euro capture", () => {

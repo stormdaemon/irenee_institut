@@ -1,5 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { LearningDocument, LearningDocumentKind } from "@/lib/learning-documents";
+import type { createServerClient } from "@/lib/supabase";
 
 type IssuableDocument = {
   courseId?: string | null;
@@ -20,7 +20,7 @@ function recipientName(profile: { prenom?: string | null; nom?: string | null; e
   return `${profile.prenom || ""} ${profile.nom || ""}`.trim() || String(profile.email || "Étudiant");
 }
 
-export async function issueLearningDocument(supabase: SupabaseClient, input: IssuableDocument) {
+export async function issueLearningDocument(supabase: NonNullable<ReturnType<typeof createServerClient>>, input: IssuableDocument) {
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("email, prenom, nom")

@@ -77,7 +77,7 @@ export function PaymentsClient({
                 <td><strong>{item.prenom} {item.nom}</strong><br /><small>{item.email}</small></td>
                 <td>{formationLabel(item.formation_choisie)}</td>
                 <td>{item.tarif_applicable || "standard"}</td>
-                <td>{item.modalite_paiement || "paiement libre"} - {item.moyen_paiement || "paypal"}</td>
+                <td>{item.modalite_paiement || "paiement libre"} - {item.moyen_paiement || "stripe"}</td>
                 <td>{formatPrice(9900)}</td>
                 <td><span className="badge">{item.statut_inscription || "en_attente"}</span></td>
                 <td><button className="btn btn-primary" disabled={item.statut_inscription === "validee"} onClick={() => validate(item.id)}>Valider</button></td>
@@ -93,7 +93,7 @@ export function PaymentsClient({
       <h2 className="font-display" style={{ color: "var(--navy)", marginTop: 38 }}>Demandes de livre d'apologetique</h2>
       <div className="card table-wrap">
         <table className="data-table">
-          <thead><tr><th>Etudiant</th><th>Formation</th><th>Livre souhaite</th><th>Commande PayPal</th><th>Statut</th><th>Actions direction</th></tr></thead>
+          <thead><tr><th>Etudiant</th><th>Formation</th><th>Livre souhaite</th><th>Commande paiement</th><th>Statut</th><th>Actions direction</th></tr></thead>
           <tbody>
             {bookRequests.map(item => (
               <tr key={item.id}>

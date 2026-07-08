@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
+import { runRegistrationAutomation } from "@/lib/google-apps-script";
 
 const allowedFields = [
   "formation_choisie",
@@ -24,5 +25,8 @@ export async function POST(request: Request) {
     updated_at: new Date().toISOString()
   }).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  return NextResponse.json({ ok: true, verified: true, data });
+  const automationWarnings = await runRegistrationAutomation(data).catch(error => [
+    error instanceof Error ? error.message : String(error)
+  ]);
+  return NextResponse.json({ ok: true, verified: true, data, automationWarnings });
 }

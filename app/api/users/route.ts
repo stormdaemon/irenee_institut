@@ -106,8 +106,9 @@ export async function PATCH(request: Request) {
 
     const { data, error } = await auth.supabase.from("course_enrollments").select("*").eq("etudiant_id", id);
     if (error) return NextResponse.json({ ok: false, verified: false, error: error.message }, { status: 400 });
-    if (data.length !== courseIds.length) return NextResponse.json({ ok: false, verified: false, error: "Enrollment verification failed" }, { status: 409 });
-    enrollments = data;
+    const enrollmentRows = data || [];
+    if (enrollmentRows.length !== courseIds.length) return NextResponse.json({ ok: false, verified: false, error: "Enrollment verification failed" }, { status: 409 });
+    enrollments = enrollmentRows;
   }
 
   return NextResponse.json({ ok: true, verified: true, profile, enrollments });

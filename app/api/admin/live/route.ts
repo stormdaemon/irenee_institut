@@ -3,7 +3,7 @@ import { authorizeRequest } from "@/lib/api-auth";
 import { createDailyRoom, getDailyApiKey, slugifyRoomName } from "@/lib/live";
 
 export async function GET(request: Request) {
-  const auth = await authorizeRequest(request, ["directeur"]);
+  const auth = await authorizeRequest(request, ["directeur", "formateur"]);
   if (!auth.ok) return auth.response;
 
   const { data, error } = await auth.supabase
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await authorizeRequest(request, ["directeur"]);
+  const auth = await authorizeRequest(request, ["directeur", "formateur"]);
   if (!auth.ok) return auth.response;
 
   const body = await request.json().catch(() => ({}));

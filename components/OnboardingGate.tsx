@@ -62,11 +62,11 @@ const slides: Slide[] = [
     eyebrow: "Direct",
     title: "Une année accompagnée en direct",
     body:
-      "À partir de décembre 2026, des sessions en direct rythment l'année. Elles permettent de retrouver les intervenants, poser vos questions, approfondir les thèmes du programme et avancer avec les autres étudiants.",
+      "À partir de septembre 2026, des sessions en direct rythment l'année. Elles permettent de retrouver les intervenants, poser vos questions, approfondir les thèmes du programme et avancer avec les autres étudiants.",
     image: "/images/irenee-feature-3.png",
     imagePosition: "52% 50%",
     proof: "Vous n'avancez pas seul.",
-    highlights: ["Dès décembre 2026", "Questions", "Promotion"]
+    highlights: ["Dès septembre 2026", "Questions", "Promotion"]
   },
   {
     eyebrow: "Abbaye",
@@ -155,7 +155,8 @@ function isPassiveOnboardingPath(pathname: string | null) {
   return Boolean(
     pathname?.startsWith("/auth") ||
     pathname?.startsWith("/paiement") ||
-    pathname?.startsWith("/paypal_checkout_valid")
+    pathname?.startsWith("/paypal_checkout_valid") ||
+    pathname?.startsWith("/stripe_webhook")
   );
 }
 
@@ -221,7 +222,7 @@ export function OnboardingGate() {
         return;
       }
 
-      const { data } = await withTimeout(
+      const { data } = await withTimeout<{ data: { session: { access_token?: string } | null } }>(
         supabase.auth.getSession().catch(() => ({ data: { session: null } })),
         sessionTimeoutMs,
         { data: { session: null } }
@@ -252,7 +253,7 @@ export function OnboardingGate() {
       };
     }
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((_event: string, session: { access_token?: string } | null) => {
       if (isPassiveOnboardingPath(pathname)) {
         setStatus("hidden");
         return;

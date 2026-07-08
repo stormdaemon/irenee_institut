@@ -6,6 +6,7 @@ import { BookOpen, Camera, ChevronDown, ClipboardList, LayoutDashboard, LogOut, 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createBrowserClient } from "@/lib/supabase";
 import { cloudinaryAvatarUrl } from "@/lib/cloudinary";
+import { cleanAnnualPassSignupPath } from "@/lib/routes";
 import type { Profile } from "@/lib/types";
 import { AvatarUploader } from "@/components/AvatarUploader";
 
@@ -31,6 +32,8 @@ function avatarSrc(profile: Profile | null) {
 type UserMenuProps = {
   onNavigate?: () => void;
 };
+
+const annualPassSignupHref = cleanAnnualPassSignupPath;
 
 export function UserMenu({ onNavigate }: UserMenuProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -102,7 +105,7 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
     return (
       <>
         <Link href={loginHref} className="btn btn-outline" onClick={onNavigate}>Se connecter</Link>
-        <Link href="/formations?checkout=annual-pass" className="btn btn-primary" onClick={onNavigate}>S'inscrire</Link>
+        <Link href={annualPassSignupHref} className="btn btn-primary" onClick={onNavigate}>S'inscrire</Link>
       </>
     );
   }
@@ -159,4 +162,3 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
     </div>
   );
 }
-

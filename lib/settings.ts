@@ -4,6 +4,9 @@ export const secretSettingKeys = new Set([
   "paypalClientId",
   "paypalClientSecret",
   "paypalWebhookId",
+  "stripeLiteWebhookSecret",
+  "stripeSecretKey",
+  "stripeWebhookSecret",
   "googleAppsScriptMailSecret",
   "dailyApiKey"
 ]);

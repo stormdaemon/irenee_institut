@@ -26,9 +26,9 @@ const faqs = [
   {
     category: "Paiement",
     items: [
-      ["Quels sont les moyens de paiement acceptés ?", "Le pass annuel se règle en ligne par PayPal. Le paiement confirmé active automatiquement l'accès au cursus dans votre espace étudiant."],
+      ["Quels sont les moyens de paiement acceptés ?", "Le pass annuel se règle en ligne par paiement sécurisé. Le paiement confirmé active automatiquement l'accès au cursus dans votre espace étudiant."],
       ["Pourquoi le pass annuel est-il en participation libre ?", "Le prix conseillé est de 99 euros. La participation libre permet aux étudiants de contribuer selon leurs moyens tout en soutenant l'accessibilité de la formation."],
-      ["Que faire si je ne peux pas régler le prix conseillé ?", "Vous pouvez choisir un montant plus bas dans la fenêtre PayPal. Pour une situation particulière, contactez l'équipe avant ou après l'inscription."],
+      ["Que faire si je ne peux pas régler le prix conseillé ?", "Vous pouvez choisir un montant plus bas dans la fenêtre de paiement. Pour une situation particulière, contactez l'équipe avant ou après l'inscription."],
     ],
   },
   {

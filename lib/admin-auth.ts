@@ -1,35 +1,35 @@
-import { createServerClient as createSupabaseAuthClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { SESSION_COOKIE_NAME, verifyAccessToken } from "@/lib/local-auth";
 import { createServerClient, hasSupabaseEnv } from "@/lib/supabase";
+import type { Profile, Role } from "@/lib/types";
 
-export async function requireDirectorPage() {
-  if (!hasSupabaseEnv()) redirect("/auth/login?next=/admin");
+function loginRedirect(nextPath: string): never {
+  redirect(`/auth/login?next=${encodeURIComponent(nextPath)}`);
+}
+
+export async function requireAdminPage(allowedRoles: Role[] = ["directeur", "formateur"], nextPath = "/admin") {
+  if (!hasSupabaseEnv()) loginRedirect(nextPath);
 
   const cookieStore = await cookies();
-  const authClient = createSupabaseAuthClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: cookiesToSet => {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
-          } catch {
-            // Server Components cannot always write refreshed cookies.
-          }
-        }
-      }
-    }
-  );
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value || "";
+  if (!token) loginRedirect(nextPath);
 
-  const { data } = await authClient.auth.getUser();
-  if (!data.user) redirect("/auth/login?next=/admin");
+  const { user } = await verifyAccessToken(token);
+  if (!user) loginRedirect(nextPath);
 
   const supabase = createServerClient();
-  if (!supabase) redirect("/auth/login?next=/admin");
+  if (!supabase) loginRedirect(nextPath);
 
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).maybeSingle();
-  if (profile?.role !== "directeur") redirect("/");
+  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+  const typedProfile = profile as Profile | null;
+  if (!typedProfile || !allowedRoles.includes(typedProfile.role)) {
+    redirect(typedProfile?.role === "formateur" ? "/admin" : "/");
+  }
+
+  return typedProfile;
+}
+
+export async function requireDirectorPage(nextPath = "/admin") {
+  return requireAdminPage(["directeur"], nextPath);
 }
