@@ -85,10 +85,17 @@ export function slugifyRoomName(titre: string) {
 }
 
 export class DailyApiError extends Error {
-  constructor(message = "Le service de visioconférence est momentanément indisponible.") {
+  readonly status: number | null;
+
+  constructor(message = "Le service de visioconférence est momentanément indisponible.", status: number | null = null) {
     super(message);
     this.name = "DailyApiError";
+    this.status = status;
   }
+}
+
+export function isDailyRoomNotFoundError(error: unknown) {
+  return error instanceof DailyApiError && error.status === 404;
 }
 
 function assertDailyApiKey(apiKey: string) {
@@ -134,7 +141,7 @@ async function dailyJsonRequest(
   } catch {
     throw new DailyApiError();
   }
-  if (!response.ok) throw new DailyApiError();
+  if (!response.ok) throw new DailyApiError(undefined, response.status);
   return data;
 }
 

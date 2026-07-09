@@ -1,8 +1,10 @@
 import { getPool, query } from "../lib/db";
 import {
+  closeDailyRoom,
   ensureDailyRoomPrivate,
   getDailyApiKey,
   getDailyRoomTimeBounds,
+  isDailyRoomNotFoundError,
   updateDailyRoomTimeBounds
 } from "../lib/live";
 import { createServerClient } from "../lib/supabase";
@@ -37,17 +39,30 @@ async function main() {
   if (!apiKey) throw new Error("La clé Daily côté serveur n'est pas configurée.");
 
   let hardened = 0;
+  let reconciled = 0;
   for (const room of rooms.rows) {
     const roomName = String(room.daily_room_name || "");
+    const bounds = getDailyRoomTimeBounds(room.starts_at, room.ends_at);
+    if (bounds.exp <= Math.floor(Date.now() / 1000)) {
+      try {
+        await closeDailyRoom(apiKey, roomName, Math.floor(Date.now() / 1000) + 10);
+      } catch (error) {
+        if (!isDailyRoomNotFoundError(error)) throw error;
+      }
+      await query(
+        `update public.live_sessions set status='ended',updated_at=now()
+         where id=$1 and status in ('scheduled','live')`,
+        [room.id]
+      );
+      reconciled += 1;
+      continue;
+    }
     await ensureDailyRoomPrivate(apiKey, roomName);
-    await updateDailyRoomTimeBounds(
-      apiKey,
-      roomName,
-      getDailyRoomTimeBounds(room.starts_at, room.ends_at)
-    );
+    await updateDailyRoomTimeBounds(apiKey, roomName, bounds);
     hardened += 1;
   }
   console.info(`${hardened} salle(s) Daily configurée(s) en mode privé avec une fenêtre temporelle stricte.`);
+  console.info(`${reconciled} séance(s) Daily expirée(s) fermée(s) ou réconciliée(s).`);
 }
 
 try {

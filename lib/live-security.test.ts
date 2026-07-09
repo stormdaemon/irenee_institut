@@ -10,6 +10,7 @@ import {
   getDailyRoomTimeBounds,
   getAccessibleLiveCourseIds,
   getLiveJoinDecision,
+  isDailyRoomNotFoundError,
   canManageCourseLiveSessions,
   canManageLiveSession,
   isAllowedLiveStatusTransition,
@@ -116,6 +117,15 @@ test("existing Daily rooms are upgraded to private before issuing access", async
       enforce_unique_user_ids: true
     }
   });
+});
+
+test("Daily exposes only a bounded not-found status so stale rooms can be reconciled", async () => {
+  const { fetcher } = jsonFetch({ error: "not-found" }, 404);
+  const error = await ensureDailyRoomPrivate("daily-test-api-key", "patristique-secure", fetcher)
+    .then(() => null)
+    .catch(caught => caught);
+  assert.equal(isDailyRoomNotFoundError(error), true);
+  assert.equal(error instanceof Error ? error.message : "", "Le service de visioconférence est momentanément indisponible.");
 });
 
 test("ending a session expires the Daily room and ejects connected participants", async () => {
@@ -354,6 +364,9 @@ test("legacy Daily hardening restores privacy and server-side time bounds", () =
   const script = readFileSync("scripts/harden-daily-rooms.ts", "utf8");
   assert.match(script, /select id,daily_room_name,starts_at,ends_at from public\.live_sessions/);
   assert.match(script, /getDailyRoomTimeBounds\(room\.starts_at, room\.ends_at\)/);
+  assert.match(script, /bounds\.exp <= Math\.floor\(Date\.now\(\) \/ 1000\)/);
+  assert.match(script, /isDailyRoomNotFoundError/);
+  assert.match(script, /status='ended'/);
 
   const privacyUpdate = script.indexOf("await ensureDailyRoomPrivate(");
   const timeBoundsUpdate = script.indexOf("await updateDailyRoomTimeBounds(");
