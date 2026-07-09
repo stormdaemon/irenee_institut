@@ -116,7 +116,7 @@ function studentHtml(pass: AnnualPassRow, profile: ProfileRow) {
       <p style="margin:0 0 16px">Votre pass annuel de l'Institut d'Apologetique Saint Irenee est bien actif. Vous pouvez acceder a l'ensemble du cursus depuis votre espace etudiant.</p>
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:22px 0;border:1px solid rgba(220,180,107,.28);border-radius:8px;background:rgba(220,180,107,.06)">
         <tr><td style="padding:14px 16px;color:#fff3dc;font-weight:700">Validite</td><td style="padding:14px 16px;color:#f0dfc2">${escapeHtml(formatDate(pass.starts_at))} - ${escapeHtml(formatDate(pass.expires_at))}</td></tr>
-        <tr><td style="padding:14px 16px;color:#fff3dc;font-weight:700;border-top:1px solid rgba(220,180,107,.18)">Commande</td><td style="padding:14px 16px;color:#f0dfc2;border-top:1px solid rgba(220,180,107,.18)">${escapeHtml(pass.provider_order_id || "PayPal")}</td></tr>
+        <tr><td style="padding:14px 16px;color:#fff3dc;font-weight:700;border-top:1px solid rgba(220,180,107,.18)">Commande</td><td style="padding:14px 16px;color:#f0dfc2;border-top:1px solid rgba(220,180,107,.18)">${escapeHtml(pass.provider_order_id || "Paiement en ligne")}</td></tr>
       </table>
       <p style="margin:0 0 22px">Vous recevrez les documents pedagogiques et certificats par email au fur et a mesure de votre progression.</p>
       <p style="margin:0"><a href="${SITE_URL}/espace-etudiant" style="display:inline-block;background:#dcb46b;color:#071523;text-decoration:none;font-weight:700;padding:13px 18px;border-radius:6px">Ouvrir mon espace etudiant</a></p>

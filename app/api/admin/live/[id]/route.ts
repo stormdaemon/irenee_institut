@@ -5,7 +5,7 @@ import type { LiveSessionStatus } from "@/lib/live";
 const allowedStatuses = new Set<LiveSessionStatus>(["scheduled", "live", "ended", "cancelled"]);
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await authorizeRequest(request, ["directeur"]);
+  const auth = await authorizeRequest(request, ["directeur", "formateur"]);
   if (!auth.ok) return auth.response;
 
   const { id } = await params;

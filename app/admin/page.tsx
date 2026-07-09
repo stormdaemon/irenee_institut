@@ -1,23 +1,27 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { BarChart3, BookOpen, ClipboardList, CreditCard, FileText, KeyRound, Radio, Settings, Users } from "lucide-react";
-import { getCourses, getCurrentProfile, getHomework, getPaymentRequests, getProfiles, getStats } from "@/lib/server-data";
+import { requireAdminPage } from "@/lib/admin-auth";
+import { getCourses, getHomework, getPaymentRequests, getProfiles, getStats } from "@/lib/server-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const [courses, profile, stats, profiles, homework, paymentRequests] = await Promise.all([
+  const profile = await requireAdminPage();
+  const isDirector = profile.role === "directeur";
+  const [courses, homework] = await Promise.all([
     getCourses(),
-    getCurrentProfile(),
-    getStats(),
-    getProfiles(),
-    getHomework(),
-    getPaymentRequests()
+    getHomework()
   ]);
-  const cards: [LucideIcon, string, string, string][] = [
+  const [stats, profiles, paymentRequests] = isDirector
+    ? await Promise.all([getStats(), getProfiles(), getPaymentRequests()])
+    : [{ cours: courses.length, etudiants: 0, inscriptions: 0 }, [], []];
+  const staffCards: [LucideIcon, string, string, string][] = [
     [BookOpen, "Gérer les cours", "Créer, modifier les modules et publier", "/admin/courses"],
     [ClipboardList, "Devoirs", "Créer, assigner et suivre les devoirs", "/admin/homework"],
-    [Radio, "Séances en direct", "Programmer les visios Daily hebdomadaires", "/admin/live"],
+    [Radio, "Séances en direct", "Programmer les visios Daily hebdomadaires", "/admin/live"]
+  ];
+  const directorCards: [LucideIcon, string, string, string][] = [
     [CreditCard, "Paiements", "Valider les demandes d'inscription", "/admin/payments"],
     [KeyRound, "Accès étudiants", "Vérifier les cours et pass annuels", "/admin/access"],
     [Users, "Utilisateurs", "Étudiants, formateurs et rôles", "/admin/users"],
@@ -25,6 +29,7 @@ export default async function AdminPage() {
     [BarChart3, "Statistiques", "Tableaux de bord et analyses", "/admin/stats"],
     [FileText, "Pages légales", "Éditer les mentions, confidentialité et CGV", "/admin/legal"]
   ];
+  const cards = isDirector ? [...staffCards, ...directorCards] : staffCards;
 
   return (
     <section className="section">
@@ -32,7 +37,7 @@ export default async function AdminPage() {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
           <div>
             <h1 className="title">Dashboard Administration</h1>
-            <p className="subtitle">Accès complet à la plateforme Institut Saint Irénée</p>
+            <p className="subtitle">{isDirector ? "Accès complet à la plateforme Institut Saint Irénée" : "Espace pédagogique formateur"}</p>
           </div>
           <Link href="/" className="btn btn-outline">Déconnexion</Link>
         </div>
@@ -47,9 +52,9 @@ export default async function AdminPage() {
 
         <div className="kpi-grid">
           <div className="kpi"><BookOpen color="#3478ff" /><strong>{stats.cours}</strong><span>Cours totaux</span></div>
-          <div className="kpi"><Users color="#22c55e" /><strong>{stats.etudiants}</strong><span>Étudiants</span></div>
-          <div className="kpi"><CreditCard color="#eab308" /><strong>{paymentRequests.length}</strong><span>Inscriptions</span></div>
           <div className="kpi"><ClipboardList color="#a855f7" /><strong>{homework.length}</strong><span>Devoirs</span></div>
+          {isDirector && <div className="kpi"><Users color="#22c55e" /><strong>{stats.etudiants}</strong><span>Étudiants</span></div>}
+          {isDirector && <div className="kpi"><CreditCard color="#eab308" /><strong>{paymentRequests.length}</strong><span>Inscriptions</span></div>}
         </div>
 
         <div className="admin-grid" style={{ marginTop: 34 }}>
@@ -78,6 +83,7 @@ export default async function AdminPage() {
             ))}
           </section>
 
+          {isDirector ? (
           <section>
             <h2 className="font-display" style={{ color: "var(--navy)" }}>Activité plateforme</h2>
             <div className="card table-wrap">
@@ -95,6 +101,18 @@ export default async function AdminPage() {
               </table>
             </div>
           </section>
+          ) : (
+          <section>
+            <h2 className="font-display" style={{ color: "var(--navy)" }}>Devoirs récents</h2>
+            {homework.slice(0, 6).map(item => (
+              <div className="card" key={item.id} style={{ padding: 22, marginBottom: 16 }}>
+                <h3 style={{ color: "var(--navy)", marginTop: 0 }}>{item.titre}</h3>
+                <p className="muted">{item.description}</p>
+                <Link className="btn btn-outline" href="/admin/homework" style={{ width: "100%" }}>Voir les devoirs</Link>
+              </div>
+            ))}
+          </section>
+          )}
         </div>
       </div>
     </section>

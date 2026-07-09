@@ -155,7 +155,8 @@ function isPassiveOnboardingPath(pathname: string | null) {
   return Boolean(
     pathname?.startsWith("/auth") ||
     pathname?.startsWith("/paiement") ||
-    pathname?.startsWith("/paypal_checkout_valid")
+    pathname?.startsWith("/paypal_checkout_valid") ||
+    pathname?.startsWith("/stripe_webhook")
   );
 }
 
@@ -221,7 +222,7 @@ export function OnboardingGate() {
         return;
       }
 
-      const { data } = await withTimeout(
+      const { data } = await withTimeout<{ data: { session: { access_token?: string } | null } }>(
         supabase.auth.getSession().catch(() => ({ data: { session: null } })),
         sessionTimeoutMs,
         { data: { session: null } }
@@ -252,7 +253,7 @@ export function OnboardingGate() {
       };
     }
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((_event: string, session: { access_token?: string } | null) => {
       if (isPassiveOnboardingPath(pathname)) {
         setStatus("hidden");
         return;

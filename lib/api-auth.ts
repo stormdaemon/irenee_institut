@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import type { User } from "@supabase/supabase-js";
 import { createServerClient } from "@/lib/supabase";
+import type { LocalServerUser } from "@/lib/local-server-client";
 import type { Profile, Role } from "@/lib/types";
 
 type ServerClient = NonNullable<ReturnType<typeof createServerClient>>;
@@ -8,7 +8,7 @@ type ServerClient = NonNullable<ReturnType<typeof createServerClient>>;
 type AuthenticatedUser = {
   ok: true;
   supabase: ServerClient;
-  user: User;
+  user: LocalServerUser;
 };
 
 type AuthenticatedProfile = AuthenticatedUser & {

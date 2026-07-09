@@ -5,11 +5,13 @@
  */
 const LEARNING_DOCUMENTS_API_URL = "https://irenee-institut.org/api/automation/learning-documents";
 const ANNUAL_PASS_EMAILS_API_URL = "https://irenee-institut.org/api/automation/annual-pass-emails";
+const ANNUAL_PASS_REMINDERS_API_URL = "https://irenee-institut.org/api/automation/annual-pass-reminders";
 const LEARNING_DOCUMENTS_MAX_ATTACHMENTS_PER_EMAIL = 20;
 
 function sendInstitutQueuedEmails() {
   sendQueuedLearningDocuments();
   sendQueuedAnnualPassEmails();
+  sendQueuedAnnualPassReminderEmails();
 }
 
 function sendQueuedLearningDocuments() {
@@ -133,6 +135,70 @@ function acknowledgeAnnualPassEmail_(job, ok, error, providerId) {
       to: job.to
     })
   });
+}
+
+function sendQueuedAnnualPassReminderEmails() {
+  sendAnnualPassReminderQueue_(ANNUAL_PASS_REMINDERS_API_URL);
+}
+
+function sendAnnualPassReminderEmailsFor(email) {
+  sendAnnualPassReminderQueue_(ANNUAL_PASS_REMINDERS_API_URL + "?email=" + encodeURIComponent(email));
+}
+
+function sendAnnualPassReminderQueue_(url) {
+  var queueResponse = UrlFetchApp.fetch(url, {
+    headers: { Authorization: "Bearer " + WEBHOOK_SECRET },
+    muteHttpExceptions: true
+  });
+  var queue = JSON.parse(queueResponse.getContentText() || "{}");
+  if (queueResponse.getResponseCode() !== 200 || queue.ok !== true) {
+    throw new Error(queue.error || "Unable to load the annual pass reminder queue.");
+  }
+
+  (queue.jobs || []).forEach(function (job) {
+    sendAnnualPassReminderJob_(job);
+  });
+}
+
+function sendAnnualPassReminderJob_(job) {
+  try {
+    var sent = GmailApp.sendEmail(job.to, job.subject, job.textBody || job.subject, {
+      htmlBody: job.htmlBody,
+      name: "Institut d'apologétique saint Irénée"
+    });
+    acknowledgeAnnualPassReminder_(job, true, "", sent && sent.getId ? sent.getId() : "");
+  } catch (error) {
+    acknowledgeAnnualPassReminder_(job, false, String(error), "");
+  }
+}
+
+function acknowledgeAnnualPassReminder_(job, ok, error, providerId) {
+  UrlFetchApp.fetch(ANNUAL_PASS_REMINDERS_API_URL, {
+    contentType: "application/json",
+    headers: { Authorization: "Bearer " + WEBHOOK_SECRET },
+    method: "post",
+    muteHttpExceptions: true,
+    payload: JSON.stringify({
+      campaignKey: job.campaignKey,
+      error: error,
+      jobId: job.jobId,
+      ok: ok,
+      profileId: job.profileId,
+      providerId: providerId,
+      to: job.to
+    })
+  });
+}
+
+function installInstitutEmailTrigger() {
+  var handler = "sendInstitutQueuedEmails";
+  var exists = ScriptApp.getProjectTriggers().some(function (trigger) {
+    return trigger.getHandlerFunction && trigger.getHandlerFunction() === handler;
+  });
+
+  if (!exists) {
+    ScriptApp.newTrigger(handler).timeBased().everyMinutes(10).create();
+  }
 }
 
 function installAnnualPassEmailTrigger() {

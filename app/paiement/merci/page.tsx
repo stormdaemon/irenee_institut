@@ -13,8 +13,8 @@ export default async function PaymentSuccessPage({ searchParams }: { searchParam
           <h1 className="title" style={{ marginTop: 18 }}>Paiement confirmé</h1>
           <p className="subtitle">
             {isLibraryMembership
-              ? "PayPal a confirmé le paiement. Votre adhésion à la bibliothèque est active : vous pouvez maintenant demander le livre de votre choix depuis votre espace étudiant."
-              : "PayPal a confirmé le paiement. Votre pass annuel est actif et l'ensemble du cursus apparaît dans votre espace étudiant."}
+              ? "Le paiement a été confirmé. Votre adhésion à la bibliothèque est active : vous pouvez maintenant demander le livre de votre choix depuis votre espace étudiant."
+              : "Le paiement a été confirmé. Votre pass annuel est actif et l'ensemble du cursus apparaît dans votre espace étudiant."}
           </p>
           <p style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <Link className="btn btn-primary" href="/espace-etudiant">Ouvrir mon espace étudiant</Link>

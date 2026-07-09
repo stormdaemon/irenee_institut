@@ -23,15 +23,24 @@ type Settings = {
   paypalWebhookIdConfigured?: boolean;
   paypalEnvironment: "live" | "sandbox";
   paypalDefaultAmountCents: number;
+  stripeApiVersion: string;
+  stripeLiteWebhookSecret: string;
+  stripeLiteWebhookSecretConfigured?: boolean;
+  stripeLiteWebhookUrl: string;
+  stripePublishableKey: string;
+  stripeSecretKey: string;
+  stripeSecretKeyConfigured?: boolean;
+  stripeWebhookSecret: string;
+  stripeWebhookSecretConfigured?: boolean;
+  stripeWebhookUrl: string;
 };
 
-type PayPalTestResult = {
+type StripeTestResult = {
   ok: boolean;
-  appName?: string;
-  environment?: string;
+  apiVersion?: string;
   error?: string;
+  liteWebhookConfigured?: boolean;
   webhookConfigured?: boolean;
-  webhookUrl?: string;
 };
 
 const emptySettings: Settings = {
@@ -47,14 +56,21 @@ const emptySettings: Settings = {
   paypalWebhookUrl: "https://irenee-institut.org/paypal_checkout_valid",
   paypalWebhookId: "",
   paypalEnvironment: "live",
-  paypalDefaultAmountCents: 9900
+  paypalDefaultAmountCents: 9900,
+  stripeApiVersion: "2022-11-15",
+  stripeLiteWebhookSecret: "",
+  stripeLiteWebhookUrl: "https://irenee-institut.org/stripe_webhook_lite",
+  stripePublishableKey: "",
+  stripeSecretKey: "",
+  stripeWebhookSecret: "",
+  stripeWebhookUrl: "https://irenee-institut.org/stripe_webhook"
 };
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Settings>(emptySettings);
   const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [testStatus, setTestStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
-  const [testResult, setTestResult] = useState<PayPalTestResult | null>(null);
+  const [testResult, setTestResult] = useState<StripeTestResult | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -69,7 +85,11 @@ export default function AdminSettingsPage() {
           paypalWebhookId: "",
           googleAppsScriptMailSecret: "",
           paypalEnvironment: data.paypalEnvironment === "sandbox" ? "sandbox" : "live",
-          paypalDefaultAmountCents: Number(data.paypalDefaultAmountCents || 9900)
+          paypalDefaultAmountCents: Number(data.paypalDefaultAmountCents || 9900),
+          stripeApiVersion: data.stripeApiVersion || "2022-11-15",
+          stripeLiteWebhookSecret: "",
+          stripeSecretKey: "",
+          stripeWebhookSecret: ""
         }));
       })
       .catch(() => undefined);
@@ -93,7 +113,14 @@ export default function AdminSettingsPage() {
       paypalWebhookUrl: settings.paypalWebhookUrl,
       paypalWebhookId: settings.paypalWebhookId,
       paypalEnvironment: settings.paypalEnvironment,
-      paypalDefaultAmountCents: settings.paypalDefaultAmountCents
+      paypalDefaultAmountCents: settings.paypalDefaultAmountCents,
+      stripeApiVersion: settings.stripeApiVersion,
+      stripeLiteWebhookSecret: settings.stripeLiteWebhookSecret,
+      stripeLiteWebhookUrl: settings.stripeLiteWebhookUrl,
+      stripePublishableKey: settings.stripePublishableKey,
+      stripeSecretKey: settings.stripeSecretKey,
+      stripeWebhookSecret: settings.stripeWebhookSecret,
+      stripeWebhookUrl: settings.stripeWebhookUrl
     };
 
     const response = await authenticatedFetch("/api/settings", {
@@ -113,7 +140,10 @@ export default function AdminSettingsPage() {
           paypalClientSecret: "",
           paypalWebhookId: "",
           googleAppsScriptMailSecret: "",
-          paypalEnvironment: refreshed.paypalEnvironment === "sandbox" ? "sandbox" : "live"
+          paypalEnvironment: refreshed.paypalEnvironment === "sandbox" ? "sandbox" : "live",
+          stripeLiteWebhookSecret: "",
+          stripeSecretKey: "",
+          stripeWebhookSecret: ""
         }));
       }
     } else {
@@ -122,10 +152,10 @@ export default function AdminSettingsPage() {
     }
   }
 
-  async function testPayPal() {
+  async function testStripe() {
     setTestStatus("saving");
     setTestResult(null);
-    const response = await authenticatedFetch("/api/payments/paypal/test");
+    const response = await authenticatedFetch("/api/payments/stripe/test");
     const data = await response.json().catch(() => null);
     setTestResult(data);
     setTestStatus(response.ok && data?.ok ? "success" : "error");
@@ -163,83 +193,85 @@ export default function AdminSettingsPage() {
           <div className="settings-panel">
             <div className="course-editor-head">
               <div>
-                <span className="badge"><ShieldCheck size={14} /> PayPal</span>
-                <h2 className="font-display">Paiement en ligne a montant libre</h2>
+                <span className="badge"><ShieldCheck size={14} /> Stripe</span>
+                <h2 className="font-display">Paiement en ligne securise</h2>
               </div>
-              <button className="btn btn-outline" type="button" onClick={testPayPal} disabled={testStatus === "saving"}>
+              <button className="btn btn-outline" type="button" onClick={testStripe} disabled={testStatus === "saving"}>
                 <TestTube2 size={18} /> {testStatus === "saving" ? "Verification..." : "Verifier"}
               </button>
             </div>
 
             <div className="paypal-settings-note">
               <CheckCircle2 size={18} />
-              <p>Prix conseille par defaut : <strong>99 euros</strong>. L'etudiant peut modifier librement le montant dans la fenetre PayPal, puis son pass annuel est active automatiquement apres capture.</p>
+              <p>API Stripe : <strong>2022-11-15</strong>. Le pass annuel et l'adhesion bibliotheque sont actives automatiquement apres confirmation webhook.</p>
             </div>
 
             <div className="grid-2">
               <p>
-                <label>Nom de l'application PayPal</label>
-                <input className="input" value={settings.paypalAppName} onChange={event => update("paypalAppName", event.target.value)} />
+                <label>Version API Stripe</label>
+                <input className="input" value={settings.stripeApiVersion} onChange={event => update("stripeApiVersion", event.target.value)} />
               </p>
               <p>
-                <label>Environnement</label>
-                <select className="input" value={settings.paypalEnvironment} onChange={event => update("paypalEnvironment", event.target.value as Settings["paypalEnvironment"])}>
-                  <option value="live">Production</option>
-                  <option value="sandbox">Sandbox</option>
-                </select>
+                <label>Cle publique Stripe</label>
+                <input className="input" value={settings.stripePublishableKey} onChange={event => update("stripePublishableKey", event.target.value)} placeholder="pk_live_..." autoComplete="off" />
+              </p>
+            </div>
+
+            <p>
+              <label>Cle secrete Stripe</label>
+              <input
+                className="input"
+                type="password"
+                value={settings.stripeSecretKey}
+                onChange={event => update("stripeSecretKey", event.target.value)}
+                placeholder={settings.stripeSecretKeyConfigured ? "Cle secrete deja enregistree" : "Coller la cle sk_live_..."}
+                autoComplete="off"
+              />
+              {settings.stripeSecretKeyConfigured && <small className="auth-help">Cle secrete deja enregistree. Laissez vide pour la conserver.</small>}
+            </p>
+
+            <div className="grid-2">
+              <p>
+                <label>Adresse webhook snapshot</label>
+                <input className="input" value={settings.stripeWebhookUrl} onChange={event => update("stripeWebhookUrl", event.target.value)} />
+              </p>
+              <p>
+                <label>Secret webhook snapshot</label>
+                <input
+                  className="input"
+                  type="password"
+                  value={settings.stripeWebhookSecret}
+                  onChange={event => update("stripeWebhookSecret", event.target.value)}
+                  placeholder={settings.stripeWebhookSecretConfigured ? "Secret deja enregistre" : "whsec_..."}
+                  autoComplete="off"
+                />
+                {settings.stripeWebhookSecretConfigured && <small className="auth-help">Secret deja enregistre. Laissez vide pour le conserver.</small>}
               </p>
             </div>
 
             <div className="grid-2">
               <p>
-                <label>Client ID</label>
+                <label>Adresse webhook leger</label>
+                <input className="input" value={settings.stripeLiteWebhookUrl} onChange={event => update("stripeLiteWebhookUrl", event.target.value)} />
+              </p>
+              <p>
+                <label>Secret webhook leger</label>
                 <input
                   className="input"
                   type="password"
-                  value={settings.paypalClientId}
-                  onChange={event => update("paypalClientId", event.target.value)}
-                  placeholder={settings.paypalClientIdConfigured ? "Client ID deja enregistre" : "Coller le Client ID PayPal"}
+                  value={settings.stripeLiteWebhookSecret}
+                  onChange={event => update("stripeLiteWebhookSecret", event.target.value)}
+                  placeholder={settings.stripeLiteWebhookSecretConfigured ? "Secret deja enregistre" : "whsec_..."}
                   autoComplete="off"
                 />
-                {settings.paypalClientIdConfigured && <small className="auth-help">Client ID deja enregistre. Laissez vide pour le conserver.</small>}
-              </p>
-              <p>
-                <label>Secret PayPal</label>
-                <input
-                  className="input"
-                  type="password"
-                  value={settings.paypalClientSecret}
-                  onChange={event => update("paypalClientSecret", event.target.value)}
-                  placeholder={settings.paypalClientSecretConfigured ? "Secret deja enregistre" : "Coller le secret PayPal"}
-                  autoComplete="off"
-                />
-                {settings.paypalClientSecretConfigured && <small className="auth-help">Secret deja enregistre. Laissez vide pour le conserver.</small>}
-              </p>
-            </div>
-
-            <div className="grid-2">
-              <p>
-                <label>Adresse webhook PayPal</label>
-                <input className="input" value={settings.paypalWebhookUrl} onChange={event => update("paypalWebhookUrl", event.target.value)} />
-              </p>
-              <p>
-                <label>ID webhook PayPal</label>
-                <input
-                  className="input"
-                  type="password"
-                  value={settings.paypalWebhookId}
-                  onChange={event => update("paypalWebhookId", event.target.value)}
-                  placeholder={settings.paypalWebhookIdConfigured ? "Webhook ID deja enregistre" : "Renseigne automatiquement apres creation"}
-                  autoComplete="off"
-                />
-                {settings.paypalWebhookIdConfigured && <small className="auth-help">Webhook ID deja enregistre. Laissez vide pour le conserver.</small>}
+                {settings.stripeLiteWebhookSecretConfigured && <small className="auth-help">Secret deja enregistre. Laissez vide pour le conserver.</small>}
               </p>
             </div>
 
             <ActionNotice
               status={testStatus}
-              success={`Connexion PayPal validee${testResult?.webhookConfigured ? " avec webhook configure" : ""}.`}
-              error={testResult?.error || "La verification PayPal a echoue."}
+              success={`Connexion Stripe validee${testResult?.webhookConfigured && testResult?.liteWebhookConfigured ? " avec webhooks configures" : ""}.`}
+              error={testResult?.error || "La verification Stripe a echoue."}
             />
           </div>
 

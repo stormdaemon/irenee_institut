@@ -3,6 +3,7 @@ import { authorizeRequest } from "@/lib/api-auth";
 import { legalPages } from "@/lib/legal";
 import { parseSettingValue, secretSettingKeys, stringifySettingValue } from "@/lib/settings";
 import { PAYPAL_DEFAULT_AMOUNT_CENTS, PAYPAL_WEBHOOK_URL } from "@/lib/paypal";
+import { STRIPE_API_VERSION, STRIPE_LITE_WEBHOOK_URL, STRIPE_WEBHOOK_URL } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase";
 
 const defaults = {
@@ -26,7 +27,17 @@ const defaults = {
   paypalWebhookId: "",
   paypalWebhookIdConfigured: false,
   paypalEnvironment: "live",
-  paypalDefaultAmountCents: PAYPAL_DEFAULT_AMOUNT_CENTS
+  paypalDefaultAmountCents: PAYPAL_DEFAULT_AMOUNT_CENTS,
+  stripeApiVersion: STRIPE_API_VERSION,
+  stripeLiteWebhookSecret: "",
+  stripeLiteWebhookSecretConfigured: false,
+  stripeLiteWebhookUrl: STRIPE_LITE_WEBHOOK_URL,
+  stripePublishableKey: "",
+  stripeSecretKey: "",
+  stripeSecretKeyConfigured: false,
+  stripeWebhookSecret: "",
+  stripeWebhookSecretConfigured: false,
+  stripeWebhookUrl: STRIPE_WEBHOOK_URL
 };
 
 const editableSettingKeys = new Set([
@@ -42,7 +53,14 @@ const editableSettingKeys = new Set([
   "paypalEnvironment",
   "paypalWebhookId",
   "paypalWebhookUrl",
-  "rib"
+  "rib",
+  "stripeApiVersion",
+  "stripeLiteWebhookSecret",
+  "stripeLiteWebhookUrl",
+  "stripePublishableKey",
+  "stripeSecretKey",
+  "stripeWebhookSecret",
+  "stripeWebhookUrl"
 ]);
 
 const editableLegalSlugs = new Set(Object.keys(legalPages));
@@ -95,6 +113,12 @@ export async function GET(request: Request) {
     paypalClientSecretPreview: "",
     paypalWebhookId: "",
     paypalWebhookIdConfigured: Boolean(rawSettingsObject.paypalWebhookId),
+    stripeLiteWebhookSecret: "",
+    stripeLiteWebhookSecretConfigured: Boolean(rawSettingsObject.stripeLiteWebhookSecret),
+    stripeSecretKey: "",
+    stripeSecretKeyConfigured: Boolean(rawSettingsObject.stripeSecretKey),
+    stripeWebhookSecret: "",
+    stripeWebhookSecretConfigured: Boolean(rawSettingsObject.stripeWebhookSecret),
     googleAppsScriptMailSecret: "",
     googleAppsScriptMailSecretConfigured: Boolean(rawSettingsObject.googleAppsScriptMailSecret)
   };

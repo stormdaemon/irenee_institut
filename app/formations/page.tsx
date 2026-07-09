@@ -27,7 +27,7 @@ const formationQuestions = [
   {
     question: "Que se passe-t-il juste après le paiement ?",
     answer:
-      "Après confirmation PayPal, le pass est activé automatiquement sur votre compte. Vous êtes redirigé vers votre espace étudiant, où les cours du cursus apparaissent avec votre progression, les séances en direct et les documents pédagogiques."
+      "Après confirmation du paiement en ligne, le pass est activé automatiquement sur votre compte. Vous êtes redirigé vers votre espace étudiant, où les cours du cursus apparaissent avec votre progression, les séances en direct et les documents pédagogiques."
   },
   {
     question: "Pourquoi le prix est-il indiqué comme participation libre ?",
@@ -63,7 +63,7 @@ const formationQuestions = [
 
 const passHighlights = [
   "Première formation francophone en apologétique",
-  "Rencontres en direct à partir de décembre 2026",
+  "Premières rencontres en visio conférence à partir de septembre 2026",
   "Accès complet au cursus pendant 365 jours",
   "Cours déjà publiés et nouveaux contenus de l'année",
   "Progression visible dans l'espace étudiant",
@@ -72,7 +72,7 @@ const passHighlights = [
 ];
 
 const reassuranceItems = [
-  ["Paiement sécurisé", "PayPal traite le règlement et confirme automatiquement l'activation du pass."],
+  ["Paiement sécurisé", "Stripe traite le règlement et confirme automatiquement l'activation du pass."],
   ["Compte personnel", "Vos cours, validations, documents et certificats restent rattachés à votre espace étudiant."],
   ["Prix accessible", "99 € conseillés, avec une participation libre pour ne pas bloquer les étudiants motivés."],
   ["Cadre légal clair", "Mentions légales, CGV, confidentialité, association porteuse et SIREN sont disponibles en pied de page."]
@@ -133,7 +133,7 @@ export default async function FormationsPage() {
           </p>
           <div className="formation-hero-highlights">
             <span>Première formation francophone en apologétique</span>
-            <span>Rencontres en direct dès décembre 2026</span>
+            <span>Premières rencontres en visio conférence à partir de septembre 2026</span>
           </div>
           <div className="hero-actions formation-hero-actions">
             <Link className="btn btn-gold" href="/formations?checkout=annual-pass">
@@ -163,7 +163,7 @@ export default async function FormationsPage() {
             </p>
             <BuyCourseButton />
             <p className="payment-note">
-              <ShieldCheck size={17} /> Paiement sécurisé par PayPal. Activation automatique du pass après confirmation.
+              <ShieldCheck size={17} /> Paiement sécurisé par Stripe. Activation automatique du pass après confirmation.
             </p>
             <p className="payment-note">
               <CreditCard size={17} /> Vous pouvez ajuster librement le montant dans la fenêtre de paiement selon vos moyens.

@@ -1,6 +1,5 @@
 "use server";
 
-import { capturePayPalOrder, createPayPalOrder, extractCompletedCapture, getPayPalConfig, PAYPAL_CURRENCY } from "@/lib/paypal";
 import {
   LIBRARY_MEMBERSHIP_AMOUNT_CENTS,
   LIBRARY_MEMBERSHIP_NAME,
@@ -8,6 +7,7 @@ import {
   LIBRARY_MEMBERSHIP_SLUG
 } from "@/lib/library";
 import { getSystemSettings } from "@/lib/settings";
+import { createStripeCheckoutSession, getStripeConfig, STRIPE_CURRENCY } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase";
 import type { Profile } from "@/lib/types";
 
@@ -17,10 +17,6 @@ type ActionInput = {
 
 type CreateOrderInput = ActionInput & {
   origin: string;
-};
-
-type CaptureOrderInput = ActionInput & {
-  orderId: string;
 };
 
 async function getStudentContext(token: string) {
@@ -44,20 +40,20 @@ async function getStudentContext(token: string) {
   };
 }
 
-export async function getLibraryPayPalConfigAction() {
+export async function getLibraryStripeConfigAction() {
   const supabase = createServerClient();
   if (!supabase) return { ok: false, error: "Le paiement est momentanement indisponible." };
 
   try {
-    const config = getPayPalConfig(await getSystemSettings(supabase));
-    if (!config.clientId) return { ok: false, error: "Le paiement PayPal n'est pas encore configure." };
-    return { ok: true, clientId: config.clientId, currency: PAYPAL_CURRENCY };
+    const config = getStripeConfig(await getSystemSettings(supabase));
+    if (!config.secretKey) return { ok: false, error: "Le paiement Stripe n'est pas encore configure." };
+    return { ok: true, currency: STRIPE_CURRENCY };
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "Configuration PayPal indisponible." };
+    return { ok: false, error: error instanceof Error ? error.message : "Configuration Stripe indisponible." };
   }
 }
 
-export async function createLibraryMembershipOrderAction(input: CreateOrderInput) {
+export async function createLibraryMembershipCheckoutSessionAction(input: CreateOrderInput) {
   try {
     const context = await getStudentContext(input.token);
     if ("error" in context) return { ok: false, error: context.error, status: context.status };
@@ -73,21 +69,22 @@ export async function createLibraryMembershipOrderAction(input: CreateOrderInput
 
     if (membership) return { ok: true, alreadyActive: true, redirectUrl: "/espace-etudiant" };
 
-    const config = getPayPalConfig(await getSystemSettings(context.supabase));
-    const order = await createPayPalOrder({
+    const config = getStripeConfig(await getSystemSettings(context.supabase));
+    const session = await createStripeCheckoutSession({
       config,
       input: {
         amountCents: LIBRARY_MEMBERSHIP_AMOUNT_CENTS,
         bookRequested: false,
-        cancelPath: "/bibliotheque-apologetique?paypal_cancelled=1",
+        cancelPath: "/bibliotheque-apologetique?stripe_cancelled=1",
         course: {
           id: LIBRARY_MEMBERSHIP_PRODUCT_ID,
           slug: LIBRARY_MEMBERSHIP_SLUG,
           titre: LIBRARY_MEMBERSHIP_NAME
         },
         origin: input.origin || "https://irenee-institut.org",
+        productType: "library_membership",
         profile: context.profile,
-        returnPath: "/paiement/merci?product=library-membership"
+        returnPath: "/paiement/merci?product=library-membership&stripe_session_id={CHECKOUT_SESSION_ID}"
       }
     });
 
@@ -96,68 +93,19 @@ export async function createLibraryMembershipOrderAction(input: CreateOrderInput
       book_requested: false,
       book_request_status: "none",
       course_id: null,
-      currency: PAYPAL_CURRENCY,
-      order_id: String(order.id),
+      currency: STRIPE_CURRENCY,
+      order_id: String(session.id),
+      provider: "stripe",
       product_type: "library_membership",
-      raw_order: order,
-      status: String(order.status || "CREATED").toLowerCase(),
+      raw_order: session,
+      status: String(session.status || "open").toLowerCase(),
       updated_at: new Date().toISOString(),
       user_id: context.userId
     }, { onConflict: "order_id" });
 
     if (orderError) throw new Error(orderError.message);
-    return { ok: true, orderId: String(order.id) };
+    return { ok: true, checkoutUrl: String(session.url), sessionId: String(session.id) };
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "La commande PayPal n'a pas pu etre creee." };
-  }
-}
-
-export async function captureLibraryMembershipOrderAction(input: CaptureOrderInput) {
-  try {
-    const context = await getStudentContext(input.token);
-    if ("error" in context) return { ok: false, error: context.error, status: context.status };
-
-    const { data: orderRow, error: orderError } = await context.supabase
-      .from("paypal_orders")
-      .select("*")
-      .eq("order_id", input.orderId)
-      .eq("product_type", "library_membership")
-      .eq("user_id", context.userId)
-      .maybeSingle();
-
-    if (orderError) return { ok: false, error: orderError.message };
-    if (!orderRow) return { ok: false, error: "Commande PayPal introuvable pour cette adhesion." };
-
-    const config = getPayPalConfig(await getSystemSettings(context.supabase));
-    const capture = await capturePayPalOrder({ config, orderId: input.orderId });
-    const summary = extractCompletedCapture(capture);
-
-    if (!summary || summary.status !== "COMPLETED") {
-      return { ok: false, error: "PayPal n'a pas confirme la capture du paiement." };
-    }
-
-    const { data, error } = await context.supabase.rpc("validate_paypal_payment", {
-      p_amount_total: summary.amountCents || Number(orderRow.amount_total || 0),
-      p_book_requested: false,
-      p_book_title: "",
-      p_capture_id: summary.captureId,
-      p_course_id: null,
-      p_currency: summary.currency || PAYPAL_CURRENCY,
-      p_event_name: "paypal_library_membership_capture_completed",
-      p_order_id: input.orderId,
-      p_product_type: "library_membership",
-      p_raw_payload: capture,
-      p_user_id: context.userId
-    });
-
-    if (error) return { ok: false, error: error.message };
-    return {
-      ok: true,
-      data,
-      redirectUrl: "/paiement/merci?product=library-membership"
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Le paiement PayPal n'a pas pu etre capture.";
-    return { ok: false, error: message, recoverable: message.includes("INSTRUMENT_DECLINED") };
+    return { ok: false, error: error instanceof Error ? error.message : "La session Stripe n'a pas pu etre creee." };
   }
 }

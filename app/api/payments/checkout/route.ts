@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ANNUAL_PASS_NAME, ANNUAL_PASS_PRODUCT_ID, ANNUAL_PASS_SLUG } from "@/lib/curriculum";
-import { createPayPalOrder, getPayPalConfig, normalizeBookTitle, parseEuroAmountToCents, PAYPAL_CURRENCY } from "@/lib/paypal";
 import { getSystemSettings } from "@/lib/settings";
+import { createStripeCheckoutSession, getStripeConfig, normalizeStripeBookTitle, parseStripeAmountToCents, STRIPE_CURRENCY } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase";
 import type { Profile } from "@/lib/types";
 
@@ -34,11 +34,11 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
 
   try {
-    const amountCents = parseEuroAmountToCents(body.amount);
-    const bookTitle = normalizeBookTitle(body.bookTitle, Boolean(body.bookRequested));
+    const amountCents = parseStripeAmountToCents(body.amount);
+    const bookTitle = normalizeStripeBookTitle(body.bookTitle, Boolean(body.bookRequested));
     const settings = await getSystemSettings(supabase);
-    const order = await createPayPalOrder({
-      config: getPayPalConfig(settings),
+    const session = await createStripeCheckoutSession({
+      config: getStripeConfig(settings),
       input: {
         amountCents,
         bookRequested: Boolean(body.bookRequested),
@@ -48,6 +48,7 @@ export async function POST(request: Request) {
           titre: ANNUAL_PASS_NAME
         },
         origin: new URL(request.url).origin,
+        productType: "annual_pass",
         profile: profile as Profile
       }
     });
@@ -58,17 +59,18 @@ export async function POST(request: Request) {
       book_request_status: body.bookRequested ? "en_attente_direction" : "none",
       book_title: bookTitle || null,
       course_id: null,
-      currency: PAYPAL_CURRENCY,
-      order_id: String(order.id),
+      currency: STRIPE_CURRENCY,
+      order_id: String(session.id),
+      provider: "stripe",
       product_type: "annual_pass",
-      raw_order: order,
-      status: String(order.status || "CREATED").toLowerCase(),
+      raw_order: session,
+      status: String(session.status || "open").toLowerCase(),
       updated_at: new Date().toISOString(),
       user_id: authData.user.id
     }, { onConflict: "order_id" });
 
     if (orderError) throw new Error(orderError.message);
-    return NextResponse.json({ ok: true, orderId: String(order.id), provider: "paypal" });
+    return NextResponse.json({ ok: true, checkoutUrl: String(session.url), provider: "stripe", sessionId: String(session.id) });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Paiement indisponible." }, { status: 400 });
   }

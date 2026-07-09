@@ -1,8 +1,8 @@
 "use server";
 
-import { capturePayPalOrder, createPayPalOrder, extractCompletedCapture, getPayPalConfig, normalizeBookTitle, parseEuroAmountToCents, PAYPAL_CURRENCY } from "@/lib/paypal";
 import { ANNUAL_PASS_NAME, ANNUAL_PASS_PRODUCT_ID, ANNUAL_PASS_SLUG } from "@/lib/curriculum";
 import { getSystemSettings } from "@/lib/settings";
+import { createStripeCheckoutSession, getStripeConfig, normalizeStripeBookTitle, parseStripeAmountToCents, STRIPE_CURRENCY } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase";
 import type { Profile } from "@/lib/types";
 
@@ -17,11 +17,6 @@ type CreateOrderInput = {
   bookRequested: boolean;
   bookTitle: string;
   origin: string;
-  token: string;
-};
-
-type CaptureOrderInput = {
-  orderId: string;
   token: string;
 };
 
@@ -45,27 +40,25 @@ async function getCheckoutContext(token: string): Promise<CheckoutContext | { er
   };
 }
 
-export async function getPayPalCheckoutConfigAction() {
+export async function getStripeCheckoutConfigAction() {
   const supabase = createServerClient();
   if (!supabase) return { ok: false, error: "Le paiement est momentanement indisponible." };
 
   try {
-    const config = getPayPalConfig(await getSystemSettings(supabase));
-    if (!config.clientId) return { ok: false, error: "Le paiement PayPal n'est pas encore configure." };
+    const config = getStripeConfig(await getSystemSettings(supabase));
+    if (!config.secretKey) return { ok: false, error: "Le paiement Stripe n'est pas encore configure." };
 
     return {
       ok: true,
-      clientId: config.clientId,
-      currency: PAYPAL_CURRENCY,
-      defaultAmount: "99.00",
-      environment: config.environment
+      currency: STRIPE_CURRENCY,
+      defaultAmount: "99.00"
     };
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "Configuration PayPal indisponible." };
+    return { ok: false, error: error instanceof Error ? error.message : "Configuration Stripe indisponible." };
   }
 }
 
-export async function createPayPalOrderAction(input: CreateOrderInput) {
+export async function createStripeCheckoutSessionAction(input: CreateOrderInput) {
   try {
     const context = await getCheckoutContext(input.token);
     if ("error" in context) return { ok: false, error: context.error, status: context.status };
@@ -85,10 +78,10 @@ export async function createPayPalOrderAction(input: CreateOrderInput) {
     }
 
     const settings = await getSystemSettings(supabase);
-    const config = getPayPalConfig(settings);
-    const amountCents = parseEuroAmountToCents(input.amount);
-    const bookTitle = normalizeBookTitle(input.bookTitle, Boolean(input.bookRequested));
-    const order = await createPayPalOrder({
+    const config = getStripeConfig(settings);
+    const amountCents = parseStripeAmountToCents(input.amount);
+    const bookTitle = normalizeStripeBookTitle(input.bookTitle, Boolean(input.bookRequested));
+    const session = await createStripeCheckoutSession({
       config,
       input: {
         amountCents,
@@ -99,86 +92,35 @@ export async function createPayPalOrderAction(input: CreateOrderInput) {
           titre: ANNUAL_PASS_NAME
         },
         origin: input.origin || "https://irenee-institut.org",
+        productType: "annual_pass",
         profile
       }
     });
 
     const { error: orderError } = await supabase.from("paypal_orders").upsert({
-      order_id: String(order.id),
+      order_id: String(session.id),
+      provider: "stripe",
       user_id: userId,
       course_id: null,
       product_type: "annual_pass",
       amount_total: amountCents,
-      currency: PAYPAL_CURRENCY,
-      status: String(order.status || "CREATED").toLowerCase(),
+      currency: STRIPE_CURRENCY,
+      status: String(session.status || "open").toLowerCase(),
       book_requested: Boolean(input.bookRequested),
       book_title: bookTitle || null,
       book_request_status: input.bookRequested ? "en_attente_direction" : "none",
-      raw_order: order,
+      raw_order: session,
       updated_at: new Date().toISOString()
     }, { onConflict: "order_id" });
 
     if (orderError) throw new Error(orderError.message);
 
-    return { ok: true, orderId: String(order.id) };
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "La commande PayPal n'a pas pu etre creee." };
-  }
-}
-
-export async function capturePayPalOrderAction(input: CaptureOrderInput) {
-  try {
-    const supabase = createServerClient();
-    if (!supabase) return { ok: false, error: "Le paiement est momentanement indisponible." };
-
-    const { data: authData, error: authError } = await supabase.auth.getUser(input.token);
-    if (authError || !authData.user) return { ok: false, error: authError?.message || "Session invalide ou expiree.", status: 401 };
-
-    const { data: orderRow, error: orderError } = await supabase
-      .from("paypal_orders")
-      .select("*")
-      .eq("order_id", input.orderId)
-      .eq("user_id", authData.user.id)
-      .maybeSingle();
-
-    if (orderError) return { ok: false, error: orderError.message };
-    if (!orderRow) return { ok: false, error: "Commande PayPal introuvable pour ce compte." };
-
-    const settings = await getSystemSettings(supabase);
-    const capture = await capturePayPalOrder({ config: getPayPalConfig(settings), orderId: input.orderId });
-    const summary = extractCompletedCapture(capture);
-
-    if (!summary || summary.status !== "COMPLETED") {
-      return { ok: false, error: "PayPal n'a pas confirme la capture du paiement." };
-    }
-
-    const { data: rpcData, error: rpcError } = await supabase.rpc("validate_paypal_payment", {
-      p_amount_total: summary.amountCents || Number(orderRow.amount_total || 0),
-      p_book_requested: Boolean(orderRow.book_requested),
-      p_book_title: String(orderRow.book_title || ""),
-      p_capture_id: summary.captureId,
-      p_course_id: orderRow.course_id,
-      p_currency: summary.currency || PAYPAL_CURRENCY,
-      p_event_name: "paypal_capture_completed",
-      p_order_id: input.orderId,
-      p_product_type: String(orderRow.product_type || "annual_pass"),
-      p_raw_payload: capture,
-      p_user_id: authData.user.id
-    });
-
-    if (rpcError) return { ok: false, error: rpcError.message };
-
     return {
       ok: true,
-      data: rpcData,
-      redirectUrl: `/paiement/merci?paypal_order_id=${encodeURIComponent(input.orderId)}`
+      checkoutUrl: String(session.url),
+      sessionId: String(session.id)
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Le paiement PayPal n'a pas pu etre capture.";
-    return {
-      ok: false,
-      error: message,
-      recoverable: message.includes("INSTRUMENT_DECLINED")
-    };
+    return { ok: false, error: error instanceof Error ? error.message : "La session Stripe n'a pas pu etre creee." };
   }
 }

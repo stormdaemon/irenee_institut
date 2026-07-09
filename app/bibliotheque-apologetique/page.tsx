@@ -51,7 +51,7 @@ export default function LibraryPage() {
             <article className="soft-card library-step">
               <Library size={34} />
               <h3>2. Adhésion à 15 EUR</h3>
-              <p className="muted">Réglez l'adhésion annuelle par PayPal. Le tarif est fixe et clairement affiché avant validation.</p>
+              <p className="muted">Réglez l'adhésion annuelle par paiement sécurisé. Le tarif est fixe et clairement affiché avant validation.</p>
             </article>
             <article className="soft-card library-step">
               <BookOpen size={34} />
