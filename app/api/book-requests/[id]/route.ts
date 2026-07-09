@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/api-auth";
+import { readJsonBodyWithLimit, RequestBodyError } from "@/lib/request-body";
 
 const allowedStatuses = new Set(["en_attente_direction", "approuve", "refuse"]);
 
@@ -8,7 +9,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!auth.ok) return auth.response;
 
   const { id } = await params;
-  const body = await request.json().catch(() => ({}));
+  let body: Record<string, unknown>;
+  try {
+    body = await readJsonBodyWithLimit<Record<string, unknown>>(request, 8192);
+  } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
+    return NextResponse.json({ ok: false, error: "Requête invalide." }, { status: 400 });
+  }
   const status = String(body.status || "").trim();
   if (!allowedStatuses.has(status)) {
     return NextResponse.json({ ok: false, error: "Statut de demande invalide." }, { status: 400 });

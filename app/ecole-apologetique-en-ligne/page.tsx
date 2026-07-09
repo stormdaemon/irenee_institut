@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, BookOpen, CheckCircle2, Laptop, MessagesSquare } from "lucide-react";
-import { serializeJsonLd, siteUrl } from "@/lib/seo";
+import { siteUrl } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
 
 const questions = [
   {
@@ -74,9 +75,9 @@ export default function EcoleApologetiqueEnLignePage() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(pageJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqJsonLd) }} />
+      <JsonLd data={pageJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
+      <JsonLd data={faqJsonLd} />
 
       <section className="page-hero">
         <div className="container center">

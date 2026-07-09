@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, BookOpen, ExternalLink } from "lucide-react";
-import { serializeJsonLd, siteUrl } from "@/lib/seo";
+import { siteUrl } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "Ressources d'apologétique catholique",
@@ -87,8 +88,8 @@ export default function RessourcesApologetiquePage() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(itemListJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }} />
+      <JsonLd data={itemListJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
 
       <section className="page-hero">
         <div className="container center">

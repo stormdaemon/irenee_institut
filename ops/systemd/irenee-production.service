@@ -1,0 +1,60 @@
+[Unit]
+Description=Institut Irénée production Next.js application
+After=network-online.target postgresql.service
+Wants=network-online.target postgresql.service
+
+[Service]
+Type=simple
+User=irenee
+Group=irenee
+WorkingDirectory=/srv/irenee-current
+EnvironmentFile=/etc/irenee/production.env
+Environment=NODE_ENV=production
+Environment=PORT=3003
+Environment=HOSTNAME=127.0.0.1
+Environment=AUTH_COOKIE_SECURE=true
+ExecStart=/usr/local/bin/node26 /srv/irenee-current/node_modules/next/dist/bin/next start -p 3003 -H 127.0.0.1
+Restart=always
+RestartSec=5
+TimeoutStartSec=45
+TimeoutStopSec=30
+KillSignal=SIGTERM
+SuccessExitStatus=143
+UMask=0077
+
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectProc=invisible
+ProtectSystem=strict
+ProcSubset=pid
+LockPersonality=true
+RemoveIPC=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+SystemCallErrorNumber=EPERM
+SystemCallFilter=~@clock @cpu-emulation @debug @module @mount @obsolete @privileged @raw-io @reboot @resources @swap
+
+StateDirectory=irenee
+StateDirectoryMode=0750
+CacheDirectory=irenee
+CacheDirectoryMode=0750
+ReadWritePaths=/var/lib/irenee/avatars /srv/irenee-current/.next/cache
+LimitNOFILE=65536
+TasksMax=512
+MemoryMax=2G
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,50 @@
+name: Security and quality gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 4 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      AUDIT_LOG_PEPPER: ci-audit-pepper-with-at-least-thirty-two-characters
+      AUTH_COOKIE_SECURE: "true"
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:65432/irenee_ci_unavailable
+      LOCAL_AUTH_JWT_SECRET: ci-jwt-secret-with-at-least-thirty-two-characters
+      RATE_LIMIT_PEPPER: ci-rate-pepper-with-at-least-thirty-two-characters
+      SETTINGS_ENCRYPTION_KEY: WlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlo=
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.13
+      - run: bun install --frozen-lockfile
+      - run: bun audit
+      - run: bunx tsc --noEmit
+      - run: bun run test:unit
+      - run: bun run build
+
+  codeql:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+      - uses: github/codeql-action/analyze@v3

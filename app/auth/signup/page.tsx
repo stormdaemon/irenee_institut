@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, Loader2, Lock, Mail, UserPlus, UserRound } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, Mail, UserPlus, UserRound } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { translateAuthError, type AuthErrorCopy } from "@/lib/auth-errors";
+import { safeInternalPath } from "@/lib/request-security";
 import { annualPassCheckoutPath, cleanAnnualPassSignupPath } from "@/lib/routes";
 import { createBrowserClient } from "@/lib/supabase";
 
-type FieldErrors = Partial<Record<"prenom" | "nom" | "email" | "password" | "passwordConfirm", string>>;
+type FieldErrors = Partial<Record<"prenom" | "nom" | "email", string>>;
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -18,8 +19,7 @@ function getFieldValue(form: FormData, key: string) {
 function getSafeNextPath() {
   if (typeof window === "undefined") return "/espace-etudiant";
   if (window.location.pathname === cleanAnnualPassSignupPath) return annualPassCheckoutPath;
-  const next = new URLSearchParams(window.location.search).get("next");
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/espace-etudiant";
+  return safeInternalPath(new URLSearchParams(window.location.search).get("next"), "/espace-etudiant");
 }
 
 function validationNotice(errors: FieldErrors) {
@@ -52,15 +52,11 @@ export default function SignupPage() {
     const prenom = getFieldValue(form, "prenom");
     const nom = getFieldValue(form, "nom");
     const email = getFieldValue(form, "email").toLowerCase();
-    const password = String(form.get("password") || "");
-    const passwordConfirm = String(form.get("passwordConfirm") || "");
     const nextFieldErrors: FieldErrors = {};
 
     if (!prenom) nextFieldErrors.prenom = "Indiquez votre prénom.";
     if (!nom) nextFieldErrors.nom = "Indiquez votre nom.";
     if (!emailPattern.test(email)) nextFieldErrors.email = "Indiquez une adresse email valide.";
-    if (password.length < 8) nextFieldErrors.password = "Le mot de passe doit contenir au moins 8 caractères.";
-    if (password !== passwordConfirm) nextFieldErrors.passwordConfirm = "Les deux mots de passe ne correspondent pas.";
 
     if (Object.keys(nextFieldErrors).length) {
       setFieldErrors(nextFieldErrors);
@@ -94,7 +90,6 @@ export default function SignupPage() {
 
     const { data, error } = await supabase.auth.signUp({
       email,
-      password,
       options: {
         data: { prenom, nom },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(getSafeNextPath())}`
@@ -106,77 +101,13 @@ export default function SignupPage() {
       setNotice(translated);
       setStatus("error");
       if (translated.field === "email") setFieldErrors({ email: translated.description });
-      if (translated.field === "password") setFieldErrors({ password: translated.description });
-      return;
-    }
-
-    if (!data.user?.id) {
-      setNotice({
-        title: "Inscription incomplète",
-        description: "Le compte n'a pas pu être créé complètement. Réessayez dans quelques instants.",
-        field: "form"
-      });
-      setStatus("error");
-      return;
-    }
-
-    if (data.user.identities && data.user.identities.length === 0) {
-      await supabase.auth.signOut();
-      setNotice({
-        title: "Adresse email déjà utilisée",
-        description: "Un compte existe déjà avec cette adresse. Connectez-vous avec cet email, ou utilisez une autre adresse.",
-        field: "email"
-      });
-      setFieldErrors({ email: "Cette adresse email est déjà utilisée." });
-      setStatus("error");
-      return;
-    }
-
-    if (data.session?.access_token) {
-      const profileResponse = await fetch("/api/inscription", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.session.access_token}` },
-      body: JSON.stringify({ prenom, nom })
-    });
-      const profileResult = await profileResponse.json().catch(() => null);
-
-      if (!profileResponse.ok || profileResult?.verified !== true) {
-      await supabase.auth.signOut();
-      setNotice({
-        title: "Compte créé, finalisation impossible",
-        description: profileResult?.error || "Le compte a été créé, mais votre espace n'a pas pu être préparé.",
-        field: "form"
-      });
-      setStatus("error");
-      return;
-      }
-    }
-
-    if (data.session?.access_token) {
-      const meResponse = await fetch("/api/me", {
-        headers: { Authorization: `Bearer ${data.session.access_token}` }
-      });
-
-      if (!meResponse.ok) {
-        const meResult = await meResponse.json().catch(() => null);
-        await supabase.auth.signOut();
-        setNotice({
-          title: "Compte créé, espace indisponible",
-          description: meResult?.error || "Le compte est connecté, mais l'espace étudiant n'a pas pu être chargé.",
-          field: "form"
-        });
-        setStatus("error");
-        return;
-      }
-
-      window.location.href = getSafeNextPath();
       return;
     }
 
     setStatus("success");
     setNotice({
       title: "Compte créé, confirmation à faire",
-      description: "Nous avons envoyé un email de confirmation. Ouvrez ce message pour activer votre compte avant de vous connecter.",
+      description: "Si cette adresse doit être confirmée, un lien vient d'être envoyé. Ouvrez-le pour choisir votre mot de passe et activer le compte.",
       field: "form"
     });
     formElement.reset();
@@ -231,24 +162,6 @@ export default function SignupPage() {
             <input className="input" name="email" type="email" autoComplete="email" disabled={isSubmitting || isSuccess} aria-invalid={Boolean(fieldErrors.email)} />
           </span>
           {fieldErrors.email && <small className="field-error">{fieldErrors.email}</small>}
-        </label>
-
-        <label className="auth-field">
-          <span>Mot de passe</span>
-          <span className="auth-input-wrap">
-            <Lock size={18} aria-hidden="true" />
-            <input className="input" name="password" type="password" autoComplete="new-password" minLength={8} disabled={isSubmitting || isSuccess} aria-invalid={Boolean(fieldErrors.password)} />
-          </span>
-          {fieldErrors.password ? <small className="field-error">{fieldErrors.password}</small> : <small className="auth-help">Minimum 8 caractères.</small>}
-        </label>
-
-        <label className="auth-field">
-          <span>Confirmer le mot de passe</span>
-          <span className="auth-input-wrap">
-            <Lock size={18} aria-hidden="true" />
-            <input className="input" name="passwordConfirm" type="password" autoComplete="new-password" minLength={8} disabled={isSubmitting || isSuccess} aria-invalid={Boolean(fieldErrors.passwordConfirm)} />
-          </span>
-          {fieldErrors.passwordConfirm && <small className="field-error">{fieldErrors.passwordConfirm}</small>}
         </label>
 
         <button className="btn btn-primary auth-submit" disabled={isSubmitting || isSuccess}>

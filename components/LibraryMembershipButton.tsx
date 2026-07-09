@@ -13,7 +13,6 @@ export function LibraryMembershipButton() {
   const stableId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const titleId = `library-stripe-checkout-title-${stableId}`;
   const [open, setOpen] = useState(false);
-  const [token, setToken] = useState("");
   const [error, setError] = useState("");
   const [status, setStatus] = useState<"idle" | "checking" | "ready" | "loading" | "error">("idle");
 
@@ -28,7 +27,7 @@ export function LibraryMembershipButton() {
     }
 
     const { data } = await supabase.auth.getSession();
-    if (!data.session?.access_token) {
+    if (!data.session) {
       window.location.href = `/auth/login?next=${encodeURIComponent("/bibliotheque-apologetique")}`;
       return;
     }
@@ -40,7 +39,6 @@ export function LibraryMembershipButton() {
       return;
     }
 
-    setToken(data.session.access_token);
     setOpen(true);
     setStatus("ready");
   }
@@ -64,7 +62,7 @@ export function LibraryMembershipButton() {
   async function continueToStripe() {
     setStatus("loading");
     setError("");
-    const result = await createLibraryMembershipCheckoutSessionAction({ origin: window.location.origin, token });
+    const result = await createLibraryMembershipCheckoutSessionAction();
     if (result.alreadyActive && result.redirectUrl) {
       window.location.href = result.redirectUrl;
       return;

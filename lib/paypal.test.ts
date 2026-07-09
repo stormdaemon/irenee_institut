@@ -6,6 +6,7 @@ import {
   extractCompletedCapture,
   extractPayPalOrderIdFromWebhook,
   getPayPalBaseUrl,
+  isExpectedCompletedCapture,
   normalizeBookTitle,
   parseEuroAmountToCents,
   parsePayPalValueToCents
@@ -29,6 +30,12 @@ test("parseEuroAmountToCents accepts free-form euro amounts", () => {
   assert.equal(parseEuroAmountToCents("12,34"), 1234);
   assert.equal(parseEuroAmountToCents(""), 9900);
   assert.throws(() => parseEuroAmountToCents("0.50"), /au moins 1 euro/);
+});
+
+test("parseEuroAmountToCents rejects unsafe or unreasonable amounts", () => {
+  assert.throws(() => parseEuroAmountToCents("0.99"), /moins/);
+  assert.throws(() => parseEuroAmountToCents("1000001"), /maximum/);
+  assert.throws(() => parseEuroAmountToCents("1e309"), /montant/i);
 });
 
 test("centsToPayPalValue and parsePayPalValueToCents roundtrip PayPal money strings", () => {
@@ -79,6 +86,26 @@ test("extractCompletedCapture returns the completed capture summary", () => {
     amountCents: 4200,
     currency: "EUR"
   });
+});
+
+test("PayPal capture validation rejects pending or financially divergent captures", () => {
+  const pendingPayload = {
+    purchase_units: [{ payments: { captures: [
+      { id: "CAPTURE-PENDING", status: "PENDING", amount: { currency_code: "EUR", value: "99.00" } }
+    ] } }]
+  };
+  assert.equal(extractCompletedCapture(pendingPayload), null);
+
+  const completed = {
+    captureId: "CAPTURE-OK",
+    status: "COMPLETED",
+    amountCents: 9900,
+    currency: "EUR"
+  };
+  assert.equal(isExpectedCompletedCapture(completed, { amountCents: 9900, currency: "EUR" }), true);
+  assert.equal(isExpectedCompletedCapture(completed, { amountCents: 100, currency: "EUR" }), false);
+  assert.equal(isExpectedCompletedCapture(completed, { amountCents: 9900, currency: "USD" }), false);
+  assert.equal(isExpectedCompletedCapture({ ...completed, status: "PENDING" }, { amountCents: 9900, currency: "EUR" }), false);
 });
 
 test("extractPayPalOrderIdFromWebhook supports order and capture webhooks", () => {

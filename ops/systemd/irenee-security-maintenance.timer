@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Institut Irénée security-data retention
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=30m
+Unit=irenee-security-maintenance.service
+
+[Install]
+WantedBy=timers.target

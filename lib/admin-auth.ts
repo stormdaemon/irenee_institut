@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { SESSION_COOKIE_NAME, verifyAccessToken } from "@/lib/local-auth";
+import { SECURE_SESSION_COOKIE_NAME, SESSION_COOKIE_NAME, verifyAccessToken } from "@/lib/local-auth";
 import { createServerClient, hasSupabaseEnv } from "@/lib/supabase";
 import type { Profile, Role } from "@/lib/types";
 
@@ -12,7 +12,7 @@ export async function requireAdminPage(allowedRoles: Role[] = ["directeur", "for
   if (!hasSupabaseEnv()) loginRedirect(nextPath);
 
   const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value || "";
+  const token = cookieStore.get(SECURE_SESSION_COOKIE_NAME)?.value || cookieStore.get(SESSION_COOKIE_NAME)?.value || "";
   if (!token) loginRedirect(nextPath);
 
   const { user } = await verifyAccessToken(token);

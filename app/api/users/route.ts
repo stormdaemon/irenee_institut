@@ -1,42 +1,13 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest, authorizeRequest } from "@/lib/api-auth";
+import { ProfileAdministrationError, replaceManualCourseEnrollments } from "@/lib/profile-admin";
+import { parseProfileUpdate, ProfileInputError } from "@/lib/profile-input";
+import { readJsonBodyWithLimit, RequestBodyError } from "@/lib/request-body";
+import { recordSecurityEvent } from "@/lib/security-audit";
 import type { Role } from "@/lib/types";
 
-const profileFields = [
-  "adresse",
-  "bio",
-  "bio_description",
-  "civilite",
-  "code_postal",
-  "date_naissance",
-  "formation_academique",
-  "instagram_url",
-  "linkedin_url",
-  "nom",
-  "pays",
-  "prenom",
-  "profession",
-  "realisations",
-  "specialites",
-  "telephone",
-  "tiktok_url",
-  "twitter_url",
-  "ville"
-] as const;
-
-const registrationFields = [
-  "formation_choisie",
-  "modalite_paiement",
-  "moyen_paiement",
-  "statut_inscription",
-  "tarif_applicable"
-] as const;
-
 const roles = new Set<Role>(["etudiant", "formateur", "directeur"]);
-
-function pick(body: Record<string, unknown>, keys: readonly string[]) {
-  return Object.fromEntries(keys.filter(key => body[key] !== undefined).map(key => [key, body[key]]));
-}
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export async function GET(request: Request) {
   const auth = await authorizeRequest(request, ["directeur"]);
@@ -51,27 +22,52 @@ export async function PATCH(request: Request) {
   const auth = await authenticateRequest(request);
   if (!auth.ok) return auth.response;
 
-  const body = await request.json().catch(() => ({})) as Record<string, unknown>;
-  const id = String(body.id || "");
-  if (!id) return NextResponse.json({ ok: false, error: "id is required" }, { status: 400 });
+  let body: Record<string, unknown>;
+  try {
+    body = await readJsonBodyWithLimit<Record<string, unknown>>(request, 64 * 1024);
+  } catch (error) {
+    if (error instanceof RequestBodyError) return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
+    return NextResponse.json({ ok: false, error: "Requête invalide." }, { status: 400 });
+  }
+  const id = String(body.id || "").trim();
+  if (!UUID_PATTERN.test(id)) return NextResponse.json({ ok: false, error: "Identifiant utilisateur invalide." }, { status: 400 });
 
   const { data: actor, error: actorError } = await auth.supabase.from("profiles").select("role").eq("id", auth.user.id).maybeSingle();
-  if (actorError) return NextResponse.json({ ok: false, error: actorError.message }, { status: 400 });
+  if (actorError) return NextResponse.json({ ok: false, error: "L'autorisation n'a pas pu être vérifiée." }, { status: 500 });
 
   const isDirector = actor?.role === "directeur";
   if (id !== auth.user.id && !isDirector) {
     return NextResponse.json({ ok: false, error: "Acces refuse." }, { status: 403 });
   }
 
-  const profilePayload: Record<string, unknown> = pick(body, isDirector ? [...profileFields, ...registrationFields] : profileFields);
-  if (body.role !== undefined) {
+  const changesRole = body.role !== undefined;
+  const changesCourses = body.course_ids !== undefined;
+  if (changesRole && changesCourses) {
+    return NextResponse.json({ ok: false, error: "Modifiez le rôle et les cours séparément." }, { status: 400 });
+  }
+
+  let profilePayload: Record<string, unknown>;
+  try {
+    profilePayload = parseProfileUpdate(
+      Object.fromEntries(Object.entries(body).filter(([key]) => !["id", "role", "course_ids"].includes(key))),
+      isDirector
+    );
+  } catch (error) {
+    if (error instanceof ProfileInputError) return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
+    return NextResponse.json({ ok: false, error: "Les informations de profil sont invalides." }, { status: 400 });
+  }
+
+  if (changesRole) {
     if (!isDirector || !roles.has(body.role as Role)) {
-      return NextResponse.json({ ok: false, error: "Role invalide ou non autorise." }, { status: 403 });
+      return NextResponse.json({ ok: false, error: "Rôle invalide ou non autorisé." }, { status: 403 });
+    }
+    if (id === auth.user.id && body.role !== "directeur") {
+      return NextResponse.json({ ok: false, error: "Vous ne pouvez pas retirer votre propre rôle de direction." }, { status: 409 });
     }
     profilePayload.role = body.role;
   }
 
-  let profile = null;
+  let profile: Record<string, unknown> | null = null;
   if (Object.keys(profilePayload).length) {
     const { data, error } = await auth.supabase
       .from("profiles")
@@ -79,36 +75,36 @@ export async function PATCH(request: Request) {
       .eq("id", id)
       .select()
       .single();
-    if (error) return NextResponse.json({ ok: false, verified: false, error: error.message }, { status: 400 });
+    if (error) return NextResponse.json({ ok: false, verified: false, error: "Le profil n'a pas pu être enregistré." }, { status: 400 });
     profile = data;
+    if (changesRole) {
+      await recordSecurityEvent({
+        actorUserId: auth.user.id,
+        eventType: "admin.profile.role_changed",
+        metadata: { subject_hash: id },
+        request
+      });
+    }
   } else {
     const { data, error } = await auth.supabase.from("profiles").select("*").eq("id", id).single();
-    if (error) return NextResponse.json({ ok: false, verified: false, error: error.message }, { status: 400 });
+    if (error) return NextResponse.json({ ok: false, verified: false, error: "Le profil est introuvable." }, { status: 404 });
     profile = data;
   }
 
   let enrollments = null;
-  if (Array.isArray(body.course_ids)) {
+  if (changesCourses) {
     if (!isDirector) return NextResponse.json({ ok: false, error: "Acces refuse." }, { status: 403 });
-
-    const courseIds = [...new Set(body.course_ids.map(String).filter(Boolean))];
-    const { error: deleteError } = await auth.supabase.from("course_enrollments").delete().eq("etudiant_id", id);
-    if (deleteError) return NextResponse.json({ ok: false, verified: false, error: deleteError.message }, { status: 400 });
-
-    if (courseIds.length) {
-      const { error: insertError } = await auth.supabase.from("course_enrollments").insert(courseIds.map(course_id => ({
-        course_id,
-        etudiant_id: id,
-        statut: "en_cours"
-      })));
-      if (insertError) return NextResponse.json({ ok: false, verified: false, error: insertError.message }, { status: 400 });
+    if (!Array.isArray(body.course_ids)) return NextResponse.json({ ok: false, error: "La liste de cours est invalide." }, { status: 400 });
+    try {
+      enrollments = await replaceManualCourseEnrollments(id, body.course_ids);
+      await recordSecurityEvent({ actorUserId: auth.user.id, eventType: "admin.profile.courses_changed", request });
+    } catch (error) {
+      if (error instanceof ProfileAdministrationError) {
+        return NextResponse.json({ ok: false, verified: false, error: error.message }, { status: error.status });
+      }
+      console.error("profile_course_assignment_failed", { actorUserId: auth.user.id });
+      return NextResponse.json({ ok: false, verified: false, error: "Les cours n'ont pas pu être attribués." }, { status: 500 });
     }
-
-    const { data, error } = await auth.supabase.from("course_enrollments").select("*").eq("etudiant_id", id);
-    if (error) return NextResponse.json({ ok: false, verified: false, error: error.message }, { status: 400 });
-    const enrollmentRows = data || [];
-    if (enrollmentRows.length !== courseIds.length) return NextResponse.json({ ok: false, verified: false, error: "Enrollment verification failed" }, { status: 409 });
-    enrollments = enrollmentRows;
   }
 
   return NextResponse.json({ ok: true, verified: true, profile, enrollments });

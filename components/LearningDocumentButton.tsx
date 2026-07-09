@@ -13,16 +13,13 @@ export function LearningDocumentButton({ documentId, label = "Télécharger" }: 
     setError("");
     const supabase = createBrowserClient();
     const { data } = await supabase?.auth.getSession() || { data: { session: null } };
-    const token = data.session?.access_token;
-    if (!token) {
+    if (!data.session) {
       setError("Reconnectez-vous pour télécharger ce document.");
       setBusy(false);
       return;
     }
 
-    const response = await fetch(`/api/documents/${documentId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await fetch(`/api/documents/${documentId}`, { credentials: "same-origin" });
     if (!response.ok) {
       const payload = await response.json().catch(() => null);
       setError(payload?.error || "Le document n'a pas pu être téléchargé.");

@@ -4,7 +4,8 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RadioPlayer } from "@/components/RadioPlayer";
 import { DeferredClientChrome } from "@/components/DeferredClientChrome";
-import { organizationJsonLd, serializeJsonLd, siteDescription, siteName, siteUrl, websiteJsonLd } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
+import { organizationJsonLd, siteDescription, siteName, siteUrl, websiteJsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -45,14 +46,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr">
       <body>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteJsonLd) }} />
+        <a className="skip-link" href="#main-content">Aller au contenu principal</a>
+        <JsonLd data={organizationJsonLd} />
+        <JsonLd data={websiteJsonLd} />
         <div className="site-chrome">
           <RadioPlayer />
           <Header />
         </div>
         <DeferredClientChrome />
-        <main>{children}</main>
+        <main id="main-content" tabIndex={-1}>{children}</main>
         <Footer />
       </body>
     </html>

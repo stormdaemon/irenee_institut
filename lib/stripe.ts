@@ -6,6 +6,7 @@ export const STRIPE_API_VERSION = "2022-11-15";
 export const STRIPE_CURRENCY = "EUR";
 export const STRIPE_DEFAULT_AMOUNT_CENTS = 9900;
 export const STRIPE_MIN_AMOUNT_CENTS = 100;
+export const STRIPE_MAX_AMOUNT_CENTS = 100_000_000;
 export const STRIPE_BOOK_TITLE_MAX_LENGTH = 180;
 export const STRIPE_WEBHOOK_URL = "https://irenee-institut.org/stripe_webhook";
 export const STRIPE_LITE_WEBHOOK_URL = "https://irenee-institut.org/stripe_webhook_lite";
@@ -59,6 +60,15 @@ export type StripeCheckoutSessionSummary = {
   userId: string;
 };
 
+type PendingStripeOrder = {
+  amount_total?: unknown;
+  currency?: unknown;
+  order_id?: unknown;
+  product_type?: unknown;
+  provider?: unknown;
+  user_id?: unknown;
+};
+
 function stringFrom(value: unknown) {
   return typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
 }
@@ -88,14 +98,34 @@ function productTypeFrom(value: unknown): StripeProductType {
   return "annual_pass";
 }
 
+export function isExpectedPaidStripeSession(
+  summary: StripeCheckoutSessionSummary,
+  order: PendingStripeOrder | null | undefined
+) {
+  if (!order || summary.paymentStatus !== "paid") return false;
+  const expectedAmount = Number(order.amount_total);
+  if (!Number.isSafeInteger(summary.amountTotal) || summary.amountTotal <= 0 || !Number.isSafeInteger(expectedAmount)) return false;
+  return summary.sessionId === stringFrom(order.order_id)
+    && summary.amountTotal === expectedAmount
+    && summary.currency.toUpperCase() === stringFrom(order.currency).toUpperCase()
+    && summary.userId !== ""
+    && summary.userId === stringFrom(order.user_id)
+    && summary.productType === productTypeFrom(order.product_type)
+    && stringFrom(order.provider).toLowerCase() === "stripe";
+}
+
 export function parseStripeAmountToCents(value: unknown, fallbackCents = STRIPE_DEFAULT_AMOUNT_CENTS) {
   const raw = stringFrom(value);
-  const numeric = raw ? Number(raw.replace(",", ".").replace(/[^\d.]/g, "")) : fallbackCents / 100;
+  if (raw && !/^\d{1,7}(?:[.,]\d{1,2})?$/.test(raw)) {
+    throw new Error("Le montant Stripe est invalide.");
+  }
+  const numeric = raw ? Number(raw.replace(",", ".")) : fallbackCents / 100;
   const cents = Math.round(numeric * 100);
 
-  if (!Number.isFinite(cents) || cents < STRIPE_MIN_AMOUNT_CENTS) {
+  if (!Number.isSafeInteger(cents) || cents < STRIPE_MIN_AMOUNT_CENTS) {
     throw new Error("Le montant Stripe doit etre d'au moins 1 euro.");
   }
+  if (cents > STRIPE_MAX_AMOUNT_CENTS) throw new Error("Le montant Stripe dépasse le maximum autorisé.");
 
   return cents;
 }

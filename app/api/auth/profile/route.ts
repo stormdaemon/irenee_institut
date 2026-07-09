@@ -1,21 +1,19 @@
 import { NextResponse } from "next/server";
-import { createServerClient } from "@/lib/supabase";
-import { verifyAccessToken } from "@/lib/local-auth";
+import { authenticateRequest } from "@/lib/api-auth";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() || "";
-  if (!token) return NextResponse.json({ error: "Connexion requise." }, { status: 401 });
-  const { user, error } = await verifyAccessToken(token);
-  if (error || !user) return NextResponse.json({ error: error?.message || "Session invalide." }, { status: 401 });
-
-  const supabase = createServerClient();
-  const { data: profile, error: profileError } = await supabase!
+  const auth = await authenticateRequest(request);
+  if (!auth.ok) return auth.response;
+  const { data: profile, error } = await auth.supabase
     .from("profiles")
     .select("*")
-    .eq("id", user.id)
+    .eq("id", auth.user.id)
     .maybeSingle();
-  if (profileError) return NextResponse.json({ error: profileError.message }, { status: 400 });
-  return NextResponse.json({ profile });
+  if (error) {
+    console.error("auth_profile_read_failed", { userId: auth.user.id });
+    return NextResponse.json({ error: "Profil indisponible." }, { status: 500 });
+  }
+  return NextResponse.json({ profile }, { headers: { "Cache-Control": "private, no-store" } });
 }

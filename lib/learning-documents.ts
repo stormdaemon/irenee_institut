@@ -91,6 +91,8 @@ export function renderLearningDocumentSvg(document: LearningDocument) {
   <text x="800" y="684" text-anchor="middle" font-family="Georgia,serif" font-size="30" fill="#38270f">${achievement}</text>
   <text x="800" y="744" text-anchor="middle" font-family="Georgia,serif" font-size="22" fill="#6a4a1f">${passName}</text>
   <text x="800" y="830" text-anchor="middle" font-family="Georgia,serif" font-size="24" fill="#38270f">Délivré le ${issuedAt}</text>
+  <text x="800" y="866" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" fill="#62451e">Document pédagogique automatisé — identité déclarée par le titulaire, non vérifiée par l'Institut</text>
+  <text x="800" y="892" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" fill="#62451e">Vérification : irenee-institut.org/verifier-document — Référence ${number}</text>
   <text x="264" y="939" text-anchor="middle" font-family="Georgia,serif" font-size="19" fill="#62451e">Direction de l'Institut</text>
   <path d="M145 906H383" stroke="#6d4d21" stroke-width="2"/>
   <text x="1336" y="939" text-anchor="middle" font-family="Georgia,serif" font-size="19" fill="#62451e">Référence ${number}</text>

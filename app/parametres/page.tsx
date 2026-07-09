@@ -28,6 +28,8 @@ export default function SettingsPage() {
   const [loaded, setLoaded] = useState(false);
   const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [error, setError] = useState("");
+  const [passwordStatus, setPasswordStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
+  const [passwordError, setPasswordError] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -43,7 +45,7 @@ export default function SettingsPage() {
       }
 
       const { data } = await supabase.auth.getSession();
-      if (!data.session?.access_token) {
+      if (!data.session) {
         if (mounted) {
           setProfile(null);
           setLoaded(true);
@@ -51,9 +53,7 @@ export default function SettingsPage() {
         return;
       }
 
-      const response = await fetch("/api/me", {
-        headers: { Authorization: `Bearer ${data.session.access_token}` }
-      });
+      const response = await fetch("/api/me", { cache: "no-store", credentials: "same-origin" });
       const result = await response.json().catch(() => null);
 
       if (mounted) {
@@ -98,6 +98,43 @@ export default function SettingsPage() {
       setError(data.error || "Les informations n'ont pas pu être enregistrées.");
       setStatus("error");
     }
+  }
+
+  async function savePassword(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const nextPassword = String(form.get("nextPassword") || "");
+    const passwordConfirmation = String(form.get("passwordConfirmation") || "");
+    setPasswordError("");
+    if (nextPassword !== passwordConfirmation) {
+      setPasswordError("Les deux nouveaux mots de passe ne correspondent pas.");
+      setPasswordStatus("error");
+      return;
+    }
+
+    setPasswordStatus("saving");
+    const response = await authenticatedFetch("/api/auth/password", {
+      body: JSON.stringify({
+        currentPassword: form.get("currentPassword"),
+        nextPassword,
+        passwordConfirmation
+      }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST"
+    }).catch(() => null);
+    const data = await response?.json().catch(() => null);
+    if (!response?.ok || data?.ok !== true) {
+      setPasswordError(data?.error || "Le mot de passe n'a pas pu être modifié.");
+      setPasswordStatus("error");
+      return;
+    }
+
+    formElement.reset();
+    setPasswordStatus("success");
+    window.setTimeout(() => {
+      window.location.assign("/auth/login?next=%2Fparametres");
+    }, 900);
   }
 
   const src = avatarSrc(profile);
@@ -148,11 +185,32 @@ export default function SettingsPage() {
               <p style={{ textAlign: "right" }}><button className="btn btn-primary"><Save size={18} /> Enregistrer les modifications</button></p>
             </form>
 
-            <form className="card" style={{ padding: 34, marginTop: 34 }} onSubmit={(event) => event.preventDefault()}>
+            <form className="card" style={{ padding: 34, marginTop: 34 }} onSubmit={savePassword}>
               <h2 className="font-display" style={{ color: "var(--navy)" }}><Lock /> Sécurité</h2>
-              <p><label>Nouveau mot de passe</label><input className="input" type="password" minLength={8} /></p>
-              <p><label>Confirmer le mot de passe</label><input className="input" type="password" minLength={8} /></p>
-              <p style={{ textAlign: "right" }}><button className="btn btn-primary">Changer le mot de passe</button></p>
+              <ActionNotice
+                status={passwordStatus}
+                success="Mot de passe modifié. Reconnexion en cours…"
+                error={passwordError}
+              />
+              <p>
+                <label htmlFor="current-password">Mot de passe actuel</label>
+                <input className="input" id="current-password" name="currentPassword" type="password" autoComplete="current-password" maxLength={128} required disabled={passwordStatus === "saving" || passwordStatus === "success"} />
+              </p>
+              <p>
+                <label htmlFor="next-password">Nouveau mot de passe</label>
+                <input className="input" id="next-password" name="nextPassword" type="password" autoComplete="new-password" minLength={12} maxLength={128} required disabled={passwordStatus === "saving" || passwordStatus === "success"} />
+                <small className="auth-help">Utilisez une phrase de passe unique d'au moins 12 caractères.</small>
+              </p>
+              <p>
+                <label htmlFor="password-confirmation">Confirmer le nouveau mot de passe</label>
+                <input className="input" id="password-confirmation" name="passwordConfirmation" type="password" autoComplete="new-password" minLength={12} maxLength={128} required disabled={passwordStatus === "saving" || passwordStatus === "success"} />
+              </p>
+              <p className="muted">Par sécurité, toutes vos sessions seront fermées après la modification.</p>
+              <p style={{ textAlign: "right" }}>
+                <button className="btn btn-primary" disabled={passwordStatus === "saving" || passwordStatus === "success"}>
+                  {passwordStatus === "saving" ? "Modification…" : "Changer le mot de passe"}
+                </button>
+              </p>
             </form>
           </>
         )}

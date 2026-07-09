@@ -176,14 +176,14 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T) {
   });
 }
 
-async function fetchOnboardingStatus(token: string) {
+async function fetchOnboardingStatus() {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), onboardingStatusTimeoutMs);
 
   try {
     const response = await fetch("/api/onboarding/status", {
       cache: "no-store",
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: "same-origin",
       signal: controller.signal
     });
     const payload = await response.json().catch(() => null) as OnboardingStatusPayload | null;
@@ -222,19 +222,19 @@ export function OnboardingGate() {
         return;
       }
 
-      const { data } = await withTimeout<{ data: { session: { access_token?: string } | null } }>(
+      const { data } = await withTimeout<{ data: { session: object | null } }>(
         supabase.auth.getSession().catch(() => ({ data: { session: null } })),
         sessionTimeoutMs,
         { data: { session: null } }
       );
-      if (!data.session?.access_token) {
+      if (!data.session) {
         if (mounted) setStatus("hidden");
         return;
       }
 
       if (mounted) setStatus("checking");
 
-      const { response, payload } = await fetchOnboardingStatus(data.session.access_token);
+      const { response, payload } = await fetchOnboardingStatus();
 
       if (!mounted) return;
 
@@ -253,7 +253,7 @@ export function OnboardingGate() {
       };
     }
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event: string, session: { access_token?: string } | null) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((_event: string, session: object | null) => {
       if (isPassiveOnboardingPath(pathname)) {
         setStatus("hidden");
         return;
@@ -316,9 +316,7 @@ export function OnboardingGate() {
 
     const supabase = createBrowserClient();
     const { data } = await supabase?.auth.getSession().catch(() => ({ data: { session: null } })) || { data: { session: null } };
-    const token = data.session?.access_token;
-
-    if (!token) {
+    if (!data.session) {
       setSaving(false);
       setError("Reconnectez-vous pour finaliser votre accueil.");
       return;
@@ -326,7 +324,7 @@ export function OnboardingGate() {
 
     const response = await fetch("/api/onboarding/complete", {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` }
+      credentials: "same-origin"
     }).catch(() => null);
     const payload = await response?.json().catch(() => null);
 

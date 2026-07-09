@@ -12,7 +12,7 @@ import { query } from "@/lib/db";
 import { runRegistrationAutomation } from "@/lib/google-apps-script";
 import { translateAuthError } from "@/lib/auth-errors";
 import { contentSecurityPolicy, securityHeaders } from "@/lib/security-headers";
-import { encodeJwtSecret, signInWithPassword, signUpWithPassword, verifyAccessToken } from "@/lib/local-auth";
+import { beginEmailSignUp, encodeJwtSecret, signInWithPassword, verifyAccessToken, verifyEmailToken } from "@/lib/local-auth";
 import { createServerClient } from "@/lib/supabase";
 
 const testLocalAuthJwtSecret = "test-local-auth-secret-with-more-than-32-characters";
@@ -52,6 +52,13 @@ function testEmail() {
   return `codex-${randomUUID()}@example.test`;
 }
 
+async function createVerifiedUser(input: { email: string; password: string; metadata?: Record<string, unknown> }) {
+  const signup = await beginEmailSignUp({ email: input.email, metadata: input.metadata });
+  if (!signup.verificationToken) throw new Error("Expected a verification token for the test account.");
+  const verified = await verifyEmailToken(signup.verificationToken, input.password);
+  return { ...signup, session: verified.session };
+}
+
 function authRequest(token: string) {
   return new Request("https://irenee.test/api/test", {
     headers: { Authorization: `Bearer ${token}` }
@@ -79,7 +86,7 @@ afterEach(async () => {
 describe("local PostgreSQL auth", () => {
   it("creates a user, signs in with the same password and verifies the issued token", async () => {
     const email = testEmail();
-    const signup = await signUpWithPassword({
+    const signup = await createVerifiedUser({
       email,
       password: "correct-password",
       metadata: { prenom: "Jean", nom: "Test" }
@@ -100,7 +107,7 @@ describe("local PostgreSQL auth", () => {
 
   it("rejects wrong passwords and invalid tokens", async () => {
     const email = testEmail();
-    const signup = await signUpWithPassword({ email, password: "correct-password" });
+    const signup = await createVerifiedUser({ email, password: "correct-password" });
     createdUserIds.push(signup.user!.id);
 
     const login = await signInWithPassword(email, "wrong-password");
@@ -115,33 +122,29 @@ describe("local PostgreSQL auth", () => {
 
   it("does not create a second account for an existing email", async () => {
     const email = testEmail();
-    const first = await signUpWithPassword({ email, password: "correct-password" });
+    const first = await createVerifiedUser({ email, password: "correct-password" });
     createdUserIds.push(first.user!.id);
 
-    const second = await signUpWithPassword({ email, password: "another-password" });
+    const second = await beginEmailSignUp({ email });
     expect(second.error).toBeNull();
     expect(second.session).toBeNull();
     expect(second.identities).toHaveLength(0);
     expect(second.user?.id).toBe(first.user?.id);
   });
 
-  it("returns a clear duplicate-email response from the signup API", async () => {
+  it("does not disclose whether an email is already registered", async () => {
     const email = testEmail();
-    const first = await signUpWithPassword({ email, password: "correct-password" });
+    const first = await createVerifiedUser({ email, password: "correct-password" });
     createdUserIds.push(first.user!.id);
 
     const response = await signupRoutePost(new Request("https://irenee.test/api/auth/signup", {
       body: JSON.stringify({ email, password: "another-password", metadata: { prenom: "Double", nom: "Email" } }),
-      headers: { "Content-Type": "application/json", "x-forwarded-for": randomUUID() },
+      headers: { "Content-Type": "application/json", origin: "https://irenee.test", "x-real-ip": "198.51.100.20" },
       method: "POST"
     }));
     const body = await response.json();
-    expect(response.status).toBe(409);
-    expect(body.error).toContain("déjà utilisée");
-
-    const translated = translateAuthError(body.error);
-    expect(translated.title).toBe("Adresse email déjà utilisée");
-    expect(translated.field).toBe("email");
+    expect(response.status).toBe(202);
+    expect(body.confirmationRequired).toBe(true);
   });
 
   it("rejects weak JWT configuration before issuing a session", async () => {
@@ -150,7 +153,7 @@ describe("local PostgreSQL auth", () => {
 
   it("resynchronizes the HttpOnly server cookie from an existing valid browser token", async () => {
     process.env.AUTH_COOKIE_SECURE = "false";
-    const signup = await signUpWithPassword({ email: testEmail(), password: "correct-password" });
+    const signup = await createVerifiedUser({ email: testEmail(), password: "correct-password" });
     createdUserIds.push(signup.user!.id);
 
     const response = await syncSessionRoutePost(authRequest(signup.session!.access_token));
@@ -179,7 +182,7 @@ describe("local PostgreSQL auth", () => {
 describe("Supabase-style profile roles", () => {
   it("uses public.profiles.role for authorization and ignores role metadata from signup", async () => {
     const supabase = createServerClient()!;
-    const signup = await signUpWithPassword({
+    const signup = await createVerifiedUser({
       email: testEmail(),
       password: "correct-password",
       metadata: { prenom: "Role", nom: "Spoof", role: "directeur" }
@@ -198,7 +201,7 @@ describe("Supabase-style profile roles", () => {
       [signup.user!.id]
     );
     expect(authRole.rows[0]?.role).toBe("authenticated");
-    expect(authRole.rows[0]?.metadata_role).toBe("directeur");
+    expect(authRole.rows[0]?.metadata_role).toBeNull();
 
     const asDirector = await authorizeRequest(authRequest(signup.session!.access_token), ["directeur"]);
     expect(asDirector.ok).toBe(false);
@@ -210,7 +213,7 @@ describe("Supabase-style profile roles", () => {
 
   it("allows formateurs on staff endpoints but keeps director-only endpoints restricted", async () => {
     const supabase = createServerClient()!;
-    const signup = await signUpWithPassword({ email: testEmail(), password: "correct-password" });
+    const signup = await createVerifiedUser({ email: testEmail(), password: "correct-password" });
     createdUserIds.push(signup.user!.id);
     await supabase.from("profiles").upsert({
       email: signup.user!.email,
@@ -236,7 +239,7 @@ describe("Supabase-style profile roles", () => {
 describe("onboarding gate API", () => {
   it("shows onboarding for new students and hides it after completion", async () => {
     const supabase = createServerClient()!;
-    const signup = await signUpWithPassword({
+    const signup = await createVerifiedUser({
       email: testEmail(),
       password: "correct-password",
       metadata: { prenom: "Accueil", nom: "Etudiant" }
@@ -321,8 +324,12 @@ describe("OWASP baseline controls", () => {
     expect(contentSecurityPolicy).toContain("frame-ancestors 'none'");
     expect(contentSecurityPolicy).toContain("base-uri 'self'");
     expect(contentSecurityPolicy).toContain("media-src 'self' https://play.radioking.io");
-    assert.equal(contentSecurityPolicy.includes("upgrade-insecure-requests"), false);
-    assert.equal(headers.has("Strict-Transport-Security"), false);
+    expect(contentSecurityPolicy).toContain("script-src-attr 'none'");
+    expect(contentSecurityPolicy).toContain("upgrade-insecure-requests");
+    assert.equal(contentSecurityPolicy.includes("'unsafe-eval'"), false);
+    expect(headers.get("Strict-Transport-Security")).toContain("includeSubDomains");
+    expect(headers.get("Cross-Origin-Opener-Policy")).toBe("same-origin-allow-popups");
+    expect(headers.get("Cross-Origin-Resource-Policy")).toBe("same-origin");
   });
 });
 
@@ -374,7 +381,7 @@ describe("local Supabase-compatible PostgreSQL facade", () => {
 describe("validate_paypal_payment RPC on local PostgreSQL", () => {
   it("activates an annual pass for a valid capture and rejects missing capture ids", async () => {
     const supabase = createServerClient()!;
-    const signup = await signUpWithPassword({ email: testEmail(), password: "correct-password", metadata: { prenom: "Pay", nom: "Pal" } });
+    const signup = await createVerifiedUser({ email: testEmail(), password: "correct-password", metadata: { prenom: "Pay", nom: "Pal" } });
     createdUserIds.push(signup.user!.id);
     await supabase.from("profiles").upsert({
       email: signup.user!.email,
@@ -418,7 +425,7 @@ describe("validate_paypal_payment RPC on local PostgreSQL", () => {
 
   it("activates an annual pass through the provider-neutral Stripe validation RPC", async () => {
     const supabase = createServerClient()!;
-    const signup = await signUpWithPassword({ email: testEmail(), password: "correct-password", metadata: { prenom: "Stri", nom: "Pe" } });
+    const signup = await createVerifiedUser({ email: testEmail(), password: "correct-password", metadata: { prenom: "Stri", nom: "Pe" } });
     createdUserIds.push(signup.user!.id);
     await supabase.from("profiles").upsert({
       email: signup.user!.email,
@@ -459,7 +466,7 @@ describe("validate_paypal_payment RPC on local PostgreSQL", () => {
 
 describe("Google Apps Script registration automation", () => {
   it("sends registration and welcome payloads, then enrolls the profile in the mandatory campaign without a duplicate email", async () => {
-    const signup = await signUpWithPassword({ email: testEmail(), password: "correct-password", metadata: { prenom: "Auto", nom: "Mation" } });
+    const signup = await createVerifiedUser({ email: testEmail(), password: "correct-password", metadata: { prenom: "Auto", nom: "Mation" } });
     createdUserIds.push(signup.user!.id);
     await query(
       `insert into public.profiles (id, email, nom, prenom, role)
@@ -505,7 +512,7 @@ describe("Google Apps Script registration automation", () => {
   });
 
   it("falls back to the designed welcome campaign when Apps Script does not support welcomeRegistration yet", async () => {
-    const signup = await signUpWithPassword({ email: testEmail(), password: "correct-password", metadata: { prenom: "Design", nom: "Mail" } });
+    const signup = await createVerifiedUser({ email: testEmail(), password: "correct-password", metadata: { prenom: "Design", nom: "Mail" } });
     createdUserIds.push(signup.user!.id);
     await query(
       `insert into public.profiles (id, email, nom, prenom, role)
@@ -544,7 +551,7 @@ describe("Google Apps Script registration automation", () => {
   });
 
   it("records failed registration automation without throwing", async () => {
-    const signup = await signUpWithPassword({ email: testEmail(), password: "correct-password" });
+    const signup = await createVerifiedUser({ email: testEmail(), password: "correct-password" });
     createdUserIds.push(signup.user!.id);
     await query(
       `insert into public.profiles (id, email, nom, prenom, role)

@@ -114,19 +114,42 @@ export async function getCurrentProfile(): Promise<Profile> {
 }
 
 export async function getTrainers(): Promise<Profile[]> {
-  const profiles = await getProfiles();
+  const supabase = createServerClient();
+  const { data, error } = supabase
+    ? await supabase
+      .from("profiles")
+      .select("id,email,role,nom,prenom,profession,bio,bio_description,specialites,realisations,formation_academique,linkedin_url,twitter_url,instagram_url,tiktok_url,avatar_url,avatar_public_id,created_at,updated_at")
+      .eq("role", "formateur")
+      .order("created_at", { ascending: false })
+    : { data: fallbackProfiles, error: null };
+  const profiles = error || !data ? fallbackProfiles : data as Profile[];
   return profiles
     .filter(profile => profile.role === "formateur" && !isExcludedPublicName(`${profile.prenom} ${profile.nom}`))
     .map(normalizePublicTrainer);
 }
 
-export async function getCourses(): Promise<Course[]> {
+export async function getCourses(
+  scope: "public" | "admin" = "public",
+  options: { authorId?: string } = {}
+): Promise<Course[]> {
   const supabase = createServerClient();
-  if (!supabase) return fallbackCourses;
-  const { data, error } = await supabase.from("courses").select("*").order("numero", { ascending: true });
-  if (error || !data) return fallbackCourses;
+  if (!supabase) {
+    if (scope === "public") return fallbackCourses.filter(course => course.statut === "publie");
+    return options.authorId ? fallbackCourses.filter(course => course.auteur_id === options.authorId) : fallbackCourses;
+  }
+  const baseQuery = supabase.from("courses").select("*").order("numero", { ascending: true });
+  const { data, error } = scope === "public"
+    ? await baseQuery.eq("statut", "publie")
+    : options.authorId
+      ? await baseQuery.eq("auteur_id", options.authorId)
+      : await baseQuery;
+  if (error || !data) {
+    if (scope === "public") return fallbackCourses.filter(course => course.statut === "publie");
+    return options.authorId ? fallbackCourses.filter(course => course.auteur_id === options.authorId) : fallbackCourses;
+  }
 
   const courses = data as RawCourse[];
+  if (scope === "public") return courses.map(course => normalizeCourse(course, []));
   const ids = courses.map(course => course.id);
   const { data: moduleRows } = ids.length
     ? await supabase.from("course_modules").select("*").in("course_id", ids).order("ordre", { ascending: true })
@@ -149,11 +172,23 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
     || null;
 }
 
-export async function getHomework(): Promise<Homework[]> {
+export async function getHomework(options: { authorId?: string; courseIds?: string[] } = {}): Promise<Homework[]> {
+  if (options.courseIds && options.courseIds.length === 0) return [];
+
+  const fallback = (fallbackHomework as (Homework & { auteur_id?: string | null })[]).filter(item => {
+    const matchesAuthor = options.authorId === undefined || item.auteur_id === options.authorId;
+    const matchesCourse = options.courseIds === undefined || Boolean(item.course_id && options.courseIds.includes(item.course_id));
+    return matchesAuthor && matchesCourse;
+  });
   const supabase = createServerClient();
-  if (!supabase) return fallbackHomework as Homework[];
-  const { data, error } = await supabase.from("homework").select("*, homework_assignments(*)").order("created_at", { ascending: false });
-  return error || !data ? fallbackHomework as Homework[] : data as Homework[];
+  if (!supabase) return fallback;
+  const baseQuery = supabase.from("homework").select("*, homework_assignments(*)");
+  let scopedQuery = options.authorId === undefined
+    ? baseQuery
+    : baseQuery.eq("auteur_id", options.authorId);
+  if (options.courseIds) scopedQuery = scopedQuery.in("course_id", options.courseIds);
+  const { data, error } = await scopedQuery.order("created_at", { ascending: false });
+  return error || !data ? fallback : data as Homework[];
 }
 
 export async function getPaymentRequests(): Promise<Profile[]> {
@@ -175,7 +210,7 @@ export async function getBookRequests(): Promise<BookRequest[]> {
 }
 
 export async function getStats() {
-  const [courses, profiles, paymentRequests] = await Promise.all([getCourses(), getProfiles(), getPaymentRequests()]);
+  const [courses, profiles, paymentRequests] = await Promise.all([getCourses("admin"), getProfiles(), getPaymentRequests()]);
   return {
     cours: courses.length,
     etudiants: profiles.filter(profile => profile.role === "etudiant").length,

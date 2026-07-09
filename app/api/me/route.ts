@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { createServerClient } from "@/lib/supabase";
+import { authenticateRequest } from "@/lib/api-auth";
+import { projectPublicQuiz } from "@/lib/learning-projection";
+import { isActiveCourseEnrollment } from "@/lib/learning-security";
 import type { Course, CourseModule, Homework, Profile } from "@/lib/types";
 
 type RawCourse = Omit<Course, "modules" | "objectifs" | "competences" | "prerequis"> & {
@@ -43,7 +45,7 @@ function normalizeModule(module: RawModule): CourseModule {
     contenu_html: module.contenu_html || module.contenu || "",
     url_video: module.url_video,
     ressources: module.ressources,
-    quiz: module.quiz
+    quiz: projectPublicQuiz(module.quiz)
   };
 }
 
@@ -61,22 +63,9 @@ function profileFromUser(user: { id: string; email?: string | null; user_metadat
 }
 
 export async function GET(request: Request) {
-  const supabase = createServerClient();
-  if (!supabase) {
-    return NextResponse.json({ ok: false, error: "Le service est momentanément indisponible." }, { status: 501 });
-  }
-
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
-  if (!token) {
-    return NextResponse.json({ ok: false, error: "Vous devez être connecté pour accéder à cet espace." }, { status: 401 });
-  }
-
-  const { data: authData, error: authError } = await supabase.auth.getUser(token);
-  if (authError || !authData.user) {
-    return NextResponse.json({ ok: false, error: authError?.message || "Session invalide ou expirée." }, { status: 401 });
-  }
-
-  const user = authData.user;
+  const auth = await authenticateRequest(request);
+  if (!auth.ok) return auth.response;
+  const { supabase, user } = auth;
   const fallbackProfile = profileFromUser(user);
   let { data: profile, error: profileError } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
 
@@ -115,18 +104,25 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: annualPassError.message }, { status: 400 });
   }
 
-  const { data: enrollments, error: enrollmentError } = isStaff
+  const enrollmentResult = isStaff
     ? { data: [], error: null }
     : await supabase
       .from("course_enrollments")
       .select("*")
-      .eq("etudiant_id", user.id);
+      .eq("etudiant_id", user.id)
+      .eq("statut", "en_cours");
 
-  if (enrollmentError) {
-    return NextResponse.json({ ok: false, error: enrollmentError.message }, { status: 400 });
+  if (enrollmentResult.error) {
+    return NextResponse.json({ ok: false, error: enrollmentResult.error.message }, { status: 400 });
   }
+  const enrollments = (enrollmentResult.data || []).filter(enrollment => isActiveCourseEnrollment({
+    accessExpiresAt: enrollment.access_expires_at,
+    accessSource: enrollment.access_source,
+    activeAnnualPass: Boolean(annualPass),
+    status: enrollment.statut
+  }));
 
-  let courseIds = [...new Set((enrollments || []).map(item => item.course_id).filter(Boolean))];
+  let courseIds = [...new Set(enrollments.map(item => item.course_id).filter(Boolean))];
 
   if (isStaff || annualPass) {
     const { data: staffCourseRows, error: staffCourseError } = await supabase
@@ -145,14 +141,33 @@ export async function GET(request: Request) {
   let progressRows: { module_id: string; course_id?: string | null; progression?: number | null; complete?: boolean | null }[] = [];
 
   if (courseIds.length) {
-    const [{ data: courseRows, error: courseError }, { data: moduleRows, error: moduleError }, { data: progressData }] = await Promise.all([
-      supabase.from("courses").select("*").in("id", courseIds).order("numero", { ascending: true }),
-      supabase.from("course_modules").select("*").in("course_id", courseIds).order("ordre", { ascending: true }),
-      supabase.from("module_progress").select("*").eq("etudiant_id", user.id)
-    ]);
-
+    const { data: courseRows, error: courseError } = await supabase
+      .from("courses")
+      .select("*")
+      .in("id", courseIds)
+      .eq("statut", "publie")
+      .order("numero", { ascending: true });
     if (courseError) return NextResponse.json({ ok: false, error: courseError.message }, { status: 400 });
+
+    const accessibleCourseIds = (courseRows || []).map(course => course.id);
+    const { data: moduleRows, error: moduleError } = accessibleCourseIds.length
+      ? await supabase
+        .from("course_modules")
+        .select("*")
+        .in("course_id", accessibleCourseIds)
+        .order("ordre", { ascending: true })
+      : { data: [], error: null };
     if (moduleError) return NextResponse.json({ ok: false, error: moduleError.message }, { status: 400 });
+
+    const accessibleModuleIds = (moduleRows || []).map(module => module.id);
+    const { data: progressData, error: progressError } = accessibleModuleIds.length
+      ? await supabase
+        .from("module_progress")
+        .select("*")
+        .eq("etudiant_id", user.id)
+        .in("module_id", accessibleModuleIds)
+      : { data: [], error: null };
+    if (progressError) return NextResponse.json({ ok: false, error: progressError.message }, { status: 400 });
 
     progressRows = (progressData || []) as typeof progressRows;
     const progressByModule = new Map(progressRows.map(row => [row.module_id, row]));
@@ -187,7 +202,7 @@ export async function GET(request: Request) {
   const { data: assignmentRows } = await supabase
     .from("homework_assignments")
     .select("*")
-    .eq("student_id", user.id);
+    .eq("etudiant_id", user.id);
 
   const homeworkIds = [...new Set((assignmentRows || []).map(item => item.homework_id).filter(Boolean))];
   let homework: Homework[] = [];

@@ -4,8 +4,9 @@ import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import { ArrowRight, ExternalLink, Newspaper, PlayCircle } from "lucide-react";
 import { getCourses } from "@/lib/server-data";
-import { serializeJsonLd, siteDescription, siteUrl } from "@/lib/seo";
+import { siteDescription, siteUrl } from "@/lib/seo";
 import { UpcomingSessions } from "@/components/UpcomingSessions";
+import { JsonLd } from "@/components/JsonLd";
 
 export const dynamic = "force-dynamic";
 
@@ -96,7 +97,7 @@ export default async function HomePage() {
     <>
       <link rel="preload" as="image" href="/images/irenee-hero-cathedral-mobile.avif" type="image/avif" media="(max-width: 700px)" fetchPriority="high" />
       <link rel="preload" as="image" href="/images/irenee-hero-cathedral.avif" type="image/avif" media="(min-width: 701px)" fetchPriority="high" />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(presentationVideoJsonLd) }} />
+      <JsonLd data={presentationVideoJsonLd} />
 
       <section className="hero-band home-hero">
         <div className="container">

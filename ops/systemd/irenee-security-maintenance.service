@@ -1,0 +1,28 @@
+[Unit]
+Description=Institut Irénée security-data retention
+After=postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=oneshot
+User=irenee
+Group=irenee
+WorkingDirectory=/srv/irenee-current
+EnvironmentFile=/etc/irenee/production.env
+Environment=NODE_ENV=production
+Environment=SECURITY_MAINTENANCE_DATABASE=irenee_staging
+ExecStart=/usr/local/bin/bun /srv/irenee-current/scripts/security-maintenance.ts --apply
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=strict
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=

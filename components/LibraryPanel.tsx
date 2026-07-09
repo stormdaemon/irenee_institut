@@ -37,8 +37,7 @@ export function LibraryPanel({
 
     const supabase = createBrowserClient();
     const { data } = await supabase?.auth.getSession() || { data: { session: null } };
-    const token = data.session?.access_token;
-    if (!token) {
+    if (!data.session) {
       setError("Reconnectez-vous avant d'envoyer votre demande.");
       setStatus("error");
       return;
@@ -47,9 +46,9 @@ export function LibraryPanel({
     const response = await fetch("/api/library/book-requests", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json"
       },
+      credentials: "same-origin",
       body: JSON.stringify({ requestedTitle: bookTitle })
     });
     const payload = await response.json().catch(() => null);

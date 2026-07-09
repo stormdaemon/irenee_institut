@@ -17,6 +17,8 @@ test("renderLearningDocumentSvg creates a nominative printable certificate", () 
   assert.match(svg, /Certificat nominatif d&apos;apologétique/);
   assert.match(svg, /Anne &amp; Martin/);
   assert.match(svg, /ISI-ABC123/);
+  assert.match(svg, /identité déclarée.*non vérifiée/i);
+  assert.match(svg, /irenee-institut\.org\/verifier-document/);
   assert.equal(learningDocumentFilename(certificate), "certificat-apologetique-isi-abc123.pdf");
 });
 

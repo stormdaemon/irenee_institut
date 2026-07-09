@@ -4,6 +4,7 @@ import { createHmac } from "node:crypto";
 import {
   buildStripeCheckoutSessionParams,
   extractStripeCheckoutSessionSummary,
+  isExpectedPaidStripeSession,
   parseStripeAmountToCents,
   verifyStripeWebhookSignature,
   type StripeCheckoutSessionPayloadInput
@@ -47,6 +48,12 @@ test("parseStripeAmountToCents accepts free-form euro amounts", () => {
   assert.equal(parseStripeAmountToCents("12,34"), 1234);
   assert.equal(parseStripeAmountToCents(""), 9900);
   assert.throws(() => parseStripeAmountToCents("0.50"), /au moins 1 euro/);
+});
+
+test("parseStripeAmountToCents rejects unsafe or unreasonable amounts", () => {
+  assert.throws(() => parseStripeAmountToCents("0.99"), /moins/);
+  assert.throws(() => parseStripeAmountToCents("1000001"), /maximum/);
+  assert.throws(() => parseStripeAmountToCents("1e309"), /montant/i);
 });
 
 test("buildStripeCheckoutSessionParams creates a hosted EUR checkout with metadata", () => {
@@ -120,4 +127,36 @@ test("extractStripeCheckoutSessionSummary supports snapshot and thin event shape
   assert.equal(thin.sessionId, "");
   assert.equal(thin.relatedObject?.id, "cs_live_456");
   assert.equal(thin.relatedObject?.url, "/v1/checkout/sessions/cs_live_456");
+});
+
+test("paid Stripe sessions must match the server-owned pending order", () => {
+  const summary = {
+    amountTotal: 9900,
+    bookRequested: false,
+    bookTitle: "",
+    captureId: "pi_123",
+    currency: "EUR",
+    eventId: "evt_123",
+    eventType: "checkout.session.completed",
+    metadata: { product_type: "annual_pass", user_id: "user-456" },
+    paymentStatus: "paid",
+    productType: "annual_pass" as const,
+    sessionId: "cs_123",
+    status: "complete",
+    userId: "user-456"
+  };
+  const order = {
+    amount_total: 9900,
+    currency: "EUR",
+    order_id: "cs_123",
+    product_type: "annual_pass",
+    provider: "stripe",
+    user_id: "user-456"
+  };
+
+  assert.equal(isExpectedPaidStripeSession(summary, order), true);
+  assert.equal(isExpectedPaidStripeSession({ ...summary, amountTotal: 100 }, order), false);
+  assert.equal(isExpectedPaidStripeSession({ ...summary, currency: "USD" }, order), false);
+  assert.equal(isExpectedPaidStripeSession({ ...summary, userId: "other" }, order), false);
+  assert.equal(isExpectedPaidStripeSession(summary, null), false);
 });

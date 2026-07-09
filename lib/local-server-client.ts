@@ -440,6 +440,23 @@ export function createLocalServerClient() {
           );
           return { data: result.rows[0]?.result || null, error: null };
         }
+        if (name === "process_payment_reversal") {
+          const result = await query<{ result: unknown }>(
+            `select public.process_payment_reversal($1,$2,$3,$4,$5,$6,$7,$8,$9) as result`,
+            [
+              params.p_provider,
+              params.p_provider_event_id,
+              params.p_event_name,
+              params.p_kind,
+              params.p_object_id,
+              params.p_order_id,
+              params.p_capture_id,
+              params.p_amount_total,
+              params.p_currency
+            ]
+          );
+          return { data: result.rows[0]?.result || null, error: null };
+        }
         if (name !== "validate_paypal_payment") throw new Error(`Unsupported RPC: ${name}`);
         const result = await query<{ result: unknown }>(
           `select public.validate_paypal_payment($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) as result`,

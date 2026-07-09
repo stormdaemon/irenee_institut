@@ -36,9 +36,22 @@ function isPublicMarketingPath(pathname: string | null) {
   );
 }
 
+function isPrivateWorkspacePath(pathname: string | null) {
+  return Boolean(
+    pathname?.startsWith("/cours") ||
+    pathname?.startsWith("/admin") ||
+    pathname?.startsWith("/espace-etudiant") ||
+    pathname?.startsWith("/devoirs") ||
+    pathname?.startsWith("/examen-final") ||
+    pathname?.startsWith("/parametres") ||
+    pathname?.startsWith("/direct")
+  );
+}
+
 export function DeferredClientChrome() {
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
+  const privateWorkspace = isPrivateWorkspacePath(pathname);
 
   useEffect(() => {
     if (!isPublicMarketingPath(pathname)) {
@@ -69,8 +82,8 @@ export function DeferredClientChrome() {
 
   return (
     <>
-      <FloatingNetworkMenu />
-      <DonationPrompt />
+      {!privateWorkspace && <FloatingNetworkMenu />}
+      {!privateWorkspace && <DonationPrompt />}
       <OnboardingGate />
     </>
   );

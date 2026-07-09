@@ -14,6 +14,7 @@ export type Course = {
   prix: number;
   prix_reduit: number;
   url_paiement_paypal?: string | null;
+  auteur_id?: string | null;
   auteur_nom?: string;
   statut?: string | null;
   semestre?: number | null;
@@ -37,7 +38,7 @@ export type CourseModule = {
   ressources?: unknown;
   contenu?: string | null;
   contenu_html?: string;
-  quiz?: { question: string; options: string[]; answer: number }[];
+  quiz?: { id?: string; question: string; options: string[]; answer?: number }[];
 };
 
 export type Profile = {
@@ -92,6 +93,8 @@ export type ModuleProgress = {
   statut?: string;
   progression?: number;
   complete?: boolean;
+  date_debut?: string | null;
+  date_completion?: string | null;
 };
 
 export type BookRequest = {

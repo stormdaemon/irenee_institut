@@ -2,8 +2,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, BookOpen, CheckCircle2, Clock } from "lucide-react";
 import { formatDuration } from "@/lib/data";
-import { serializeJsonLd, siteUrl } from "@/lib/seo";
+import { siteUrl } from "@/lib/seo";
 import { getCourses } from "@/lib/server-data";
+import { JsonLd } from "@/components/JsonLd";
 
 export const dynamic = "force-dynamic";
 
@@ -55,8 +56,8 @@ export default async function ProgrammeApologetiquePage() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(itemListJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }} />
+      <JsonLd data={itemListJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
 
       <section className="page-hero">
         <div className="container center">

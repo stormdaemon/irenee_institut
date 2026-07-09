@@ -30,7 +30,7 @@ export default function DirectSessionPage() {
 
     async function loadRoom() {
       try {
-        const response = await authenticatedFetch(`/api/live/${id}`);
+        const response = await authenticatedFetch(`/api/live/${id}`, { method: "POST" });
         const data = await response.json().catch(() => null);
         if (!mounted) return;
 
@@ -103,6 +103,8 @@ export default function DirectSessionPage() {
             title={room.titre}
             src={room.room_url}
             allow="camera; microphone; fullscreen; speaker; display-capture; autoplay"
+            allowFullScreen
+            referrerPolicy="no-referrer"
             style={{ width: "100%", height: "min(74vh, 720px)", border: "0", borderRadius: 12, display: "block" }}
           />
         </div>

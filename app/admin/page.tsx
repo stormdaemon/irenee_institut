@@ -9,10 +9,8 @@ export const dynamic = "force-dynamic";
 export default async function AdminPage() {
   const profile = await requireAdminPage();
   const isDirector = profile.role === "directeur";
-  const [courses, homework] = await Promise.all([
-    getCourses(),
-    getHomework()
-  ]);
+  const courses = await getCourses("admin", isDirector ? {} : { authorId: profile.id });
+  const homework = await getHomework(isDirector ? {} : { authorId: profile.id, courseIds: courses.map(course => course.id) });
   const [stats, profiles, paymentRequests] = isDirector
     ? await Promise.all([getStats(), getProfiles(), getPaymentRequests()])
     : [{ cours: courses.length, etudiants: 0, inscriptions: 0 }, [], []];

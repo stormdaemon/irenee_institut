@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarClock, ExternalLink, Loader2, Radio, Save, Video } from "lucide-react";
+import { CalendarClock, Loader2, Radio, Save, Video } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ActionNotice } from "@/components/ActionNotice";
 import { authenticatedFetch } from "@/lib/authenticated-fetch";
@@ -156,9 +156,6 @@ export default function AdminLivePage() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "stretch", minWidth: 180 }}>
                   <Link className="btn btn-outline" href={`/direct/${session.id}`}><Video size={16} /> Rejoindre</Link>
-                  {session.daily_room_url && (
-                    <a className="btn btn-outline" href={session.daily_room_url} target="_blank" rel="noreferrer"><ExternalLink size={16} /> Salle Daily</a>
-                  )}
                   <select className="input" value={session.status} onChange={event => changeStatus(session.id, event.target.value as AdminLiveSession["status"])}>
                     <option value="scheduled">Programmée</option>
                     <option value="live">En direct</option>

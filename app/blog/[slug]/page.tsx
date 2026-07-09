@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ArrowLeft, ArrowRight, CalendarDays, Clock, ExternalLink } from "lucide-react";
 import { blogArticles, formatArticleDate, getBlogArticle, getRelatedArticles } from "@/lib/blog";
+import { JsonLd } from "@/components/JsonLd";
 
 type BlogArticlePageProps = {
   params: Promise<{ slug: string }>;
@@ -86,7 +87,7 @@ export default async function BlogArticlePage({ params }: BlogArticlePageProps) 
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <JsonLd data={jsonLd} />
       <article>
         <section className="blog-article-hero">
           <Image src={article.image} alt={article.imageAlt} fill sizes="100vw" priority loading="eager" />

@@ -4,6 +4,7 @@ import type { SystemSettings } from "@/lib/settings";
 export const PAYPAL_CURRENCY = "EUR";
 export const PAYPAL_DEFAULT_AMOUNT_CENTS = 9900;
 export const PAYPAL_MIN_AMOUNT_CENTS = 100;
+export const PAYPAL_MAX_AMOUNT_CENTS = 100_000_000;
 export const PAYPAL_BOOK_TITLE_MAX_LENGTH = 180;
 export const PAYPAL_WEBHOOK_URL = "https://irenee-institut.org/paypal_checkout_valid";
 
@@ -12,7 +13,10 @@ export const PAYPAL_CHECKOUT_WEBHOOK_EVENTS = [
   "CHECKOUT.PAYMENT-APPROVAL.REVERSED",
   "PAYMENT.CAPTURE.PENDING",
   "PAYMENT.CAPTURE.COMPLETED",
-  "PAYMENT.CAPTURE.DENIED"
+  "PAYMENT.CAPTURE.DENIED",
+  "PAYMENT.CAPTURE.REFUNDED",
+  "PAYMENT.CAPTURE.REVERSED",
+  "CUSTOMER.DISPUTE.CREATED"
 ] as const;
 
 export type PayPalEnvironment = "live" | "sandbox";
@@ -64,12 +68,16 @@ export function getPayPalBaseUrl(environment: PayPalEnvironment) {
 
 export function parseEuroAmountToCents(value: unknown, fallbackCents = PAYPAL_DEFAULT_AMOUNT_CENTS) {
   const raw = stringFrom(value);
-  const numeric = raw ? Number(raw.replace(",", ".").replace(/[^\d.]/g, "")) : fallbackCents / 100;
+  if (raw && !/^\d{1,7}(?:[.,]\d{1,2})?$/.test(raw)) {
+    throw new Error("Le montant PayPal est invalide.");
+  }
+  const numeric = raw ? Number(raw.replace(",", ".")) : fallbackCents / 100;
   const cents = Math.round(numeric * 100);
 
-  if (!Number.isFinite(cents) || cents < PAYPAL_MIN_AMOUNT_CENTS) {
+  if (!Number.isSafeInteger(cents) || cents < PAYPAL_MIN_AMOUNT_CENTS) {
     throw new Error("Le montant PayPal doit etre d'au moins 1 euro.");
   }
+  if (cents > PAYPAL_MAX_AMOUNT_CENTS) throw new Error("Le montant PayPal dépasse le maximum autorisé.");
 
   return cents;
 }
@@ -236,7 +244,7 @@ export function extractCompletedCapture(capturePayload: unknown) {
     }>;
   };
   const captures = payload.purchase_units?.flatMap(unit => unit.payments?.captures || []) || [];
-  const capture = captures.find(item => item.status === "COMPLETED") || captures[0];
+  const capture = captures.find(item => stringFrom(item.status).toUpperCase() === "COMPLETED");
 
   if (!capture?.id) return null;
 
@@ -246,6 +254,16 @@ export function extractCompletedCapture(capturePayload: unknown) {
     amountCents: parsePayPalValueToCents(capture.amount?.value),
     currency: stringFrom(capture.amount?.currency_code) || PAYPAL_CURRENCY
   };
+}
+
+export function isExpectedCompletedCapture(
+  capture: { amountCents?: number; currency?: string; status?: string } | null,
+  expected: { amountCents: number; currency: string }
+) {
+  if (!capture || stringFrom(capture.status).toUpperCase() !== "COMPLETED") return false;
+  if (!Number.isSafeInteger(capture.amountCents) || !Number.isSafeInteger(expected.amountCents)) return false;
+  return capture.amountCents === expected.amountCents
+    && stringFrom(capture.currency).toUpperCase() === stringFrom(expected.currency).toUpperCase();
 }
 
 export function extractPayPalOrderIdFromWebhook(event: unknown) {

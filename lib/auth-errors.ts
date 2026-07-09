@@ -45,7 +45,7 @@ export function translateAuthError(message?: string | null, fallback = "Une erre
   if (normalized.includes("password") && (normalized.includes("weak") || normalized.includes("short") || normalized.includes("6 characters"))) {
     return {
       title: "Mot de passe trop faible",
-      description: "Utilisez au moins 8 caractères, avec idéalement une majuscule, une minuscule et un chiffre.",
+      description: "Utilisez au moins 12 caractères, idéalement sous forme de phrase de passe unique.",
       field: "password"
     };
   }

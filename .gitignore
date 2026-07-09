@@ -6,6 +6,8 @@ node_modules
 .env.*.local
 !.env.example
 .codex-screenshots/
+.playwright-artifacts/
+e2e/.auth/
 old_build/
 seo-evidence/captures/
 supabase/.temp/

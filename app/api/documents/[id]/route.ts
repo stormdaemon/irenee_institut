@@ -1,32 +1,31 @@
 import { NextResponse } from "next/server";
+import { authenticateRequest } from "@/lib/api-auth";
 import { renderLearningDocumentPdf } from "@/lib/learning-document-pdf";
 import { learningDocumentFilename, type LearningDocument } from "@/lib/learning-documents";
-import { createServerClient } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const supabase = createServerClient();
-  if (!supabase) return NextResponse.json({ ok: false, error: "Service indisponible." }, { status: 501 });
-
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
-  if (!token) return NextResponse.json({ ok: false, error: "Connexion requise." }, { status: 401 });
-
-  const { data: authData, error: authError } = await supabase.auth.getUser(token);
-  if (authError || !authData.user) return NextResponse.json({ ok: false, error: "Session invalide." }, { status: 401 });
+  const auth = await authenticateRequest(request);
+  if (!auth.ok) return auth.response;
+  const { supabase, user } = auth;
 
   const { id } = await params;
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", authData.user.id).maybeSingle();
-  const { data, error } = await supabase.from("learning_documents").select("*").eq("id", id).maybeSingle();
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
-  if (!data) return NextResponse.json({ ok: false, error: "Document introuvable." }, { status: 404 });
-  if (data.user_id !== authData.user.id && profile?.role !== "directeur" && profile?.role !== "formateur") {
-    return NextResponse.json({ ok: false, error: "Accès refusé." }, { status: 403 });
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ ok: false, error: "Document introuvable." }, { status: 404 });
+  const { data: profile, error: profileError } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  if (profileError || !profile) {
+    return NextResponse.json({ ok: false, error: "L'autorisation ne peut pas être vérifiée." }, { status: 503 });
   }
+  let documentQuery = supabase.from("learning_documents").select("*").eq("id", id);
+  if (profile.role !== "directeur") documentQuery = documentQuery.eq("user_id", user.id);
+  const { data, error } = await documentQuery.maybeSingle();
+  if (error) return NextResponse.json({ ok: false, error: "Document indisponible." }, { status: 503 });
+  if (!data) return NextResponse.json({ ok: false, error: "Document introuvable." }, { status: 404 });
 
   const document = data as LearningDocument;
   return new NextResponse(Buffer.from(await renderLearningDocumentPdf(document)), {
     headers: {
+      "Cache-Control": "private, no-store",
       "Content-Disposition": `inline; filename="${learningDocumentFilename(document)}"`,
       "Content-Type": "application/pdf"
     }

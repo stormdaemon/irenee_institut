@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { CheckCircle2, ClipboardList, Clock, Plus, Users } from "lucide-react";
-import { getHomework } from "@/lib/server-data";
+import { requireAdminPage } from "@/lib/admin-auth";
+import { getCourses, getHomework } from "@/lib/server-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomeworkAdminPage() {
-  const homework = await getHomework();
+  const profile = await requireAdminPage();
+  const isDirector = profile.role === "directeur";
+  const courses = isDirector ? [] : await getCourses("admin", { authorId: profile.id });
+  const homework = await getHomework(isDirector ? {} : { authorId: profile.id, courseIds: courses.map(course => course.id) });
   const assigned = homework.reduce((sum, item) => sum + (item.homework_assignments?.length || 0), 0);
 
   return (

@@ -98,6 +98,8 @@ export async function renderLearningDocumentPdf(document: LearningDocument) {
   drawCenteredLines(page, regular, learningDocumentAchievement(document), 248, 16, 660, 21);
   drawCentered(page, regular, ANNUAL_PASS_NAME, 185, 12, rgb(0.42, 0.29, 0.12));
   drawCentered(page, regular, `Delivre le ${learningDocumentIssuedAt(document)}`, 142, 13, rgb(0.22, 0.15, 0.06));
+  drawCentered(page, regular, "Document pedagogique automatise - identite declaree, non verifiee par l'Institut", 119, 8, rgb(0.38, 0.27, 0.12));
+  drawCentered(page, regular, "Verification : irenee-institut.org/verifier-document", 106, 8, rgb(0.38, 0.27, 0.12));
 
   page.drawLine({ start: { x: 80, y: 74 }, end: { x: 205, y: 74 }, color: rgb(0.43, 0.3, 0.13), thickness: 1 });
   page.drawText("Direction de l'Institut", { x: 88, y: 58, size: 10, font: regular, color: rgb(0.38, 0.27, 0.12) });

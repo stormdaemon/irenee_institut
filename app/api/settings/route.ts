@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/api-auth";
 import { legalPages } from "@/lib/legal";
-import { parseSettingValue, secretSettingKeys, stringifySettingValue } from "@/lib/settings";
+import { protectSettingValue, secretSettingKeys, unprotectSettingValue } from "@/lib/settings";
 import { PAYPAL_DEFAULT_AMOUNT_CENTS, PAYPAL_WEBHOOK_URL } from "@/lib/paypal";
+import { readJsonBodyWithLimit, RequestBodyError } from "@/lib/request-body";
 import { STRIPE_API_VERSION, STRIPE_LITE_WEBHOOK_URL, STRIPE_WEBHOOK_URL } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase";
+import { recordSecurityEvent } from "@/lib/security-audit";
 
 const defaults = {
   rib: "",
@@ -66,7 +68,7 @@ const editableSettingKeys = new Set([
 const editableLegalSlugs = new Set(Object.keys(legalPages));
 
 async function upsertSystemSetting(supabase: NonNullable<ReturnType<typeof createServerClient>>, key: string, value: unknown) {
-  const normalized = stringifySettingValue(value);
+  const normalized = protectSettingValue(key, value);
   const { data: existing, error: selectError } = await supabase.from("system_settings").select("*").eq("key", key).maybeSingle();
   if (selectError) throw new Error(selectError.message);
 
@@ -90,13 +92,25 @@ export async function GET(request: Request) {
   const auth = await authorizeRequest(request, ["directeur"]);
   if (!auth.ok) return auth.response;
 
-  const [{ data: settings }, { data: legalRows }] = await Promise.all([
+  const [{ data: settings, error: settingsError }, { data: legalRows, error: legalError }] = await Promise.all([
     auth.supabase.from("system_settings").select("*"),
     auth.supabase.from("legal_pages").select("*")
   ]);
+  if (settingsError || legalError) {
+    console.error("admin_settings_read_failed", { legal: Boolean(legalError), settings: Boolean(settingsError) });
+    return NextResponse.json({ error: "Les paramètres sont momentanément indisponibles." }, { status: 500 });
+  }
 
   const rawSettingsObject = Object.fromEntries((settings || []).map(item => [item.key, item.value]));
-  const settingsObject = Object.fromEntries(Object.entries(rawSettingsObject).map(([key, value]) => [key, parseSettingValue(value)]));
+  let settingsObject: Record<string, unknown>;
+  try {
+    settingsObject = Object.fromEntries(
+      Object.entries(rawSettingsObject).map(([key, value]) => [key, unprotectSettingValue(key, value)])
+    );
+  } catch {
+    console.error("admin_settings_decryption_failed");
+    return NextResponse.json({ error: "Les paramètres secrets ne peuvent pas être déchiffrés." }, { status: 500 });
+  }
   const legalObject = Object.fromEntries((legalRows || []).map(item => [item.slug, item.contenu]));
   const rib = String(settingsObject.rib || settingsObject.iban || "");
   const responseSettings: Record<string, unknown> = {
@@ -106,36 +120,44 @@ export async function GET(request: Request) {
     iban: String(settingsObject.iban || rib),
     legalPages: legalObject,
     paypalClientId: "",
-    paypalClientIdConfigured: Boolean(rawSettingsObject.paypalClientId),
+    paypalClientIdConfigured: Boolean(settingsObject.paypalClientId),
     paypalClientIdPreview: "",
     paypalClientSecret: "",
-    paypalClientSecretConfigured: Boolean(rawSettingsObject.paypalClientSecret),
+    paypalClientSecretConfigured: Boolean(settingsObject.paypalClientSecret),
     paypalClientSecretPreview: "",
     paypalWebhookId: "",
-    paypalWebhookIdConfigured: Boolean(rawSettingsObject.paypalWebhookId),
+    paypalWebhookIdConfigured: Boolean(settingsObject.paypalWebhookId),
     stripeLiteWebhookSecret: "",
-    stripeLiteWebhookSecretConfigured: Boolean(rawSettingsObject.stripeLiteWebhookSecret),
+    stripeLiteWebhookSecretConfigured: Boolean(settingsObject.stripeLiteWebhookSecret),
     stripeSecretKey: "",
-    stripeSecretKeyConfigured: Boolean(rawSettingsObject.stripeSecretKey),
+    stripeSecretKeyConfigured: Boolean(settingsObject.stripeSecretKey),
     stripeWebhookSecret: "",
-    stripeWebhookSecretConfigured: Boolean(rawSettingsObject.stripeWebhookSecret),
+    stripeWebhookSecretConfigured: Boolean(settingsObject.stripeWebhookSecret),
     googleAppsScriptMailSecret: "",
-    googleAppsScriptMailSecretConfigured: Boolean(rawSettingsObject.googleAppsScriptMailSecret)
+    googleAppsScriptMailSecretConfigured: Boolean(settingsObject.googleAppsScriptMailSecret)
   };
 
   for (const key of secretSettingKeys) {
     responseSettings[key] = "";
-    responseSettings[`${key}Configured`] = Boolean(rawSettingsObject[key]);
+    responseSettings[`${key}Configured`] = Boolean(settingsObject[key]);
   }
 
-  return NextResponse.json(responseSettings);
+  return NextResponse.json(responseSettings, { headers: { "Cache-Control": "private, no-store" } });
 }
 
 export async function POST(request: Request) {
   const auth = await authorizeRequest(request, ["directeur"]);
   if (!auth.ok) return auth.response;
 
-  const body = await request.json().catch(() => ({}));
+  let body: Record<string, unknown>;
+  try {
+    body = await readJsonBodyWithLimit<Record<string, unknown>>(request, 262_144);
+  } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+  }
   try {
     const verified: Record<string, unknown> = {};
 
@@ -162,11 +184,26 @@ export async function POST(request: Request) {
     for (const [key, value] of Object.entries(body)) {
       if (!editableSettingKeys.has(key)) continue;
       if (secretSettingKeys.has(key) && typeof value === "string" && !value.trim()) continue;
-      verified[key] = await upsertSystemSetting(auth.supabase, key, value);
+      await upsertSystemSetting(auth.supabase, key, value);
+      verified[key] = true;
     }
 
-    return NextResponse.json({ ok: true, verified: true, data: verified });
-  } catch (error) {
-    return NextResponse.json({ ok: false, verified: false, error: error instanceof Error ? error.message : "Unknown error" }, { status: 400 });
+    await recordSecurityEvent({
+      actorUserId: auth.user.id,
+      eventType: "admin.settings.updated",
+      metadata: { route: "/api/settings" },
+      request
+    });
+
+    return NextResponse.json(
+      { ok: true, verified: true, data: verified },
+      { headers: { "Cache-Control": "private, no-store" } }
+    );
+  } catch {
+    console.error("admin_settings_write_failed");
+    return NextResponse.json(
+      { ok: false, verified: false, error: "Les paramètres n'ont pas pu être enregistrés." },
+      { status: 500 }
+    );
   }
 }

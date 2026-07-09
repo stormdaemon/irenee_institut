@@ -3,72 +3,38 @@ type AuthResponse<T> = {
   error: { message: string } | null;
 };
 
+type BrowserUser = {
+  id: string;
+  email: string;
+  user_metadata?: Record<string, unknown>;
+  identities?: unknown[];
+};
+
 type BrowserSession = {
-  access_token: string;
   expires_at: number;
-  expires_in: number;
-  token_type: "bearer";
-  user: {
-    id: string;
-    email: string;
-    user_metadata?: Record<string, unknown>;
-    identities?: unknown[];
-  };
+  expires_in?: number;
+  token_type: "cookie" | "bearer";
+  user: BrowserUser;
 };
 
 import type { LocalServerClient } from "./local-server-client";
 
-const storageKey = "irenee.auth.session";
-let syncedAccessToken: string | null = null;
+let cachedSession: BrowserSession | null | undefined;
+let pendingSession: Promise<BrowserSession | null> | null = null;
 
 function isBrowser() {
   return typeof window !== "undefined";
 }
 
-function readStoredSession(): BrowserSession | null {
-  if (!isBrowser()) return null;
-  try {
-    const session = JSON.parse(window.localStorage.getItem(storageKey) || "null") as BrowserSession | null;
-    if (!session?.access_token || !session.expires_at) return null;
-    if (session.expires_at <= Math.floor(Date.now() / 1000)) {
-      window.localStorage.removeItem(storageKey);
-      return null;
-    }
-    return session;
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredSession(session: BrowserSession | null) {
-  if (!isBrowser()) return;
-  if (session) window.localStorage.setItem(storageKey, JSON.stringify(session));
-  else window.localStorage.removeItem(storageKey);
-  if (!session) syncedAccessToken = null;
-  window.dispatchEvent(new CustomEvent("irenee-auth-change", { detail: session }));
-}
-
-async function syncSessionCookie(session: BrowserSession | null) {
-  if (!session?.access_token) return false;
-  if (syncedAccessToken === session.access_token) return true;
-
-  const response = await fetch("/api/auth/session", {
-    headers: { Authorization: `Bearer ${session.access_token}` },
-    method: "POST"
-  }).catch(() => null);
-
-  if (!response?.ok) {
-    writeStoredSession(null);
-    return false;
-  }
-
-  syncedAccessToken = session.access_token;
-  return true;
+function announceSession(session: BrowserSession | null) {
+  cachedSession = session;
+  if (isBrowser()) window.dispatchEvent(new CustomEvent("irenee-auth-change", { detail: session }));
 }
 
 async function authFetch<T>(url: string, init: RequestInit = {}): Promise<AuthResponse<T>> {
   const response = await fetch(url, {
     ...init,
+    credentials: "same-origin",
     headers: {
       "Content-Type": "application/json",
       ...(init.headers || {})
@@ -76,9 +42,31 @@ async function authFetch<T>(url: string, init: RequestInit = {}): Promise<AuthRe
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    return { data: body as T, error: { message: body?.error || "Requete refusee." } };
+    return { data: body as T, error: { message: body?.error || "Requête refusée." } };
   }
   return { data: body as T, error: null };
+}
+
+async function loadSession(force = false) {
+  if (!isBrowser()) return null;
+  if (!force && cachedSession !== undefined) return cachedSession;
+  if (pendingSession) return pendingSession;
+
+  pendingSession = fetch("/api/auth/user", { cache: "no-store", credentials: "same-origin" })
+    .then(async response => {
+      if (!response.ok) return null;
+      const body = await response.json().catch(() => ({}));
+      return body.session?.user ? body.session as BrowserSession : null;
+    })
+    .catch(() => null)
+    .then(session => {
+      cachedSession = session;
+      return session;
+    })
+    .finally(() => {
+      pendingSession = null;
+    });
+  return pendingSession;
 }
 
 class BrowserProfileQuery {
@@ -97,17 +85,15 @@ class BrowserProfileQuery {
 
   async maybeSingle() {
     if (this.table !== "profiles") {
-      return { data: null, error: { message: "Client browser local limite aux profils." } };
+      return { data: null, error: { message: "Client navigateur limité aux profils." } };
     }
-    const session = readStoredSession();
-    if (!session?.access_token) return { data: null, error: { message: "Session absente." } };
-    const response = await fetch("/api/auth/profile", {
-      headers: { Authorization: `Bearer ${session.access_token}` }
-    });
+    const session = await loadSession();
+    if (!session) return { data: null, error: { message: "Session absente." } };
+    const response = await fetch("/api/auth/profile", { cache: "no-store", credentials: "same-origin" });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) return { data: null, error: { message: body?.error || "Profil indisponible." } };
     if (this.filters.id && body.profile?.id !== this.filters.id) {
-      return { data: null, error: { message: "Acces refuse." } };
+      return { data: null, error: { message: "Accès refusé." } };
     }
     return { data: body.profile || null, error: null };
   }
@@ -122,31 +108,27 @@ export function createBrowserClient(): any {
 
   return {
     auth: {
-      async exchangeCodeForSession(_code?: string) {
-        const session = readStoredSession();
-        if (session) await syncSessionCookie(session);
-        return { data: { session: readStoredSession() }, error: null };
+      async exchangeCodeForSession(code?: string, password?: string, passwordConfirmation?: string) {
+        const next = new URLSearchParams(window.location.search).get("next") || "/espace-etudiant";
+        const { data, error } = await authFetch<{ session: BrowserSession; user: BrowserUser }>("/api/auth/verify", {
+          body: JSON.stringify({ code, next, password, passwordConfirmation }),
+          method: "POST"
+        });
+        if (!error && data.session) announceSession(data.session);
+        return { data, error };
       },
       async getSession() {
-        const session = readStoredSession();
-        if (session) await syncSessionCookie(session);
-        return { data: { session: readStoredSession() }, error: null };
+        const session = await loadSession();
+        return { data: { session }, error: null };
       },
       async getUser() {
-        const session = readStoredSession();
-        if (!session?.access_token) return { data: { user: null }, error: { message: "Session absente." } };
-        if (!await syncSessionCookie(session)) {
-          return { data: { user: null }, error: { message: "Session invalide." } };
-        }
-        const response = await fetch("/api/auth/user", {
-          headers: { Authorization: `Bearer ${session.access_token}` }
-        });
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok) return { data: { user: null }, error: { message: body?.error || "Session invalide." } };
-        return { data: { user: body.user }, error: null };
+        const session = await loadSession(true);
+        return session
+          ? { data: { user: session.user }, error: null }
+          : { data: { user: null }, error: { message: "Session absente." } };
       },
       onAuthStateChange(callback: (_event: string, session: BrowserSession | null) => void) {
-        const handler = (event: Event) => callback("TOKEN_REFRESHED", (event as CustomEvent).detail || readStoredSession());
+        const handler = (event: Event) => callback("SIGNED_IN", (event as CustomEvent).detail || null);
         window.addEventListener("irenee-auth-change", handler);
         return {
           data: {
@@ -157,34 +139,36 @@ export function createBrowserClient(): any {
         };
       },
       async signInWithPassword(credentials: { email: string; password: string }) {
-        const { data, error } = await authFetch<{ session: BrowserSession; user: BrowserSession["user"] }>("/api/auth/login", {
-          method: "POST",
-          body: JSON.stringify(credentials)
+        const { data, error } = await authFetch<{ session: BrowserSession; user: BrowserUser }>("/api/auth/login", {
+          body: JSON.stringify(credentials),
+          method: "POST"
         });
-        if (!error && data.session) {
-          syncedAccessToken = data.session.access_token;
-          writeStoredSession(data.session);
-        }
+        if (!error && data.session) announceSession(data.session);
         return { data, error };
       },
       async signOut(_options?: unknown) {
-        writeStoredSession(null);
-        await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
+        await fetch("/api/auth/logout", { credentials: "same-origin", method: "POST" }).catch(() => undefined);
+        announceSession(null);
         return { error: null };
       },
-      async signUp(input: { email: string; password: string; options?: { data?: Record<string, unknown>; emailRedirectTo?: string } }) {
-        const { data, error } = await authFetch<{ session: BrowserSession; user: BrowserSession["user"] }>("/api/auth/signup", {
-          method: "POST",
+      async signUp(input: { email: string; password?: string; options?: { data?: Record<string, unknown>; emailRedirectTo?: string } }) {
+        let next = "/espace-etudiant";
+        try {
+          if (input.options?.emailRedirectTo) {
+            const redirect = new URL(input.options.emailRedirectTo, window.location.origin);
+            next = redirect.searchParams.get("next") || next;
+          }
+        } catch {
+          // The server also validates the target and will use the safe default.
+        }
+        const { data, error } = await authFetch<{ confirmationRequired: boolean; session: null; user: { email: string } }>("/api/auth/signup", {
           body: JSON.stringify({
             email: input.email,
             metadata: input.options?.data || {},
-            password: input.password
-          })
+            next
+          }),
+          method: "POST"
         });
-        if (!error && data.session) {
-          syncedAccessToken = data.session.access_token;
-          writeStoredSession(data.session);
-        }
         return { data, error };
       }
     },

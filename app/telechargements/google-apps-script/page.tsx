@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requireDirectorPage } from "@/lib/admin-auth";
 
 export const metadata: Metadata = {
   title: "Téléchargement Google Apps Script",
@@ -8,7 +9,8 @@ export const metadata: Metadata = {
   }
 };
 
-export default function GoogleAppsScriptDownloadPage() {
+export default async function GoogleAppsScriptDownloadPage() {
+  await requireDirectorPage("/telechargements/google-apps-script");
   return (
     <section className="section">
       <div className="container" style={{ maxWidth: 720 }}>
@@ -18,13 +20,9 @@ export default function GoogleAppsScriptDownloadPage() {
             Google Apps Script complet
           </h1>
           <p className="muted">
-            Entrez le code de téléchargement transmis par l'équipe pour récupérer la version complète du script.
+            Ce fichier sensible est réservé aux comptes de direction authentifiés. Le téléchargement est journalisé.
           </p>
-          <form action="/api/download/google-apps-script" method="get" style={{ display: "grid", gap: 14, marginTop: 24 }}>
-            <label>
-              <span style={{ display: "block", fontWeight: 700, marginBottom: 8 }}>Code</span>
-              <input className="input" name="code" type="password" autoComplete="off" required />
-            </label>
+          <form action="/api/download/google-apps-script" method="post" style={{ display: "grid", gap: 14, marginTop: 24 }}>
             <button className="btn btn-primary" type="submit">
               Télécharger le fichier .gs
             </button>

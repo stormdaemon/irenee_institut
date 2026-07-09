@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/api-auth";
 import { normalizeLibraryBookTitle } from "@/lib/library";
+import { readJsonBodyWithLimit, RequestBodyError } from "@/lib/request-body";
 
 export async function POST(request: Request) {
   const auth = await authorizeRequest(request, ["etudiant"]);
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
   if (!membership) return NextResponse.json({ ok: false, error: "Une adhesion active a la bibliotheque est requise." }, { status: 403 });
 
   try {
-    const body = await request.json().catch(() => ({}));
+    const body = await readJsonBodyWithLimit<Record<string, unknown>>(request, 8192);
     const requestedTitle = normalizeLibraryBookTitle(body.requestedTitle);
     const { data, error } = await auth.supabase
       .from("book_requests")
@@ -38,6 +39,9 @@ export async function POST(request: Request) {
     if (error) throw new Error(error.message);
     return NextResponse.json({ ok: true, data });
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
+    }
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Demande invalide." }, { status: 400 });
   }
 }

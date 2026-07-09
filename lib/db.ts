@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import type { Pool as PgPool, QueryResult, QueryResultRow } from "pg";
+import type { Pool as PgPool, PoolClient, QueryResult, QueryResultRow } from "pg";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -51,4 +51,19 @@ export function getPool() {
 
 export async function query<T extends QueryResultRow = QueryResultRow>(text: string, values: unknown[] = []): Promise<QueryResult<T>> {
   return getPool().query<T>(text, values);
+}
+
+export async function withTransaction<T>(operation: (client: PoolClient) => Promise<T>): Promise<T> {
+  const client = await getPool().connect();
+  try {
+    await client.query("begin");
+    const result = await operation(client);
+    await client.query("commit");
+    return result;
+  } catch (error) {
+    await client.query("rollback").catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
 }

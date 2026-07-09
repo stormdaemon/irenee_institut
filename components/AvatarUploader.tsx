@@ -10,20 +10,6 @@ type AvatarUploaderProps = {
   onUploaded: (profile: Profile) => void;
 };
 
-const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "da52mpv3g";
-const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "institut-apologetique-unsigned";
-
-async function uploadToCloudinary(file: Blob, fileName: string) {
-  const form = new FormData();
-  form.append("file", file, fileName);
-  form.append("upload_preset", uploadPreset);
-  form.append("folder", "institut-apologetique/avatars");
-  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: "POST", body: form });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error?.message || "L'envoi de la photo a échoué.");
-  return data as { secure_url: string; public_id: string };
-}
-
 export function AvatarUploader({ profile, onUploaded }: AvatarUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -38,11 +24,15 @@ export function AvatarUploader({ profile, onUploaded }: AvatarUploaderProps) {
     setDone(false);
     setError("");
     try {
-      const uploaded = await uploadToCloudinary(file, fileName);
+      if (file.size > 3 * 1024 * 1024) throw new Error("La photo ne doit pas dépasser 3 Mo.");
+      if (!new Set(["image/jpeg", "image/png", "image/webp"]).has(file.type)) {
+        throw new Error("Utilisez une image JPEG, PNG ou WebP.");
+      }
+      const form = new FormData();
+      form.append("file", file, fileName);
       const response = await authenticatedFetch("/api/profile/avatar", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ avatar_url: uploaded.secure_url, avatar_public_id: uploaded.public_id }),
+        body: form
       });
       const data = await response.json();
       if (!response.ok || data.verified !== true) throw new Error(data.error || "La photo n'a pas pu être enregistrée.");
@@ -101,7 +91,7 @@ export function AvatarUploader({ profile, onUploaded }: AvatarUploaderProps) {
   return (
     <div className="avatar-uploader">
       <div className="avatar-actions">
-        <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={chooseFile} />
+        <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={chooseFile} />
         <button type="button" className="btn btn-primary" disabled={saving} onClick={() => fileInputRef.current?.click()}>
           {saving ? <Loader2 className="action-spin" size={18} /> : <Upload size={18} />} Importer une photo
         </button>

@@ -26,16 +26,14 @@ export default function HomeworkPage() {
       }
 
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData.session?.access_token) {
+      if (sessionError || !sessionData.session) {
         if (!mounted) return;
         setError(sessionError?.message || "Connectez-vous pour accéder à vos devoirs.");
         setStatus("unauthenticated");
         return;
       }
 
-      const response = await fetch("/api/me", {
-        headers: { Authorization: `Bearer ${sessionData.session.access_token}` }
-      });
+      const response = await fetch("/api/me", { cache: "no-store", credentials: "same-origin" });
       const data = await response.json().catch(() => null);
 
       if (!mounted) return;

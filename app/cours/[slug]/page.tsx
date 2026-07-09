@@ -24,6 +24,7 @@ type PageStatus = "loading" | "ready" | "unauthenticated" | "error";
 export default function CoursePage() {
   const params = useParams<{ slug: string }>();
   const slug = String(params?.slug || "");
+  const loginHref = `/auth/login?next=${encodeURIComponent(`/cours/${slug}`)}`;
   const [payload, setPayload] = useState<CoursePayload | null>(null);
   const [status, setStatus] = useState<PageStatus>("loading");
   const [error, setError] = useState("");
@@ -41,16 +42,14 @@ export default function CoursePage() {
       }
 
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData.session?.access_token) {
+      if (sessionError || !sessionData.session) {
         if (!mounted) return;
         setError(sessionError?.message || "Connectez-vous pour accéder à ce cours.");
         setStatus("unauthenticated");
         return;
       }
 
-      const response = await fetch("/api/me", {
-        headers: { Authorization: `Bearer ${sessionData.session.access_token}` }
-      });
+      const response = await fetch(`/api/learning/courses/${encodeURIComponent(slug)}`, { cache: "no-store", credentials: "same-origin" });
       const data = await response.json().catch(() => null);
 
       if (!mounted) return;
@@ -63,7 +62,7 @@ export default function CoursePage() {
 
       setPayload({
         profile: data.profile,
-        courses: data.courses || [],
+        courses: data.course ? [data.course] : [],
         progress: data.progress || []
       });
       setStatus("ready");
@@ -73,7 +72,7 @@ export default function CoursePage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [slug]);
 
   const course = useMemo(() => payload?.courses.find(item => item.slug === slug), [payload, slug]);
   const progressByModule = useMemo(() => new Map((payload?.progress || []).map(item => [item.module_id, item])), [payload]);
@@ -82,7 +81,7 @@ export default function CoursePage() {
     return (
       <section className="section" style={{ minHeight: 680 }}>
         <div className="container center">
-          <div className="card" style={{ padding: 42, maxWidth: 620, margin: "0 auto" }}>
+          <div className="card" role="status" aria-live="polite" aria-busy="true" style={{ padding: 42, maxWidth: 620, margin: "0 auto" }}>
             <Loader2 className="action-spin" size={34} />
             <h1 className="title" style={{ marginTop: 18 }}>Chargement du cours</h1>
             <p className="subtitle">Préparation de votre cours...</p>
@@ -100,7 +99,9 @@ export default function CoursePage() {
             <AlertTriangle size={38} color="var(--gold-2)" />
             <h1 className="title" style={{ marginTop: 18 }}>{status === "unauthenticated" ? "Connexion requise" : "Cours indisponible"}</h1>
             <p className="subtitle">{error}</p>
-            <Link href="/auth/login" className="btn btn-primary">Se connecter</Link>
+            <Link href={status === "unauthenticated" ? loginHref : "/espace-etudiant"} className="btn btn-primary">
+              {status === "unauthenticated" ? "Se connecter" : "Retour à mon espace"}
+            </Link>
           </div>
         </div>
       </section>
@@ -144,7 +145,8 @@ export default function CoursePage() {
             <h2 className="font-display" style={{ color: "var(--navy)" }}>Contenu de la formation</h2>
             {course.modules.map((module, index) => {
               const moduleProgress = progressByModule.get(module.id);
-              const progress = moduleProgress?.complete ? 100 : Number(moduleProgress?.progression || 0);
+              const rawProgress = moduleProgress?.complete ? 100 : Number(moduleProgress?.progression || 0);
+              const progress = Number.isFinite(rawProgress) ? Math.min(100, Math.max(0, rawProgress)) : 0;
               const isComplete = progress >= 100;
               return (
                 <article className="card course-module-card" key={module.id}>
@@ -155,8 +157,15 @@ export default function CoursePage() {
                       <h3 className="font-display" style={{ color: "var(--navy)", fontSize: "1.35rem", marginTop: 4 }}>{module.titre}</h3>
                       <p className="muted">{module.description}</p>
                       <p className="course-module-meta"><Clock size={15} /> {module.duree} min <span className="badge">{module.type}</span></p>
-                      <div className="course-progress-track">
-                        <div style={{ width: `${progress}%` }} />
+                      <div
+                        className="course-progress-track"
+                        role="progressbar"
+                        aria-label={`Progression du module ${module.titre}`}
+                        aria-valuenow={progress}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                      >
+                        <div style={{ width: `${progress}%` }} aria-hidden="true" />
                       </div>
                       <Link className="btn btn-outline" href={`/cours/${course.slug}/modules/${module.id}`}>{isComplete ? "Revoir" : "Commencer"}</Link>
                     </div>
@@ -167,7 +176,13 @@ export default function CoursePage() {
           </div>
           <aside className="card course-objectives-card">
             <h3 className="font-display" style={{ color: "var(--navy)" }}>Objectifs de la formation</h3>
-            {course.objectifs.length ? course.objectifs.map(item => <p key={item}><CheckCircle2 size={17} color="#22c55e" /> {item}</p>) : <p className="muted">Aucun objectif publié pour ce cours.</p>}
+            {course.objectifs.length ? (
+              <ul className="course-objectives-list">
+                {course.objectifs.map(item => (
+                  <li key={item}><CheckCircle2 size={17} color="#22c55e" aria-hidden="true" /> <span>{item}</span></li>
+                ))}
+              </ul>
+            ) : <p className="muted">Aucun objectif publié pour ce cours.</p>}
           </aside>
         </div>
       </div>

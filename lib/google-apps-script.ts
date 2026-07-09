@@ -1,4 +1,5 @@
 import { query } from "@/lib/db";
+import { safeInternalPath } from "@/lib/request-security";
 
 type RegistrationProfile = {
   created_at?: string | null;
@@ -33,13 +34,65 @@ async function postAppsScript(payload: Record<string, unknown>) {
   const response = await fetch(url, {
     body: JSON.stringify({ secret, ...payload }),
     headers: { "Content-Type": "application/json" },
-    method: "POST"
+    method: "POST",
+    signal: AbortSignal.timeout(10_000)
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data?.ok !== true) {
     throw new Error(data?.error || `Google Apps Script HTTP ${response.status}`);
   }
   return data;
+}
+
+export async function sendEmailVerification(input: {
+  email: string;
+  nom?: string | null;
+  prenom?: string | null;
+  token: string;
+  nextPath?: string;
+}) {
+  const nextPath = safeInternalPath(input.nextPath, "/espace-etudiant");
+  const confirmationUrl = new URL("/auth/callback", "https://irenee-institut.org");
+  confirmationUrl.searchParams.set("next", nextPath);
+  // Keep the one-time credential out of HTTP requests, reverse-proxy access
+  // logs and referrer headers. The callback erases the fragment immediately.
+  confirmationUrl.hash = new URLSearchParams({ code: input.token }).toString();
+  const displayName = `${input.prenom || ""} ${input.nom || ""}`.trim() || "cher étudiant";
+  const safeName = escapeHtml(displayName);
+  const safeUrl = escapeHtml(confirmationUrl.toString());
+
+  return postAppsScript({
+    campaign: {
+      body: `Bonjour ${displayName},\n\nConfirmez votre adresse email pour activer votre compte Institut Saint Irénée :\n${confirmationUrl.toString()}\n\nCe lien expire dans 24 heures.`,
+      htmlBody: `<p>Bonjour <strong>${safeName}</strong>,</p><p>Confirmez votre adresse email pour activer votre compte Institut Saint Irénée.</p><p><a href="${safeUrl}">Confirmer mon adresse email</a></p><p>Ce lien expire dans 24 heures. Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.</p>`,
+      subject: "Confirmez votre compte Institut Saint Irénée",
+      to: input.email
+    }
+  });
+}
+
+export async function sendPasswordResetEmail(input: {
+  email: string;
+  nom?: string | null;
+  prenom?: string | null;
+  token: string;
+}) {
+  const resetUrl = new URL("/auth/password-reset", "https://irenee-institut.org");
+  // Fragments are not included in HTTP requests, reverse-proxy access logs or
+  // referrer headers. The client removes this value from history immediately.
+  resetUrl.hash = new URLSearchParams({ code: input.token }).toString();
+  const displayName = `${input.prenom || ""} ${input.nom || ""}`.trim() || "cher étudiant";
+  const safeName = escapeHtml(displayName);
+  const safeUrl = escapeHtml(resetUrl.toString());
+
+  return postAppsScript({
+    campaign: {
+      body: `Bonjour ${displayName},\n\nUne réinitialisation du mot de passe de votre compte Institut Saint Irénée a été demandée :\n${resetUrl.toString()}\n\nCe lien à usage unique expire dans 30 minutes. Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe reste inchangé.`,
+      htmlBody: `<p>Bonjour <strong>${safeName}</strong>,</p><p>Une réinitialisation du mot de passe de votre compte Institut Saint Irénée a été demandée.</p><p><a href="${safeUrl}">Choisir un nouveau mot de passe</a></p><p>Ce lien à usage unique expire dans 30 minutes. Si vous n'êtes pas à l'origine de cette demande, ignorez ce message&nbsp;: votre mot de passe reste inchangé.</p>`,
+      subject: "Réinitialiser votre mot de passe Institut Saint Irénée",
+      to: input.email
+    }
+  });
 }
 
 function welcomeRegistrationFor(profile: RegistrationProfile) {

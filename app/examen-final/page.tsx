@@ -34,13 +34,10 @@ export default function FinalExamPage() {
   async function request(path: string, init?: RequestInit) {
     const supabase = createBrowserClient();
     const { data } = await supabase?.auth.getSession() || { data: { session: null } };
-    if (!data.session?.access_token) throw new Error("Connectez-vous pour accéder à l'examen final.");
+    if (!data.session) throw new Error("Connectez-vous pour accéder à l'examen final.");
     return fetch(path, {
       ...init,
-      headers: {
-        ...(init?.headers || {}),
-        Authorization: `Bearer ${data.session.access_token}`
-      }
+      credentials: "same-origin"
     });
   }
 
@@ -140,4 +137,3 @@ export default function FinalExamPage() {
     </section>
   );
 }
-

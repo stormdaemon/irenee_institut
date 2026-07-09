@@ -26,7 +26,6 @@ export function BuyCourseButton({
   const [status, setStatus] = useState<"idle" | "checking" | "ready" | "loading" | "error">("idle");
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
-  const [token, setToken] = useState("");
   const [amount, setAmount] = useState(() => (defaultAmountCents / 100).toFixed(0));
   const [bookRequested, setBookRequested] = useState(false);
   const [bookTitle, setBookTitle] = useState("");
@@ -44,7 +43,7 @@ export function BuyCourseButton({
     }
 
     const { data } = await supabase.auth.getSession();
-    if (!data.session?.access_token) {
+    if (!data.session) {
       window.location.href = cleanAnnualPassSignupPath;
       return;
     }
@@ -56,7 +55,6 @@ export function BuyCourseButton({
       return;
     }
 
-    setToken(data.session.access_token);
     setOpen(true);
     setStatus("ready");
   }
@@ -101,9 +99,7 @@ export function BuyCourseButton({
     const result = await createStripeCheckoutSessionAction({
       amount,
       bookRequested,
-      bookTitle,
-      origin: window.location.origin,
-      token
+      bookTitle
     });
 
     if (result.alreadyActive && result.redirectUrl) {

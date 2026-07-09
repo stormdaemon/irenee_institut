@@ -71,7 +71,7 @@ test("homepage exposes Samy's presentation video in the hero without forcing aut
   assert.match(homepage, /className="hero-video-disclosure"/);
   assert.match(homepage, /className="hero-video-toggle"/);
   assert.match(homepage, /@type": "VideoObject"/);
-  assert.match(homepage, /serializeJsonLd\(presentationVideoJsonLd\)/);
+  assert.match(homepage, /<JsonLd data=\{presentationVideoJsonLd\} \/>/);
   assert.match(homepage, /<video[\s\S]*controls[\s\S]*preload="none"[\s\S]*playsInline/);
   assert.doesNotMatch(homepage, /autoPlay/);
 });
@@ -289,6 +289,25 @@ test("admin role gates let formateurs use pedagogical tools while keeping direct
   assert.match(source("app/api/admin/live/route.ts"), /\["directeur", "formateur"\]/);
   assert.match(source("app/api/courses/route.ts"), /\["directeur", "formateur"\]/);
   assert.match(source("app/api/homework/route.ts"), /\["directeur", "formateur"\]/);
+});
+
+test("admin server pages scope formateur courses and homework to owned courses", () => {
+  const dashboard = source("app/admin/page.tsx");
+  const homeworkPage = source("app/admin/homework/page.tsx");
+  const serverData = source("lib/server-data.ts");
+
+  assert.match(serverData, /getHomework\(options: \{ authorId\?: string; courseIds\?: string\[\] \} = \{\}\)/);
+  assert.match(serverData, /options\.courseIds && options\.courseIds\.length === 0/);
+  assert.match(serverData, /\.eq\("auteur_id", options\.authorId\)/);
+  assert.match(serverData, /\.in\("course_id", options\.courseIds\)/);
+
+  assert.match(dashboard, /getCourses\("admin", isDirector \? \{\} : \{ authorId: profile\.id \}\)/);
+  assert.match(dashboard, /getHomework\(isDirector \? \{\} : \{ authorId: profile\.id, courseIds: courses\.map\(course => course\.id\) \}\)/);
+
+  assert.match(homeworkPage, /requireAdminPage\(\)/);
+  assert.match(homeworkPage, /profile\.role === "directeur"/);
+  assert.match(homeworkPage, /getCourses\("admin", \{ authorId: profile\.id \}\)/);
+  assert.match(homeworkPage, /getHomework\(isDirector \? \{\} : \{ authorId: profile\.id, courseIds: courses\.map\(course => course\.id\) \}\)/);
 });
 
 test("SEO surfaces keep the established canonical page while adding the no-apostrophe school query", () => {

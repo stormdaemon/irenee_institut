@@ -1,22 +1,45 @@
-export const contentSecurityPolicy = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "object-src 'none'",
-  "frame-ancestors 'none'",
-  "form-action 'self' https://checkout.stripe.com https://www.paypal.com https://*.paypal.com",
-  "img-src 'self' data: blob: https:",
-  "font-src 'self' data:",
-  "media-src 'self' https://play.radioking.io",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.paypal.com https://www.paypalobjects.com",
-  "style-src 'self' 'unsafe-inline'",
-  "connect-src 'self' https:",
-  "frame-src https://checkout.stripe.com https://www.paypal.com https://*.paypal.com"
-].join("; ");
+export function buildContentSecurityPolicy(nonce?: string, development = false) {
+  const scriptSources = [
+    "'self'",
+    ...(nonce ? [`'nonce-${nonce}'`, "'strict-dynamic'"] : []),
+    ...(development ? ["'unsafe-eval'"] : []),
+    "https://www.paypal.com",
+    "https://www.paypalobjects.com"
+  ];
+
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'self' https://checkout.stripe.com https://www.paypal.com https://*.paypal.com",
+    "img-src 'self' data: blob: https://res.cloudinary.com https://lebaptemecatholique.fr https://bilan-previsionnel.fr",
+    "font-src 'self' data:",
+    "media-src 'self' https://play.radioking.io https://res.cloudinary.com",
+    `script-src ${scriptSources.join(" ")}`,
+    "script-src-attr 'none'",
+    "style-src 'self' 'unsafe-inline'",
+    "connect-src 'self' https://www.paypal.com https://*.paypal.com",
+    "frame-src https://checkout.stripe.com https://www.paypal.com https://*.paypal.com https://www.google.com https://maps.google.com https://*.daily.co",
+    "worker-src 'self' blob:",
+    "manifest-src 'self'",
+    "upgrade-insecure-requests"
+  ].join("; ");
+}
+
+export const contentSecurityPolicy = buildContentSecurityPolicy();
 
 export const securityHeaders = [
   { key: "Content-Security-Policy", value: contentSecurityPolicy },
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
-  { key: "Permissions-Policy", value: "camera=(), geolocation=(), microphone=()" }
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
+  { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
+  { key: "Origin-Agent-Cluster", value: "?1" },
+  {
+    key: "Permissions-Policy",
+    value: "accelerometer=(), autoplay=(self \"https://institutsaintirenee.daily.co\"), camera=(self \"https://institutsaintirenee.daily.co\"), display-capture=(\"https://institutsaintirenee.daily.co\"), geolocation=(), gyroscope=(), magnetometer=(), microphone=(self \"https://institutsaintirenee.daily.co\"), payment=(self), usb=()"
+  }
 ];

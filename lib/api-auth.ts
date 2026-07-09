@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase";
+import { getRequestSessionToken } from "@/lib/local-auth";
+import { assertSameOrigin, RequestSecurityError } from "@/lib/request-security";
 import type { LocalServerUser } from "@/lib/local-server-client";
 import type { Profile, Role } from "@/lib/types";
 
@@ -7,6 +9,7 @@ type ServerClient = NonNullable<ReturnType<typeof createServerClient>>;
 
 type AuthenticatedUser = {
   ok: true;
+  authMethod: "bearer" | "cookie";
   supabase: ServerClient;
   user: LocalServerUser;
 };
@@ -21,7 +24,10 @@ type AuthFailure = {
 };
 
 function errorResponse(error: string, status: number) {
-  return NextResponse.json({ ok: false, error }, { status });
+  return NextResponse.json({ ok: false, error }, {
+    headers: { "Cache-Control": "no-store" },
+    status
+  });
 }
 
 export async function authenticateRequest(request: Request): Promise<AuthenticatedUser | AuthFailure> {
@@ -30,17 +36,28 @@ export async function authenticateRequest(request: Request): Promise<Authenticat
     return { ok: false, response: errorResponse("Le service est momentanement indisponible.", 501) };
   }
 
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+  const { token, viaCookie } = getRequestSessionToken(request);
   if (!token) {
     return { ok: false, response: errorResponse("Connexion requise.", 401) };
   }
 
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data.user) {
-    return { ok: false, response: errorResponse(error?.message || "Session invalide ou expiree.", 401) };
+  if (viaCookie) {
+    try {
+      assertSameOrigin(request);
+    } catch (error) {
+      if (error instanceof RequestSecurityError) {
+        return { ok: false, response: errorResponse("Requête refusée.", error.status) };
+      }
+      return { ok: false, response: errorResponse("Requête refusée.", 403) };
+    }
   }
 
-  return { ok: true, supabase, user: data.user };
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data.user) {
+    return { ok: false, response: errorResponse("Session invalide ou expirée.", 401) };
+  }
+
+  return { authMethod: viaCookie ? "cookie" : "bearer", ok: true, supabase, user: data.user };
 }
 
 export async function authorizeRequest(request: Request, allowedRoles: Role[]): Promise<AuthenticatedProfile | AuthFailure> {
@@ -54,7 +71,8 @@ export async function authorizeRequest(request: Request, allowedRoles: Role[]): 
     .maybeSingle();
 
   if (error) {
-    return { ok: false, response: errorResponse(error.message, 400) };
+    console.error("authorization_profile_lookup_failed", { userId: authenticated.user.id });
+    return { ok: false, response: errorResponse("L'autorisation n'a pas pu être vérifiée.", 500) };
   }
 
   const profile = data as Profile | null;

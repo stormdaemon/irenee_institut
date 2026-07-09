@@ -1,12 +1,20 @@
 import { NextResponse } from "next/server";
-import { verifyAccessToken } from "@/lib/local-auth";
+import { authenticateRequest } from "@/lib/api-auth";
+import { getRequestSessionToken, verifyAccessToken } from "@/lib/local-auth";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() || "";
-  if (!token) return NextResponse.json({ error: "Connexion requise." }, { status: 401 });
-  const { user, error } = await verifyAccessToken(token);
-  if (error || !user) return NextResponse.json({ error: error?.message || "Session invalide." }, { status: 401 });
-  return NextResponse.json({ user });
+  const auth = await authenticateRequest(request);
+  if (!auth.ok) return auth.response;
+  const { token } = getRequestSessionToken(request);
+  const verified = await verifyAccessToken(token);
+  return NextResponse.json({
+    session: {
+      expires_at: verified.expiresAt,
+      token_type: "cookie",
+      user: auth.user
+    },
+    user: auth.user
+  }, { headers: { "Cache-Control": "no-store" } });
 }

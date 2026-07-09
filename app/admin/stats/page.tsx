@@ -5,7 +5,7 @@ import { getCourses, getHomework, getProfiles } from "@/lib/server-data";
 export const dynamic = "force-dynamic";
 
 export default async function AdminStatsPage() {
-  const [courses, profiles, homework] = await Promise.all([getCourses(), getProfiles(), getHomework()]);
+  const [courses, profiles, homework] = await Promise.all([getCourses("admin"), getProfiles(), getHomework()]);
   const blocks: [LucideIcon, string, string | number][] = [
     [BookOpen, "Cours publiés", courses.filter(course => course.statut === "publie").length || courses.length],
     [Users, "Utilisateurs", profiles.length],

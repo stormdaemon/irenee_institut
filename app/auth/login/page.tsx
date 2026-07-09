@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, Loader2, Lock, LogIn, Mail } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, Lock, LogIn, Mail } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { translateAuthError, type AuthErrorCopy } from "@/lib/auth-errors";
+import { safeInternalPath } from "@/lib/request-security";
 import { annualPassCheckoutPath, cleanAnnualPassSignupPath } from "@/lib/routes";
 import { createBrowserClient } from "@/lib/supabase";
 
@@ -13,8 +14,7 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function getSafeNextPath() {
   if (typeof window === "undefined") return "/espace-etudiant";
-  const next = new URLSearchParams(window.location.search).get("next");
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/espace-etudiant";
+  return safeInternalPath(new URLSearchParams(window.location.search).get("next"), "/espace-etudiant");
 }
 
 export default function LoginPage() {
@@ -22,7 +22,9 @@ export default function LoginPage() {
   const [notice, setNotice] = useState<AuthErrorCopy | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [signupHref, setSignupHref] = useState("/auth/signup");
+  const [resendStatus, setResendStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const noticeRef = useRef<HTMLDivElement | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   useEffect(() => {
     const next = getSafeNextPath();
@@ -43,12 +45,9 @@ export default function LoginPage() {
       if (!supabase) return;
 
       const { data } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
-      const token = data.session?.access_token;
-      if (!token) return;
+      if (!data.session) return;
 
-      const meResponse = await fetch("/api/me", {
-        headers: { Authorization: `Bearer ${token}` }
-      }).catch(() => null);
+      const meResponse = await fetch("/api/me", { cache: "no-store", credentials: "same-origin" }).catch(() => null);
       if (!meResponse?.ok || cancelled) return;
 
       window.location.replace(getSafeNextPath());
@@ -118,7 +117,7 @@ export default function LoginPage() {
       return;
     }
 
-    if (!data.session?.access_token || !data.user) {
+    if (!data.session || !data.user) {
       setNotice({
         title: "Connexion non confirmée",
         description: "Vérifiez que votre email est confirmé et que le mot de passe est correct.",
@@ -128,9 +127,7 @@ export default function LoginPage() {
       return;
     }
 
-    const meResponse = await fetch("/api/me", {
-      headers: { Authorization: `Bearer ${data.session.access_token}` }
-    });
+    const meResponse = await fetch("/api/me", { cache: "no-store", credentials: "same-origin" });
 
     if (!meResponse.ok) {
       const meResult = await meResponse.json().catch(() => null);
@@ -147,6 +144,25 @@ export default function LoginPage() {
     window.location.href = getSafeNextPath();
   }
 
+  async function resendVerification() {
+    const form = formRef.current;
+    const email = String(form ? new FormData(form).get("email") || "" : "").trim().toLowerCase();
+    if (!emailPattern.test(email)) {
+      setFieldErrors(current => ({ ...current, email: "Indiquez l'adresse email à confirmer." }));
+      setResendStatus("error");
+      return;
+    }
+
+    setResendStatus("submitting");
+    const response = await fetch("/api/auth/verification/resend", {
+      body: JSON.stringify({ email, next: getSafeNextPath() }),
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      method: "POST"
+    }).catch(() => null);
+    setResendStatus(response?.ok ? "success" : "error");
+  }
+
   const isSubmitting = status === "submitting";
 
   return (
@@ -157,7 +173,7 @@ export default function LoginPage() {
         <p className="subtitle">Accédez à votre espace personnel.</p>
       </div>
 
-      <form onSubmit={submit} className="card auth-card" noValidate>
+      <form ref={formRef} onSubmit={submit} className="card auth-card" noValidate>
         {notice && (
           <div ref={noticeRef} className="auth-notice auth-notice-error" role="alert" aria-live="polite">
             <AlertTriangle size={20} aria-hidden="true" />
@@ -186,10 +202,35 @@ export default function LoginPage() {
           {fieldErrors.password && <small className="field-error">{fieldErrors.password}</small>}
         </label>
 
+        <p className="auth-forgot">
+          <Link href="/auth/password-forgot">Mot de passe oublié&nbsp;?</Link>
+        </p>
+
         <button className="btn btn-primary auth-submit" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="action-spin" size={18} aria-hidden="true" />}
           {isSubmitting ? "Connexion..." : "Se connecter"}
         </button>
+
+        <button
+          className="btn btn-outline auth-submit"
+          type="button"
+          onClick={resendVerification}
+          disabled={isSubmitting || resendStatus === "submitting"}
+        >
+          {resendStatus === "submitting" ? "Envoi…" : "Renvoyer l’e-mail de confirmation"}
+        </button>
+        {resendStatus === "success" && (
+          <div className="auth-notice auth-notice-success" role="status" aria-live="polite">
+            <CheckCircle2 size={20} aria-hidden="true" />
+            <div><strong>Demande prise en compte</strong><p>Si ce compte attend une confirmation, un nouveau lien vient d’être envoyé.</p></div>
+          </div>
+        )}
+        {resendStatus === "error" && !fieldErrors.email && (
+          <div className="auth-notice auth-notice-error" role="alert" aria-live="polite">
+            <AlertTriangle size={20} aria-hidden="true" />
+            <div><strong>Envoi indisponible</strong><p>Réessayez dans quelques instants.</p></div>
+          </div>
+        )}
 
         <p className="auth-switch">
           Pas encore de compte ? <Link href={signupHref}><strong>S'inscrire</strong></Link>

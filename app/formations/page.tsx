@@ -5,7 +5,8 @@ import { formatDuration, formatPrice } from "@/lib/data";
 import { getCourses } from "@/lib/server-data";
 import { BuyCourseButton } from "@/components/BuyCourseButton";
 import { ANNUAL_PASS_NAME } from "@/lib/curriculum";
-import { serializeJsonLd, siteUrl } from "@/lib/seo";
+import { siteUrl } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
 
 export const dynamic = "force-dynamic";
 
@@ -119,8 +120,8 @@ export default async function FormationsPage() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(collectionJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqJsonLd) }} />
+      <JsonLd data={collectionJsonLd} />
+      <JsonLd data={faqJsonLd} />
       <section className="page-hero">
         <div className="container">
           <span className="hero-eyebrow">Cours accessibles à distance</span>
