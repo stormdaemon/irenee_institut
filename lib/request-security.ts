@@ -61,14 +61,49 @@ export function assertSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   if (!origin) throw new RequestSecurityError("Origine de requête manquante.");
 
-  let expectedOrigin: string;
+  let suppliedOrigin: string;
   try {
-    expectedOrigin = new URL(request.url).origin;
+    const parsedOrigin = new URL(origin);
+    if (!["http:", "https:"].includes(parsedOrigin.protocol) || origin !== parsedOrigin.origin) {
+      throw new RequestSecurityError();
+    }
+    suppliedOrigin = parsedOrigin.origin;
   } catch {
     throw new RequestSecurityError();
   }
 
-  if (origin !== expectedOrigin) throw new RequestSecurityError();
+  const expectedOrigins = new Set<string>();
+  try {
+    expectedOrigins.add(new URL(request.url).origin);
+  } catch {
+    throw new RequestSecurityError();
+  }
+
+  // Nginx terminates TLS and overwrites these headers before forwarding to the
+  // loopback-only Next.js service. Accept that external origin only when every
+  // proxy-controlled value is present and internally consistent.
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.trim().toLowerCase() || "";
+  const forwardedHost = request.headers.get("x-forwarded-host")?.trim() || "";
+  const requestHost = request.headers.get("host")?.trim() || "";
+  if (
+    validIp(request.headers.get("x-real-ip"))
+    && ["http", "https"].includes(forwardedProto)
+    && forwardedHost
+    && requestHost.toLowerCase() === forwardedHost.toLowerCase()
+    && !controlCharacters.test(forwardedHost)
+    && !/[,@\\/]/.test(forwardedHost)
+  ) {
+    try {
+      const forwardedOrigin = new URL(`${forwardedProto}://${forwardedHost}`);
+      if (!forwardedOrigin.username && !forwardedOrigin.password && forwardedOrigin.pathname === "/") {
+        expectedOrigins.add(forwardedOrigin.origin);
+      }
+    } catch {
+      // A malformed forwarded host is never trusted.
+    }
+  }
+
+  if (!expectedOrigins.has(suppliedOrigin)) throw new RequestSecurityError();
 }
 
 function validIp(value: string | null) {

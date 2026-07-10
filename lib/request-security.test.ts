@@ -29,6 +29,44 @@ test("assertSameOrigin protects cookie-authenticated unsafe requests", () => {
     method: "POST"
   });
   assert.throws(() => assertSameOrigin(crossSite), /origine/i);
+
+  const proxiedHttps = new Request("http://irenee-institut.org/api/settings", {
+    headers: {
+      host: "irenee-institut.org",
+      origin: "https://irenee-institut.org",
+      "sec-fetch-site": "same-origin",
+      "x-forwarded-host": "irenee-institut.org",
+      "x-forwarded-proto": "https",
+      "x-real-ip": "198.51.100.42"
+    },
+    method: "POST"
+  });
+  assert.doesNotThrow(() => assertSameOrigin(proxiedHttps));
+
+  const spoofedOrigin = new Request("http://irenee-institut.org/api/settings", {
+    headers: {
+      host: "irenee-institut.org",
+      origin: "https://evil.test",
+      "sec-fetch-site": "same-origin",
+      "x-forwarded-host": "irenee-institut.org",
+      "x-forwarded-proto": "https",
+      "x-real-ip": "198.51.100.42"
+    },
+    method: "POST"
+  });
+  assert.throws(() => assertSameOrigin(spoofedOrigin), /origine/i);
+
+  const injectedForwardedHost = new Request("http://irenee-institut.org/api/settings", {
+    headers: {
+      host: "irenee-institut.org",
+      origin: "https://irenee-institut.org",
+      "x-forwarded-host": "irenee-institut.org,evil.test",
+      "x-forwarded-proto": "https",
+      "x-real-ip": "198.51.100.42"
+    },
+    method: "POST"
+  });
+  assert.throws(() => assertSameOrigin(injectedForwardedHost), /origine/i);
 });
 
 test("getTrustedClientIp ignores attacker-controlled X-Forwarded-For entries", () => {
