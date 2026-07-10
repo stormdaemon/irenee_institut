@@ -44,10 +44,15 @@ function courseForm(slug: string) {
   form.set("prix", "0");
   form.set("prix_reduit", "0");
   form.set("duree_totale_minutes", "0");
-  form.set("objectifs", "[]");
-  form.set("competences", "[]");
+  form.set("objectifs", JSON.stringify(["Comprendre le cours de test"]));
+  form.set("competences", JSON.stringify(["Valider un accès manuel"]));
   form.set("prerequis", "[]");
-  form.set("modules", "[]");
+  form.set("modules", JSON.stringify([{
+    titre: "Module de test",
+    type_contenu: "texte",
+    contenu_html: "<p>Contenu publié pour le test d'inscription.</p>",
+    duree: 1,
+  }]));
   return form;
 }
 

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
-import { projectPublicQuiz } from "@/lib/learning-projection";
 import { isActiveCourseEnrollment } from "@/lib/learning-security";
 import type { Course, CourseModule, Homework, Profile } from "@/lib/types";
 
@@ -14,6 +13,12 @@ type RawCourse = Omit<Course, "modules" | "objectifs" | "competences" | "prerequ
 type RawModule = CourseModule & {
   type_contenu?: string | null;
 };
+
+const privateNoStoreHeaders = { "Cache-Control": "private, no-store" };
+
+function privateJson(body: Record<string, unknown>, status = 200) {
+  return NextResponse.json(body, { headers: privateNoStoreHeaders, status });
+}
 
 function normalizeCourse(course: RawCourse, modules: CourseModule[]): Course {
   return {
@@ -40,12 +45,7 @@ function normalizeModule(module: RawModule): CourseModule {
     ordre: module.ordre || 0,
     duree: Number(module.duree || 0),
     type: module.type_contenu || module.type || "texte",
-    type_contenu: module.type_contenu,
-    contenu: module.contenu,
-    contenu_html: module.contenu_html || module.contenu || "",
-    url_video: module.url_video,
-    ressources: module.ressources,
-    quiz: projectPublicQuiz(module.quiz)
+    type_contenu: module.type_contenu
   };
 }
 
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
   let { data: profile, error: profileError } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
 
   if (profileError) {
-    return NextResponse.json({ ok: false, error: profileError.message }, { status: 400 });
+    return privateJson({ ok: false, error: profileError.message }, 400);
   }
 
   if (!profile) {
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
       .single();
 
     if (createProfileError) {
-      return NextResponse.json({ ok: false, error: createProfileError.message }, { status: 400 });
+      return privateJson({ ok: false, error: createProfileError.message }, 400);
     }
 
     profile = createdProfile;
@@ -92,7 +92,7 @@ export async function GET(request: Request) {
     ? { data: null, error: null }
     : await supabase
       .from("annual_access_passes")
-      .select("*")
+      .select("id,status,expires_at")
       .eq("user_id", user.id)
       .eq("status", "active")
       .gt("expires_at", new Date().toISOString())
@@ -101,19 +101,19 @@ export async function GET(request: Request) {
       .maybeSingle();
 
   if (annualPassError) {
-    return NextResponse.json({ ok: false, error: annualPassError.message }, { status: 400 });
+    return privateJson({ ok: false, error: annualPassError.message }, 400);
   }
 
   const enrollmentResult = isStaff
     ? { data: [], error: null }
     : await supabase
       .from("course_enrollments")
-      .select("*")
+      .select("id,course_id,statut,access_source,access_expires_at")
       .eq("etudiant_id", user.id)
       .eq("statut", "en_cours");
 
   if (enrollmentResult.error) {
-    return NextResponse.json({ ok: false, error: enrollmentResult.error.message }, { status: 400 });
+    return privateJson({ ok: false, error: enrollmentResult.error.message }, 400);
   }
   const enrollments = (enrollmentResult.data || []).filter(enrollment => isActiveCourseEnrollment({
     accessExpiresAt: enrollment.access_expires_at,
@@ -143,31 +143,31 @@ export async function GET(request: Request) {
   if (courseIds.length) {
     const { data: courseRows, error: courseError } = await supabase
       .from("courses")
-      .select("*")
+      .select("id,titre,slug,description,image_url,objectifs,competences,prerequis,semestre,numero,duree,niveau,statut,nb_modules,duree_totale_minutes,duree_totale,prix,prix_reduit")
       .in("id", courseIds)
       .eq("statut", "publie")
       .order("numero", { ascending: true });
-    if (courseError) return NextResponse.json({ ok: false, error: courseError.message }, { status: 400 });
+    if (courseError) return privateJson({ ok: false, error: courseError.message }, 400);
 
     const accessibleCourseIds = (courseRows || []).map(course => course.id);
     const { data: moduleRows, error: moduleError } = accessibleCourseIds.length
       ? await supabase
         .from("course_modules")
-        .select("*")
+        .select("id,course_id,titre,description,ordre,duree,type_contenu")
         .in("course_id", accessibleCourseIds)
         .order("ordre", { ascending: true })
       : { data: [], error: null };
-    if (moduleError) return NextResponse.json({ ok: false, error: moduleError.message }, { status: 400 });
+    if (moduleError) return privateJson({ ok: false, error: moduleError.message }, 400);
 
     const accessibleModuleIds = (moduleRows || []).map(module => module.id);
     const { data: progressData, error: progressError } = accessibleModuleIds.length
       ? await supabase
         .from("module_progress")
-        .select("*")
+        .select("module_id,course_id,progression,complete,date_completion,statut")
         .eq("etudiant_id", user.id)
         .in("module_id", accessibleModuleIds)
       : { data: [], error: null };
-    if (progressError) return NextResponse.json({ ok: false, error: progressError.message }, { status: 400 });
+    if (progressError) return privateJson({ ok: false, error: progressError.message }, 400);
 
     progressRows = (progressData || []) as typeof progressRows;
     const progressByModule = new Map(progressRows.map(row => [row.module_id, row]));
@@ -182,7 +182,8 @@ export async function GET(request: Request) {
     const enrollmentByCourse = new Map((enrollments || []).map(item => [item.course_id, item]));
     courses = ((courseRows || []) as RawCourse[]).map(course => {
       const modules = modulesByCourse.get(course.id) || [];
-      const completedModules = modules.filter(module => progressByModule.get(module.id)?.complete || Number(progressByModule.get(module.id)?.progression || 0) >= 100).length;
+      const completedModules = modules.filter(module => progressByModule.get(module.id)?.complete === true).length;
+      const resumeModuleId = modules.find(module => progressByModule.get(module.id)?.complete !== true)?.id || modules.at(-1)?.id || null;
       const progress = modules.length
         ? Math.round(modules.reduce((sum, module) => {
           const row = progressByModule.get(module.id);
@@ -194,7 +195,8 @@ export async function GET(request: Request) {
         ...normalizeCourse(course, modules),
         enrollment_id: enrollmentByCourse.get(course.id)?.id,
         progress,
-        completedModules
+        completedModules,
+        resumeModuleId
       };
     });
   }
@@ -249,14 +251,14 @@ export async function GET(request: Request) {
       .order("requested_at", { ascending: false })
   ]);
 
-  if (documentsError) return NextResponse.json({ ok: false, error: documentsError.message }, { status: 400 });
-  if (examError) return NextResponse.json({ ok: false, error: examError.message }, { status: 400 });
-  if (libraryMembershipError) return NextResponse.json({ ok: false, error: libraryMembershipError.message }, { status: 400 });
-  if (bookRequestsError) return NextResponse.json({ ok: false, error: bookRequestsError.message }, { status: 400 });
+  if (documentsError) return privateJson({ ok: false, error: documentsError.message }, 400);
+  if (examError) return privateJson({ ok: false, error: examError.message }, 400);
+  if (libraryMembershipError) return privateJson({ ok: false, error: libraryMembershipError.message }, 400);
+  if (bookRequestsError) return privateJson({ ok: false, error: bookRequestsError.message }, 400);
 
   const curriculumCompleted = Boolean(annualPass) && courses.length > 0 && courses.every(course => course.modules.length > 0 && course.completedModules === course.modules.length);
 
-  return NextResponse.json({
+  return privateJson({
     annualPass,
     curriculum: {
       completed: curriculumCompleted,

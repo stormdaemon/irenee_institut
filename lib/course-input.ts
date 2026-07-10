@@ -2,8 +2,13 @@ import sanitizeHtml from "sanitize-html";
 
 const MAX_HTML_LENGTH = 1_000_000;
 const MAX_MODULES = 100;
+const MAX_QUIZ_QUESTIONS = 100;
+const MAX_QUIZ_OPTIONS = 20;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const QUIZ_ID_PATTERN = /^[a-z0-9](?:[a-z0-9_-]{0,99})$/i;
+const COURSE_VERSION_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{1,6}Z$/;
+const RESERVED_QUIZ_IDS = new Set(["__proto__", "constructor", "prototype"]);
 const courseStatuses = new Set(["brouillon", "en_preparation", "publie", "archive"]);
 const courseLevels = new Set(["debutant", "intermediaire", "avance"]);
 const moduleTypes = new Set(["texte", "video", "quiz"]);
@@ -64,6 +69,117 @@ function parseTextList(value: FormDataEntryValue | null, label: string) {
   const parsed = parseArray(value ?? "[]", label);
   if (parsed.length > 100) throw new CourseInputError(`${label} contient trop d'éléments.`);
   return parsed.map((item, index) => optionalText(item, `${label} ${index + 1}`, 500)).filter(Boolean);
+}
+
+function parseExpectedUpdatedAt(value: FormDataEntryValue | null) {
+  if (value === null || String(value).trim() === "") return null;
+  if (typeof value !== "string") throw new CourseInputError("La version du cours est invalide.");
+  const candidate = value.trim();
+  if (candidate.length > 100 || !COURSE_VERSION_PATTERN.test(candidate)) {
+    throw new CourseInputError("La version du cours est invalide.");
+  }
+  const timestamp = Date.parse(candidate);
+  if (!Number.isFinite(timestamp)) throw new CourseInputError("La version du cours est invalide.");
+  return candidate;
+}
+
+export type ParsedCourseQuizQuestion = {
+  id: string;
+  question: string;
+  options: string[];
+  answer?: number;
+};
+
+function normalizedQuizText(value: unknown, label: string, maxLength: number) {
+  const normalized = String(value || "").replace(/\s+/g, " ").trim();
+  if (normalized.length > maxLength) throw new CourseInputError(`${label} est trop long.`);
+  return normalized;
+}
+
+function parseModuleQuiz(value: unknown, moduleIndex: number): ParsedCourseQuizQuestion[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value)) throw new CourseInputError(`Le quiz du module ${moduleIndex + 1} doit être une liste de questions.`);
+  if (value.length > MAX_QUIZ_QUESTIONS) {
+    throw new CourseInputError(`Le quiz du module ${moduleIndex + 1} contient trop de questions.`);
+  }
+
+  const identifiers = new Set<string>();
+  return value.map((rawQuestion, questionIndex) => {
+    if (!rawQuestion || typeof rawQuestion !== "object" || Array.isArray(rawQuestion)) {
+      throw new CourseInputError(`La question ${questionIndex + 1} du quiz est invalide.`);
+    }
+    const entry = rawQuestion as Record<string, unknown>;
+    const id = requiredText(entry.id, `L'identifiant de la question ${questionIndex + 1}`, 100);
+    if (!QUIZ_ID_PATTERN.test(id) || RESERVED_QUIZ_IDS.has(id.toLowerCase())) {
+      throw new CourseInputError(`L'identifiant de la question ${questionIndex + 1} est invalide.`);
+    }
+    if (identifiers.has(id)) throw new CourseInputError(`L'identifiant de la question ${questionIndex + 1} est déjà utilisé.`);
+    identifiers.add(id);
+
+    const question = normalizedQuizText(entry.question, `La question ${questionIndex + 1}`, 1_000);
+    const rawOptions = entry.options ?? [];
+    if (!Array.isArray(rawOptions) || rawOptions.length > MAX_QUIZ_OPTIONS) {
+      throw new CourseInputError(`Les réponses de la question ${questionIndex + 1} sont invalides.`);
+    }
+    const options = rawOptions.map((option, optionIndex) => normalizedQuizText(
+      option,
+      `La réponse ${optionIndex + 1} de la question ${questionIndex + 1}`,
+      500,
+    ));
+    let answer: number | undefined;
+    if (entry.answer !== undefined && entry.answer !== null && entry.answer !== "") {
+      answer = boundedInteger(entry.answer, `La correction de la question ${questionIndex + 1}`, 0, MAX_QUIZ_OPTIONS - 1);
+    }
+    return { id, options, question, ...(answer !== undefined ? { answer } : {}) };
+  });
+}
+
+function courseHtmlHasText(html: string) {
+  return sanitizeHtml(html, { allowedAttributes: {}, allowedTags: [] })
+    .replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim().length > 0;
+}
+
+function validatePublishedCourse(
+  modules: ParsedCourseModule[],
+  objectifs: string[],
+  competences: string[],
+) {
+  if (!modules.length) throw new CourseInputError("Pour publier ce cours, ajoutez au moins un module.");
+  if (!objectifs.length || !competences.length) {
+    throw new CourseInputError("Pour publier ce cours, ajoutez au moins un objectif et une compétence.");
+  }
+  modules.forEach((module, index) => {
+    if (module.type_contenu === "quiz") {
+      if (!module.quiz?.length) {
+        throw new CourseInputError(`Le quiz du module ${index + 1} doit contenir au moins une question avant publication.`);
+      }
+      module.quiz.forEach((question, questionIndex) => {
+        if (!question.question.trim()) {
+          throw new CourseInputError(`La question ${questionIndex + 1} du quiz du module ${index + 1} doit avoir un intitulé avant publication.`);
+        }
+        if (question.options.length < 2 || question.options.some(option => !option.trim())) {
+          throw new CourseInputError(`La question ${questionIndex + 1} du quiz du module ${index + 1} doit proposer au moins deux réponses complètes.`);
+        }
+        if (new Set(question.options).size !== question.options.length) {
+          throw new CourseInputError(`Les réponses de la question ${questionIndex + 1} du quiz doivent être différentes.`);
+        }
+        if (!Number.isInteger(question.answer) || Number(question.answer) < 0 || Number(question.answer) >= question.options.length) {
+          throw new CourseInputError(`La question ${questionIndex + 1} du quiz doit avoir une correction valide avant publication.`);
+        }
+      });
+      return;
+    }
+    const hasText = courseHtmlHasText(module.contenu_html);
+    if (module.type_contenu === "video") {
+      if (!hasText && !module.url_video) {
+        throw new CourseInputError(`Le module vidéo ${index + 1} doit contenir un texte ou une URL HTTPS avant publication.`);
+      }
+      return;
+    }
+    if (!hasText) throw new CourseInputError(`Le module ${index + 1} doit contenir du texte avant publication.`);
+  });
 }
 
 export function sanitizeExternalUrl(value: unknown) {
@@ -162,6 +278,7 @@ export type ParsedCourseModule = {
   duree: number;
   type_contenu: string;
   ordre: number;
+  quiz?: ParsedCourseQuizQuestion[];
 };
 
 export function parseCourseForm(form: FormData) {
@@ -189,6 +306,7 @@ export function parseCourseForm(form: FormData) {
     const urlVideo = sanitizeExternalUrl(module.url_video);
     if (module.url_video && !urlVideo) throw new CourseInputError(`L'URL vidéo du module ${index + 1} est invalide.`);
     const html = sanitizeCourseHtml(module.contenu_html || module.contenu || "");
+    const quiz = parseModuleQuiz(module.quiz, index);
     return {
       ...(id ? { id } : {}),
       titre: requiredText(module.titre, `Le titre du module ${index + 1}`, 240),
@@ -198,7 +316,8 @@ export function parseCourseForm(form: FormData) {
       url_video: urlVideo || null,
       duree: boundedInteger(module.duree ?? 0, `La durée du module ${index + 1}`, 0, 100_000),
       type_contenu: type,
-      ordre: index + 1
+      ordre: index + 1,
+      ...(quiz !== undefined ? { quiz } : {})
     };
   });
 
@@ -208,16 +327,21 @@ export function parseCourseForm(form: FormData) {
   if (form.get("url_paiement_paypal") && !paymentUrl) throw new CourseInputError("L'URL de paiement est invalide.");
 
   const duration = boundedInteger(form.get("duree_totale_minutes") || form.get("duree_totale") || 0, "La durée totale", 0, 1_000_000);
+  const objectifs = parseTextList(form.get("objectifs") ?? "[]", "Les objectifs");
+  const competences = parseTextList(form.get("competences") ?? "[]", "Les compétences");
+  const prerequis = parseTextList(form.get("prerequis") ?? "[]", "Les prérequis");
+  if (status === "publie") validatePublishedCourse(modules, objectifs, competences);
   return {
+    expectedUpdatedAt: parseExpectedUpdatedAt(form.get("expected_updated_at")),
     course: {
       titre: title,
       slug,
       description: requiredText(form.get("description"), "La description", 5_000),
       image_url: imageUrl || null,
       niveau: level,
-      objectifs: parseTextList(form.get("objectifs") ?? "[]", "Les objectifs"),
-      competences: parseTextList(form.get("competences") ?? "[]", "Les compétences"),
-      prerequis: parseTextList(form.get("prerequis") ?? "[]", "Les prérequis"),
+      objectifs,
+      competences,
+      prerequis,
       semestre: boundedInteger(form.get("semestre") || 1, "Le semestre", 1, 2),
       numero: boundedInteger(form.get("numero") || 0, "L'ordre du cours", 0, 100_000),
       nb_modules: modules.length,

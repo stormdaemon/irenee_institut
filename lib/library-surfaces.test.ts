@@ -263,14 +263,17 @@ test("fixed chrome keeps the radio player dark and the desktop network rail belo
   assert.match(styles, /\.floating-network\s*\{[^}]*top:\s*calc\(132px \+ var\(--radio-bar-height\)\)/);
 });
 
-test("module iframe applies its night theme after the saved lesson styles", () => {
+test("module iframe discards authored style blocks before applying its controlled reader theme", () => {
   const modulePage = source("app/cours/[slug]/modules/[moduleId]/page.tsx");
   assert.match(modulePage, /const moduleFrameThemeCss = `/);
-  assert.match(modulePage, /<style>\$\{sanitizedCss\}<\/style>\s*<style>\$\{moduleFrameThemeCss\}<\/style>/);
+  assert.doesNotMatch(modulePage, /<style>\$\{sanitizedCss\}<\/style>/);
+  assert.match(modulePage, /FORBID_TAGS:\s*\[/);
+  assert.match(modulePage, /"style"/);
+  assert.match(modulePage, /querySelectorAll<HTMLElement>\("\[style\]"\)[\s\S]*element\.removeAttribute\("style"\)/);
   assert.match(modulePage, /\.module-content,\s*\.module-content \*,\s*body > \* \{ color: #172033 !important;/);
   assert.match(modulePage, /\.module-content :is\(\.definition-box, \.quote-box, \.biblical-quote, \.note-box, \.warning-box, \.success-box, \.example-box\)/);
   assert.match(modulePage, /const normalizedHtml = html\.replace\(/);
-  assert.match(modulePage, /DOMPurify\.sanitize\(normalizedHtml\)/);
+  assert.match(modulePage, /DOMPurify\.sanitize\(normalizedHtml, \{/);
   assert.match(modulePage, /querySelectorAll<HTMLElement>\("\.comparison-table:not\(table\)"\)/);
 });
 

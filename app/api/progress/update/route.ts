@@ -124,6 +124,21 @@ export async function POST(request: Request) {
 
   if (isStart) {
     if (currentProgress) {
+      if (currentProgress.complete !== true && !currentProgress.date_debut) {
+        const { data: repairedStart, error: repairError } = await auth.supabase
+          .from("module_progress")
+          .update({ date_debut: now, statut: "en_cours", updated_at: now })
+          .eq("id", currentProgress.id)
+          .eq("etudiant_id", auth.user.id)
+          .eq("module_id", moduleId)
+          .eq("complete", false)
+          .select("id,module_id,complete,date_debut,progression,statut")
+          .single();
+        if (repairError || !repairedStart) {
+          return NextResponse.json({ ok: false, error: "Le début de lecture n'a pas pu être réinitialisé." }, { status: 500 });
+        }
+        return NextResponse.json({ ok: true, data: repairedStart }, { headers: { "Cache-Control": "private, no-store" } });
+      }
       return NextResponse.json({ ok: true, data: currentProgress }, { headers: { "Cache-Control": "private, no-store" } });
     }
     const startPayload = {
@@ -237,28 +252,33 @@ export async function POST(request: Request) {
 
   const documents = [];
   const warnings = [];
-  try {
-    documents.push(await issueLearningDocument(auth.supabase, {
-      courseId,
-      courseTitle: String(courseResult.data.titre || "Cours d'apologétique"),
-      documentKind: "module_parchment",
-      moduleId,
-      moduleTitle: String(moduleResult.data.titre || "Module d'apologétique"),
-      userId: auth.user.id
-    }));
-
-    const courseModuleIds = orderedModuleIds;
-    const completedIds = new Set([...completedModuleIds, moduleId]);
-    if (courseModuleIds.length > 0 && courseModuleIds.every(id => completedIds.has(id))) {
+  // Staff may use the reader and keep a useful preview progression without a
+  // paid entitlement, but that operational access must never mint a student
+  // certificate or a verifiable annual-programme credential.
+  if (!isStaff) {
+    try {
       documents.push(await issueLearningDocument(auth.supabase, {
         courseId,
         courseTitle: String(courseResult.data.titre || "Cours d'apologétique"),
-        documentKind: "course_parchment",
+        documentKind: "module_parchment",
+        moduleId,
+        moduleTitle: String(moduleResult.data.titre || "Module d'apologétique"),
         userId: auth.user.id
       }));
+
+      const courseModuleIds = orderedModuleIds;
+      const completedIds = new Set([...completedModuleIds, moduleId]);
+      if (courseModuleIds.length > 0 && courseModuleIds.every(id => completedIds.has(id))) {
+        documents.push(await issueLearningDocument(auth.supabase, {
+          courseId,
+          courseTitle: String(courseResult.data.titre || "Cours d'apologétique"),
+          documentKind: "course_parchment",
+          userId: auth.user.id
+        }));
+      }
+    } catch (documentError) {
+      warnings.push(documentError instanceof Error ? documentError.message : "Le parchemin n'a pas pu être préparé.");
     }
-  } catch (documentError) {
-    warnings.push(documentError instanceof Error ? documentError.message : "Le parchemin n'a pas pu être préparé.");
   }
 
   return NextResponse.json({ ok: true, data, documents, warnings });

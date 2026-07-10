@@ -19,6 +19,7 @@ export type Course = {
   statut?: string | null;
   semestre?: number | null;
   numero?: number | null;
+  updated_at?: string | null;
   objectifs: string[];
   competences?: string[];
   prerequis?: string[];

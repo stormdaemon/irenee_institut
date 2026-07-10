@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 const port = Number(process.env.E2E_PORT || 3101);
 const baseURL = process.env.E2E_BASE_URL || `http://127.0.0.1:${port}`;
+const enableWebKit = process.env.E2E_WEBKIT === "true";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -15,7 +16,7 @@ export default defineConfig({
     toHaveScreenshot: {
       animations: "disabled",
       caret: "hide",
-      maxDiffPixelRatio: 0.01,
+      maxDiffPixelRatio: 0.003,
       scale: "css"
     }
   },
@@ -42,8 +43,17 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
+      grepInvert: /@mobile-webkit/,
       use: { browserName: "chromium" }
-    }
+    },
+    ...(enableWebKit ? [{
+      name: "webkit-iphone",
+      grep: /@mobile-webkit/,
+      use: {
+        ...devices["iPhone 13"],
+        browserName: "webkit" as const
+      }
+    }] : [])
   ],
   webServer: {
     command: `bunx next start --hostname 127.0.0.1 --port ${port}`,

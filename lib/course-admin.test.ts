@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { afterEach, beforeEach, test } from "node:test";
 import { createCourse, updateCourse } from "./course-admin";
 import { parseCourseForm } from "./course-input";
 import { query } from "./db";
+import { getCourses } from "./server-data";
 
 const createdUserIds: string[] = [];
 const createdCourseIds: string[] = [];
@@ -84,6 +86,7 @@ test("updateCourse rolls back every change when a submitted module belongs to an
   createdCourseIds.push(first.id, second.id);
 
   const form = formFor(String(first.slug), "Titre compromis");
+  form.set("expected_updated_at", String(first.updated_at));
   form.set("modules", JSON.stringify([
     {
       id: second.course_modules[0].id,
@@ -100,4 +103,69 @@ test("updateCourse rolls back every change when a submitted module belongs to an
   assert.equal(persisted.rows[0]?.titre, "Titre initial");
   const moduleOwner = await query<{ course_id: string }>("select course_id from public.course_modules where id = $1", [second.course_modules[0].id]);
   assert.equal(moduleOwner.rows[0]?.course_id, second.id);
+});
+
+test("updateCourse rejects a stale editor version instead of overwriting newer work", async () => {
+  const actor = await author();
+  const created = await createCourse(parseCourseForm(formFor(`version-${randomUUID()}`, "Version initiale")), actor);
+  createdCourseIds.push(created.id);
+
+  const listed = (await getCourses("admin", { authorId: actor.id })).find(course => course.id === created.id);
+  assert.ok(listed, "the freshly created course must be returned by the admin list");
+  assert.equal(listed.updated_at, created.updated_at, "the admin list must preserve the exact PostgreSQL concurrency token");
+
+  const firstUpdate = formFor(String(created.slug), "Version onglet A");
+  firstUpdate.set("expected_updated_at", String(listed.updated_at));
+  await updateCourse(created.id, parseCourseForm(firstUpdate), actor);
+
+  const staleUpdate = formFor(String(created.slug), "Version onglet B périmée");
+  staleUpdate.set("expected_updated_at", String(created.updated_at));
+  await assert.rejects(() => updateCourse(created.id, parseCourseForm(staleUpdate), actor), /modifié.*autre|recharger/i);
+
+  const persisted = await query<{ titre: string }>("select titre from public.courses where id = $1", [created.id]);
+  assert.equal(persisted.rows[0]?.titre, "Version onglet A");
+});
+
+test("createCourse persists quiz answers for server-only grading", async () => {
+  const actor = await author();
+  const form = formFor(`quiz-${randomUUID()}`, "Quiz transactionnel");
+  form.set("modules", JSON.stringify([{
+    titre: "Quiz",
+    type_contenu: "quiz",
+    quiz: [{ id: "q-1", question: "Bonne réponse ?", options: ["A", "B"], answer: 1 }],
+  }]));
+  const course = await createCourse(parseCourseForm(form), actor);
+  createdCourseIds.push(course.id);
+
+  assert.deepEqual(course.course_modules[0].quiz, [{ id: "q-1", question: "Bonne réponse ?", options: ["A", "B"], answer: 1 }]);
+});
+
+test("updating legacy module fields does not erase an omitted quiz", async () => {
+  const actor = await author();
+  const createForm = formFor(`quiz-preserved-${randomUUID()}`, "Quiz à préserver");
+  createForm.set("modules", JSON.stringify([{
+    titre: "Quiz",
+    type_contenu: "quiz",
+    quiz: [{ id: "q-keep", question: "Réponse ?", options: ["A", "B"], answer: 0 }],
+  }]));
+  const created = await createCourse(parseCourseForm(createForm), actor);
+  createdCourseIds.push(created.id);
+
+  const updateForm = formFor(String(created.slug), "Quiz renommé");
+  updateForm.set("expected_updated_at", String(created.updated_at));
+  updateForm.set("modules", JSON.stringify([{
+    id: created.course_modules[0].id,
+    titre: "Quiz renommé",
+    type_contenu: "quiz",
+  }]));
+  const updated = await updateCourse(created.id, parseCourseForm(updateForm), actor);
+
+  assert.deepEqual(updated.course_modules[0].quiz, [{ id: "q-keep", question: "Réponse ?", options: ["A", "B"], answer: 0 }]);
+});
+
+test("the admin course list fails closed when its module query fails", async () => {
+  const source = await readFile(new URL("./server-data.ts", import.meta.url), "utf8");
+  assert.match(source, /data:\s*moduleRows,\s*error:\s*moduleError/);
+  assert.match(source, /if \(moduleError\)\s*\{\s*throw new Error/);
+  assert.doesNotMatch(source, /const \{ data: moduleRows \} =/);
 });

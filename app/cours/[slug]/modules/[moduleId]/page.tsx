@@ -2,10 +2,32 @@
 
 import Link from "next/link";
 import DOMPurify from "dompurify";
-import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, Film, Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ExternalLink,
+  Film,
+  Loader2,
+  LockKeyhole,
+  Minus,
+  Plus,
+  RotateCcw,
+  Settings2,
+} from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { getModuleNavigation, getSafeCourseAssetUrl } from "@/components/course-reader-utils";
+import {
+  buildCourseJourney,
+  defaultReaderPreferences,
+  parseReaderPreferences,
+  type ReaderPreferences,
+} from "@/lib/course-experience";
 import { createBrowserClient } from "@/lib/supabase";
 import type { Course, CourseModule, ModuleProgress } from "@/lib/types";
 
@@ -19,15 +41,13 @@ type ModulePayload = {
   progress: ModuleProgress[];
 };
 
-type ModuleStatus = "loading" | "ready" | "unauthenticated" | "error";
+type ModuleStatus = "loading" | "ready" | "locked" | "unauthenticated" | "error";
+type ModuleStartStatus = "idle" | "pending" | "ready" | "error";
 
 type Resource = {
   label: string;
   url: string;
 };
-
-const unsafeCssPattern = /@import|url\s*\(|expression\s*\(|behavior\s*:|-moz-binding|javascript\s*:/i;
-const hostileInlineStylePattern = /(?:^|;)\s*(?:color|background(?:-color)?|width|min-width|max-width|font-size|line-height|white-space|overflow|display)\s*:[^;]*/gi;
 
 const moduleFrameThemeCss = `
   html { background: #fffaf0; }
@@ -81,7 +101,10 @@ const moduleFrameThemeCss = `
   table::-webkit-scrollbar-thumb { background: #b88a3a; border-radius: 3px; }
   th, td {
     min-width: clamp(96px, 26vw, 160px);
+    padding: 12px 14px;
+    border: 1px solid #d9cba9;
     overflow-wrap: anywhere;
+    vertical-align: top;
   }
   .module-content ul.styled-list li::before { color: #7a1717 !important; }
   .module-content :is(.definition-box, .quote-box, .biblical-quote, .note-box, .warning-box, .success-box, .example-box) {
@@ -160,35 +183,19 @@ const moduleFrameThemeCss = `
   }
 `;
 
-function getSafeModuleCss(html: string) {
-  return [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)]
-    .map(match => match[1])
-    .filter(css => !unsafeCssPattern.test(css))
-    .join("\n");
-}
-
 function sanitizeModuleHtml(html: string) {
   const normalizedHtml = html.replace(
     /<div(\s+[^>]*class=["'][^"']*\bcomparison-table\b[^"']*["'][^>]*)>/gi,
     "<table$1>"
   );
-  const document = new DOMParser().parseFromString(DOMPurify.sanitize(normalizedHtml), "text/html");
+  const document = new DOMParser().parseFromString(DOMPurify.sanitize(normalizedHtml, {
+    FORBID_TAGS: [
+      "base", "button", "embed", "form", "iframe", "input", "link", "math", "meta", "object",
+      "option", "script", "select", "style", "svg", "textarea",
+    ],
+  }), "text/html");
   document.querySelectorAll<HTMLElement>("[style]").forEach(element => {
-    const style = element.getAttribute("style") || "";
-    if (unsafeCssPattern.test(style)) {
-      element.removeAttribute("style");
-      return;
-    }
-    const cleanedStyle = style
-      .replace(hostileInlineStylePattern, "")
-      .replace(/;{2,}/g, ";")
-      .replace(/^;+|;+$/g, "")
-      .trim();
-    if (cleanedStyle) {
-      element.setAttribute("style", cleanedStyle);
-    } else {
-      element.removeAttribute("style");
-    }
+    element.removeAttribute("style");
   });
   document.querySelectorAll<HTMLElement>(".comparison-table:not(table)").forEach(element => {
     element.classList.remove("comparison-table");
@@ -205,24 +212,30 @@ function sanitizeModuleHtml(html: string) {
   return document.body.innerHTML;
 }
 
-function ModuleHtmlContent({ html, title }: { html: string; title: string }) {
+function ModuleHtmlContent({ html, preferences, title }: { html: string; preferences: ReaderPreferences; title: string }) {
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const document = useMemo(() => {
     const sanitizedHtml = sanitizeModuleHtml(html);
-    const sanitizedCss = getSafeModuleCss(html);
+    const preferenceCss = `
+      body { font-size: ${preferences.fontScale === "small" ? "16px" : preferences.fontScale === "large" ? "20px" : "18px"}; }
+      .module-content { max-width: ${preferences.measure === "focused" ? "60ch" : "72ch"}; }
+      @media (max-width: 640px) {
+        body { font-size: ${preferences.fontScale === "small" ? "16px" : preferences.fontScale === "large" ? "19px" : "17px"}; }
+      }
+    `;
     return `<!doctype html>
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; media-src https:; style-src 'unsafe-inline'; font-src 'none'; form-action 'none'" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' https: data:; media-src 'self' https:; style-src 'unsafe-inline'; font-src 'none'; form-action 'none'" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>html,body{margin:0;padding:0}body{overflow-wrap:anywhere}table{max-width:100%}</style>
-    <style>${sanitizedCss}</style>
     <style>${moduleFrameThemeCss}</style>
+    <style>${preferenceCss}</style>
   </head>
   <body><main class="module-content">${sanitizedHtml}</main></body>
 </html>`;
-  }, [html]);
+  }, [html, preferences]);
 
   const syncHeight = useCallback(() => {
     const frame = frameRef.current;
@@ -319,10 +332,53 @@ function AccessibleModuleVideo({ module, url }: { module: CourseModule; url: str
   );
 }
 
+function CoursePlan({ course, currentModuleId, progress }: {
+  course: StudentCourse;
+  currentModuleId: string;
+  progress: ModuleProgress[];
+}) {
+  const journey = buildCourseJourney(course.modules, progress);
+  const href = (id: string) => `/cours/${encodeURIComponent(course.slug)}/modules/${encodeURIComponent(id)}`;
+
+  return (
+    <nav className="module-course-plan" aria-label="Plan du cours">
+      <ol>
+        {journey.modules.map((item, index) => {
+          const active = item.module.id === currentModuleId;
+          const available = item.state !== "locked";
+          const label = (
+            <>
+              <span className="module-plan-marker" aria-hidden="true">
+                {item.state === "complete" ? <Check size={15} /> : item.state === "locked" ? <LockKeyhole size={14} /> : index + 1}
+              </span>
+              <span className="module-plan-copy">
+                <small>Module {index + 1}</small>
+                <strong>{item.module.titre}</strong>
+              </span>
+              {active && <span className="module-plan-current">En lecture</span>}
+            </>
+          );
+          return (
+            <li className={`is-${item.state} ${active ? "is-active" : ""}`} key={item.module.id}>
+              {available ? (
+                <Link href={href(item.module.id)} aria-current={active ? "step" : undefined}>{label}</Link>
+              ) : (
+                <span aria-label={`Module ${index + 1} verrouillé`}>{label}</span>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
 function CourseModuleNavigation({
+  canGoNext,
   courseSlug,
   navigation
 }: {
+  canGoNext: boolean;
   courseSlug: string;
   navigation: {
     position: number;
@@ -347,13 +403,13 @@ function CourseModuleNavigation({
       <span className="course-module-position" aria-current="step">
         Module {navigation.position} sur {navigation.total}
       </span>
-      {navigation.nextModule ? (
+      {navigation.nextModule && canGoNext ? (
         <Link className="btn btn-outline" href={moduleHref(navigation.nextModule.id)}>
           Suivant <ArrowRight size={17} aria-hidden="true" />
         </Link>
       ) : (
         <span className="course-module-navigation-disabled" aria-disabled="true">
-          Suivant <ArrowRight size={17} aria-hidden="true" />
+          {navigation.nextModule ? "Terminez pour continuer" : "Fin du cours"} <ArrowRight size={17} aria-hidden="true" />
         </span>
       )}
     </nav>
@@ -368,57 +424,77 @@ export default function ModulePage() {
   const [payload, setPayload] = useState<ModulePayload | null>(null);
   const [status, setStatus] = useState<ModuleStatus>("loading");
   const [error, setError] = useState("");
+  const [lockedResumeId, setLockedResumeId] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [startStatus, setStartStatus] = useState<ModuleStartStatus>("idle");
+  const [startRetryKey, setStartRetryKey] = useState(0);
   const [completionAvailableAt, setCompletionAvailableAt] = useState(0);
   const [clock, setClock] = useState(() => Date.now());
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
   const [quizScore, setQuizScore] = useState<number | null>(null);
-  const startedModuleRef = useRef("");
+  const [completionDocuments, setCompletionDocuments] = useState(0);
+  const [completionWarnings, setCompletionWarnings] = useState<string[]>([]);
+  const [preferences, setPreferences] = useState<ReaderPreferences>(defaultReaderPreferences);
+  const [preferencesReady, setPreferencesReady] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
     async function loadModule() {
-      const supabase = createBrowserClient();
-      if (!supabase) {
+      setStatus("loading");
+      setError("");
+      setLockedResumeId("");
+      try {
+        const supabase = createBrowserClient();
+        if (!supabase) throw new Error("Le service est momentanément indisponible. Réessayez dans quelques instants.");
+
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !sessionData.session) {
+          if (!mounted) return;
+          setError(sessionError?.message || "Connectez-vous pour accéder à ce module.");
+          setStatus("unauthenticated");
+          return;
+        }
+
+        const response = await fetch(
+          `/api/learning/courses/${encodeURIComponent(slug)}/modules/${encodeURIComponent(moduleId)}`,
+          { cache: "no-store", credentials: "same-origin" },
+        );
+        const data = await response.json().catch(() => null);
         if (!mounted) return;
-        setError("Le service est momentanément indisponible. Réessayez dans quelques instants.");
+
+        if (!response.ok || data?.ok !== true) {
+          setError(data?.error || "Le module n'a pas pu être chargé.");
+          setLockedResumeId(String(data?.resumeModuleId || ""));
+          setStatus(response.status === 401 ? "unauthenticated" : response.status === 409 ? "locked" : "error");
+          return;
+        }
+
+        const courseWithModule = data.course ? {
+          ...data.course,
+          modules: Array.isArray(data.course.modules)
+            ? data.course.modules.map((item: CourseModule) => item.id === data.module?.id ? { ...item, ...data.module } : item)
+            : data.module ? [data.module] : [],
+        } : null;
+        setPayload({
+          courses: courseWithModule ? [courseWithModule] : [],
+          progress: data.progress || [],
+        });
+        setStatus("ready");
+      } catch (cause) {
+        if (!mounted) return;
+        setError(cause instanceof Error ? cause.message : "La connexion a été interrompue pendant le chargement.");
         setStatus("error");
-        return;
       }
-
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData.session) {
-        if (!mounted) return;
-        setError(sessionError?.message || "Connectez-vous pour accéder à ce module.");
-        setStatus("unauthenticated");
-        return;
-      }
-
-      const response = await fetch(`/api/learning/courses/${encodeURIComponent(slug)}`, { cache: "no-store", credentials: "same-origin" });
-      const data = await response.json().catch(() => null);
-
-      if (!mounted) return;
-
-      if (!response.ok || data?.ok !== true) {
-        setError(data?.error || "Le module n'a pas pu être chargé.");
-        setStatus(response.status === 401 ? "unauthenticated" : "error");
-        return;
-      }
-
-      setPayload({
-        courses: data.course ? [data.course] : [],
-        progress: data.progress || []
-      });
-      setStatus("ready");
     }
 
-    loadModule();
+    void loadModule();
     return () => {
       mounted = false;
     };
-  }, [slug]);
+  }, [moduleId, reloadKey, slug]);
 
   useEffect(() => {
     setSaveError("");
@@ -426,13 +502,34 @@ export default function ModulePage() {
     setClock(Date.now());
     setQuizAnswers({});
     setQuizScore(null);
+    setStartStatus("idle");
+    setCompletionDocuments(0);
+    setCompletionWarnings([]);
   }, [moduleId]);
+
+  useEffect(() => {
+    try {
+      setPreferences(parseReaderPreferences(window.localStorage.getItem("irenee:reader-preferences:v1")));
+    } catch {
+      setPreferences(defaultReaderPreferences);
+    }
+    setPreferencesReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!preferencesReady) return;
+    try {
+      window.localStorage.setItem("irenee:reader-preferences:v1", JSON.stringify(preferences));
+    } catch {
+      // Reading preferences are a non-critical local convenience.
+    }
+  }, [preferences, preferencesReady]);
 
   const course = useMemo(() => payload?.courses.find(item => item.slug === slug), [payload, slug]);
   const module = useMemo(() => course?.modules.find(item => item.id === moduleId), [course, moduleId]);
   const progress = useMemo(() => payload?.progress.find(item => item.module_id === moduleId), [payload, moduleId]);
   const resources = module ? getResources(module) : [];
-  const isComplete = Boolean(progress?.complete) || Number(progress?.progression || 0) >= 100;
+  const isComplete = Boolean(progress?.complete);
   const isQuiz = module?.type === "quiz" || module?.type_contenu === "quiz";
   const quizQuestions = isQuiz && Array.isArray(module?.quiz) ? module.quiz : [];
   const allQuizQuestionsAnswered = quizQuestions.length > 0 && quizQuestions.every((question, index) => {
@@ -442,11 +539,15 @@ export default function ModulePage() {
   const engagementSecondsRemaining = Math.max(0, Math.ceil((completionAvailableAt - clock) / 1000));
 
   useEffect(() => {
-    if (!course || !module || isComplete || startedModuleRef.current === module.id) return;
-    startedModuleRef.current = module.id;
+    if (!course || !module) return;
+    if (isComplete) {
+      setStartStatus("ready");
+      return;
+    }
     let cancelled = false;
 
     async function startModule() {
+      setStartStatus("pending");
       const response = await fetch("/api/progress/update", {
         body: JSON.stringify({ action: "start", course_id: course!.id, module_id: module!.id }),
         credentials: "same-origin",
@@ -457,6 +558,7 @@ export default function ModulePage() {
       if (cancelled) return;
       if (!response?.ok || data?.ok !== true) {
         setSaveError(data?.error || "Le début de votre lecture n'a pas pu être enregistré. Réessayez avant de terminer le module.");
+        setStartStatus("error");
         return;
       }
       const startedAt = Date.parse(String(data.data?.date_debut || ""));
@@ -468,13 +570,15 @@ export default function ModulePage() {
           { ...data.data, course_id: course!.id, module_id: module!.id }
         ]
       } : current);
+      setSaveError("");
+      setStartStatus("ready");
     }
 
     startModule();
     return () => {
       cancelled = true;
     };
-  }, [course, isComplete, module]);
+  }, [course, isComplete, module, startRetryKey]);
 
   useEffect(() => {
     if (!completionAvailableAt || completionAvailableAt <= Date.now()) return;
@@ -484,6 +588,10 @@ export default function ModulePage() {
 
   async function markComplete() {
     if (!course || !module || saving) return;
+    if (startStatus !== "ready") {
+      setSaveError("La progression doit être initialisée avant de terminer ce module.");
+      return;
+    }
     if (isQuiz && !allQuizQuestionsAnswered) {
       setSaveError("Répondez à toutes les questions avant de valider le quiz.");
       return;
@@ -532,6 +640,8 @@ export default function ModulePage() {
           { course_id: course.id, module_id: module.id, complete: true, progression: 100 }
         ]
       } : current);
+      setCompletionDocuments(Array.isArray(data.documents) ? data.documents.length : 0);
+      setCompletionWarnings(Array.isArray(data.warnings) ? data.warnings.map(String) : []);
     } catch {
       setSaveError("La connexion a été interrompue. Votre lecture reste disponible ; réessayez dans un instant.");
     } finally {
@@ -541,29 +651,41 @@ export default function ModulePage() {
 
   if (status === "loading") {
     return (
-      <section className="section" style={{ minHeight: 680 }}>
+      <section className="section course-state-page">
         <div className="container center">
-          <div className="card" role="status" aria-live="polite" aria-busy="true" style={{ padding: 42, maxWidth: 620, margin: "0 auto" }}>
-            <Loader2 className="action-spin" size={34} />
-            <h1 className="title" style={{ marginTop: 18 }}>Chargement du module</h1>
-            <p className="subtitle">Préparation du module...</p>
+          <div className="course-state-card" role="status" aria-live="polite" aria-busy="true">
+            <Loader2 className="action-spin" size={34} aria-hidden="true" />
+            <h1>Préparation du module</h1>
+            <p>Nous vérifions votre progression et préparons un espace de lecture confortable.</p>
           </div>
         </div>
       </section>
     );
   }
 
-  if (status === "unauthenticated" || status === "error") {
+  if (status === "unauthenticated" || status === "error" || status === "locked") {
+    const locked = status === "locked";
     return (
-      <section className="section" style={{ minHeight: 680 }}>
+      <section className="section course-state-page">
         <div className="container center">
-          <div className="card" style={{ padding: 42, maxWidth: 680, margin: "0 auto" }}>
-            <AlertTriangle size={38} color="var(--gold-2)" />
-            <h1 className="title" style={{ marginTop: 18 }}>{status === "unauthenticated" ? "Connexion requise" : "Module indisponible"}</h1>
-            <p className="subtitle">{error}</p>
-            <Link href={status === "unauthenticated" ? loginHref : "/espace-etudiant"} className="btn btn-primary">
-              {status === "unauthenticated" ? "Se connecter" : "Retour à mon espace"}
-            </Link>
+          <div className="course-state-card">
+            {locked ? <LockKeyhole size={38} aria-hidden="true" /> : <AlertTriangle size={38} aria-hidden="true" />}
+            <h1>{status === "unauthenticated" ? "Connexion requise" : locked ? "Module verrouillé" : "Module indisponible"}</h1>
+            <p>{error}</p>
+            <div className="course-state-actions">
+              {status === "unauthenticated" ? (
+                <Link href={loginHref} className="btn btn-primary">Se connecter</Link>
+              ) : locked && lockedResumeId ? (
+                <Link className="btn btn-primary" href={`/cours/${encodeURIComponent(slug)}/modules/${encodeURIComponent(lockedResumeId)}`}>
+                  Reprendre le bon module <ArrowRight size={17} aria-hidden="true" />
+                </Link>
+              ) : (
+                <button className="btn btn-primary" type="button" onClick={() => setReloadKey(value => value + 1)}>
+                  <RotateCcw size={17} aria-hidden="true" /> Réessayer
+                </button>
+              )}
+              <Link href={`/cours/${encodeURIComponent(slug)}`} className="btn btn-outline">Retour au cours</Link>
+            </div>
           </div>
         </div>
       </section>
@@ -572,13 +694,13 @@ export default function ModulePage() {
 
   if (!course || !module) {
     return (
-      <section className="section" style={{ minHeight: 680 }}>
+      <section className="section course-state-page">
         <div className="container center">
-          <div className="card" style={{ padding: 42, maxWidth: 720, margin: "0 auto" }}>
-            <AlertTriangle size={38} color="var(--gold-2)" />
-            <h1 className="title" style={{ marginTop: 18 }}>Module non accessible</h1>
-            <p className="subtitle">Ce module n'est pas encore disponible sur votre compte.</p>
-            <Link href="/espace-etudiant" className="btn btn-primary">Retour à mon espace</Link>
+          <div className="course-state-card">
+            <AlertTriangle size={38} aria-hidden="true" />
+            <h1>Module non accessible</h1>
+            <p>Ce module n'est pas encore disponible sur votre compte.</p>
+            <Link href={`/cours/${encodeURIComponent(slug)}`} className="btn btn-primary">Retour au cours</Link>
           </div>
         </div>
       </section>
@@ -588,116 +710,207 @@ export default function ModulePage() {
   const navigation = getModuleNavigation(course.modules, module.id);
   const safeVideoUrl = getSafeCourseAssetUrl(module.url_video);
   const expectsVideo = module.type === "video" || module.type_contenu === "video" || Boolean(module.url_video);
+  const answeredQuizQuestions = quizQuestions.filter((question, index) => {
+    const id = String(question.id || `question-${index + 1}`);
+    return Number.isInteger(quizAnswers[id]);
+  }).length;
 
   return (
-    <section className="section course-reader-page">
-      <div className="container course-module-container">
-        <Link className="course-back-link" href={`/cours/${course.slug}`}>← Retour au cours</Link>
-        <div className="card course-hero-card">
-          <span className="badge">{module.type}</span>
-          <h1 className="title">{module.titre}</h1>
-          <p className="subtitle">{module.description}</p>
-        </div>
-        <CourseModuleNavigation courseSlug={course.slug} navigation={navigation} />
-        {safeVideoUrl ? (
-          <AccessibleModuleVideo module={module} url={safeVideoUrl} />
-        ) : expectsVideo ? (
-          <div className="module-video-unavailable" role="status">
-            <Film size={22} aria-hidden="true" />
-            <div>
-              <h2>Vidéo temporairement indisponible</h2>
-              <p>Le résumé textuel et le contenu du module restent accessibles ci-dessous.</p>
+    <section className="section course-reader-page module-workspace-page">
+      <div className="container module-workspace-container">
+        <Link className="course-back-link" href={`/cours/${course.slug}`}>← Vue d'ensemble du cours</Link>
+
+        <details className="module-mobile-plan">
+          <summary>
+            <span><BookOpen size={18} aria-hidden="true" /> Plan du cours · Module {navigation.position}/{navigation.total}</span>
+            <ChevronDown size={19} aria-hidden="true" />
+          </summary>
+          <CoursePlan course={course} currentModuleId={module.id} progress={payload?.progress || []} />
+        </details>
+
+        <div className="module-workspace-grid">
+          <aside className="module-plan-sidebar">
+            <div className="module-plan-sidebar-head">
+              <span className="course-eyebrow">{course.titre}</span>
+              <h2>Plan du cours</h2>
+              <p>{navigation.total} modules · progression séquentielle</p>
             </div>
-          </div>
-        ) : null}
-        <div className="card module-reading-card">
-          {module.contenu_html ? (
-            <ModuleHtmlContent html={module.contenu_html} title={module.titre} />
-          ) : module.contenu ? (
-            <section className="module-text-content">
-              <h2>Contenu du module</h2>
-              <p>{module.contenu}</p>
-            </section>
-          ) : (
-            <section className="module-empty-content" role="status">
-              <h2>Contenu du module</h2>
-              <p>Aucun contenu textuel n'est encore publié pour ce module.</p>
-            </section>
-          )}
-        </div>
-        <div className="card course-resource-card">
-          <h2 className="font-display" style={{ color: "var(--navy)" }}>Ressources du module</h2>
-          {resources.length ? resources.map(resource => (
-            <a className="btn btn-outline" href={resource.url} key={resource.url} target="_blank" rel="noopener noreferrer">
-              <span>{resource.label}</span> <ExternalLink size={15} aria-hidden="true" />
-            </a>
-          )) : <p className="muted">Aucune ressource n'est encore publiée pour ce module.</p>}
-        </div>
-        {Array.isArray(module.quiz) && module.quiz.length > 0 && (
-          <div className="card course-resource-card course-quiz-card">
-            <h2 className="font-display" style={{ color: "var(--navy)" }}>Quiz de validation</h2>
-            {module.quiz.map((question, index) => (
-              <fieldset className="soft-card course-quiz-question" key={`${question.question}-${index}`}>
-                <legend>{index + 1}. {question.question}</legend>
-                <div className="course-quiz-options">
-                  {question.options.map((option, optionIndex) => {
-                    const questionId = String(question.id || `question-${index + 1}`);
-                    return (
-                      <label className="course-quiz-option" key={`${questionId}-${optionIndex}`}>
-                        <input
-                          checked={quizAnswers[questionId] === optionIndex}
-                          name={`quiz-${questionId}`}
-                          onChange={() => {
-                            setQuizAnswers(current => ({ ...current, [questionId]: optionIndex }));
-                            setQuizScore(null);
-                            setSaveError("");
-                          }}
-                          type="radio"
-                          value={optionIndex}
-                        />
-                        <span>{option}</span>
-                      </label>
-                    );
-                  })}
+            <CoursePlan course={course} currentModuleId={module.id} progress={payload?.progress || []} />
+            <Link href={`/cours/${course.slug}`} className="module-plan-overview-link">Voir la progression globale</Link>
+          </aside>
+
+          <section
+            className="module-reading-workspace"
+            data-font-scale={preferences.fontScale}
+            data-measure={preferences.measure}
+            aria-label={`Module ${navigation.position} : ${module.titre}`}
+          >
+            <header className="module-focus-header">
+              <div className="module-focus-meta">
+                <span className="badge">Module {navigation.position} sur {navigation.total}</span>
+                <span>{module.duree || 0} min</span>
+                <span>{module.type || module.type_contenu || "texte"}</span>
+              </div>
+              <h1>{module.titre}</h1>
+              {module.description && <p>{module.description}</p>}
+            </header>
+
+            <section className="reader-preferences" aria-labelledby="reader-preferences-title">
+              <div className="reader-preferences-title">
+                <Settings2 size={18} aria-hidden="true" />
+                <div><h2 id="reader-preferences-title">Confort de lecture</h2><p>Adaptez le texte à votre écran.</p></div>
+              </div>
+              <div className="reader-preference-actions">
+                <div className="reader-font-controls" role="group" aria-label="Taille du texte">
+                  <button className={preferences.fontScale === "small" ? "active" : ""} type="button" disabled={!preferencesReady} onClick={() => setPreferences(current => ({ ...current, fontScale: "small" }))} aria-label="Réduire la taille du texte" aria-pressed={preferences.fontScale === "small"}><Minus size={17} aria-hidden="true" /> A</button>
+                  <button className={preferences.fontScale === "normal" ? "active" : ""} type="button" disabled={!preferencesReady} onClick={() => setPreferences(current => ({ ...current, fontScale: "normal" }))} aria-label="Taille de texte normale" aria-pressed={preferences.fontScale === "normal"}>A</button>
+                  <button className={preferences.fontScale === "large" ? "active" : ""} type="button" disabled={!preferencesReady} onClick={() => setPreferences(current => ({ ...current, fontScale: "large" }))} aria-label="Augmenter la taille du texte" aria-pressed={preferences.fontScale === "large"}>A <Plus size={17} aria-hidden="true" /></button>
                 </div>
-              </fieldset>
-            ))}
-            {quizScore !== null && <p className="course-quiz-score" role="status">Dernier score : <strong>{quizScore} %</strong></p>}
-          </div>
-        )}
-        <div className="card center course-complete-card" aria-busy={saving}>
-          {saveError && (
-            <div className="course-save-error" role="alert">
-              <AlertTriangle size={18} aria-hidden="true" />
-              <span>{saveError}</span>
-              {saveError.includes("connexion a expiré") && <Link href={loginHref}>Se reconnecter</Link>}
-            </div>
-          )}
-          {isComplete ? (
-            <>
-              <p role="status" aria-live="polite"><CheckCircle2 size={17} color="#22c55e" aria-hidden="true" /> Module terminé.</p>
-              {navigation.nextModule && (
-                <Link
-                  className="btn btn-primary"
-                  href={`/cours/${encodeURIComponent(course.slug)}/modules/${encodeURIComponent(navigation.nextModule.id)}`}
+                <button
+                  className="reader-measure-toggle"
+                  type="button"
+                  disabled={!preferencesReady}
+                  aria-label={preferences.measure === "focused" ? "Utiliser une colonne confortable" : "Utiliser une colonne focalisée"}
+                  aria-pressed={preferences.measure === "focused"}
+                  onClick={() => setPreferences(current => ({ ...current, measure: current.measure === "focused" ? "comfortable" : "focused" }))}
                 >
-                  Passer au module suivant <ArrowRight size={17} aria-hidden="true" />
-                </Link>
+                  <BookOpen size={16} aria-hidden="true" />
+                  <span className="reader-measure-label">{preferences.measure === "focused" ? "Colonne focalisée" : "Colonne confortable"}</span>
+                </button>
+              </div>
+            </section>
+
+            {startStatus === "error" && (
+              <div className="module-start-notice" role="alert">
+                <AlertTriangle size={18} aria-hidden="true" />
+                <span>{saveError}</span>
+                <button type="button" onClick={() => setStartRetryKey(value => value + 1)}>Réessayer l'enregistrement</button>
+              </div>
+            )}
+
+            {safeVideoUrl ? (
+              <AccessibleModuleVideo module={module} url={safeVideoUrl} />
+            ) : expectsVideo ? (
+              <div className="module-video-unavailable" role="status">
+                <Film size={22} aria-hidden="true" />
+                <div><h2>Vidéo temporairement indisponible</h2><p>Le contenu textuel du module reste accessible ci-dessous.</p></div>
+              </div>
+            ) : null}
+
+            <article className="card module-reading-card" aria-label={`Lecture : ${module.titre}`}>
+              {module.contenu_html ? (
+                <ModuleHtmlContent html={module.contenu_html} preferences={preferences} title={module.titre} />
+              ) : module.contenu ? (
+                <section className="module-text-content"><h2>Contenu du module</h2><p>{module.contenu}</p></section>
+              ) : (
+                <section className="module-empty-content" role="status"><h2>Contenu du module</h2><p>Aucun contenu textuel n'est encore publié pour ce module.</p></section>
               )}
-            </>
-          ) : (
-            <>
-              <p>{isQuiz ? "Validez vos réponses pour terminer ce module." : "Avez-vous terminé la lecture de ce module ?"}</p>
-              <button className="btn btn-primary" type="button" onClick={markComplete} disabled={saving || engagementSecondsRemaining > 0 || (isQuiz && !allQuizQuestionsAnswered)}>
-                {saving && <Loader2 className="action-spin" size={18} aria-hidden="true" />}
-                {saving
-                  ? "Enregistrement..."
-                  : engagementSecondsRemaining > 0
-                    ? `Disponible dans ${engagementSecondsRemaining} s`
-                    : isQuiz ? "Valider le quiz" : "Marquer comme terminé"}
-              </button>
-            </>
-          )}
+            </article>
+
+            {resources.length > 0 && (
+              <section className="card course-resource-card">
+                <h2>Ressources utiles</h2>
+                <div className="module-resource-list">
+                  {resources.map(resource => (
+                    <a className="btn btn-outline" href={resource.url} key={resource.url} target="_blank" rel="noopener noreferrer">
+                      <span>{resource.label}</span> <ExternalLink size={15} aria-hidden="true" />
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {isQuiz && (
+              <section className="card course-resource-card course-quiz-card">
+                <div className="module-quiz-heading">
+                  <div><span className="course-eyebrow">Validation</span><h2>Quiz du module</h2></div>
+                  {quizQuestions.length > 0 && <span>{answeredQuizQuestions}/{quizQuestions.length} réponses · 80 % requis</span>}
+                </div>
+                {quizQuestions.length ? quizQuestions.map((question, index) => (
+                  <fieldset className="soft-card course-quiz-question" key={`${question.question}-${index}`}>
+                    <legend>{index + 1}. {question.question}</legend>
+                    <div className="course-quiz-options">
+                      {question.options.map((option, optionIndex) => {
+                        const questionId = String(question.id || `question-${index + 1}`);
+                        return (
+                          <label className="course-quiz-option" key={`${questionId}-${optionIndex}`}>
+                            <input
+                              checked={quizAnswers[questionId] === optionIndex}
+                              name={`quiz-${questionId}`}
+                              onChange={() => {
+                                setQuizAnswers(current => ({ ...current, [questionId]: optionIndex }));
+                                setQuizScore(null);
+                                setSaveError("");
+                              }}
+                              type="radio"
+                              value={optionIndex}
+                            />
+                            <span>{option}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+                )) : (
+                  <div className="module-config-warning" role="alert"><AlertTriangle size={18} aria-hidden="true" /> Ce quiz n'est pas encore correctement configuré. Contactez l'équipe pédagogique.</div>
+                )}
+                {quizScore !== null && <p className="course-quiz-score" role="status">Dernier score : <strong>{quizScore} %</strong></p>}
+              </section>
+            )}
+
+            <section className="card course-complete-card" aria-busy={saving}>
+              {saveError && startStatus !== "error" && (
+                <div className="course-save-error" role="alert">
+                  <AlertTriangle size={18} aria-hidden="true" />
+                  <span>{saveError}</span>
+                  {saveError.includes("connexion a expiré") && <Link href={loginHref}>Se reconnecter</Link>}
+                </div>
+              )}
+              {isComplete ? (
+                <div className="module-complete-success">
+                  <CheckCircle2 size={28} aria-hidden="true" />
+                  <div>
+                    <h2>Module terminé</h2>
+                    <p role="status" aria-live="polite">Votre progression est enregistrée.</p>
+                    {completionDocuments > 0 && <p>Votre nouveau parchemin est disponible dans l'espace étudiant.</p>}
+                    {completionWarnings.map(warning => <p className="module-completion-warning" key={warning}>{warning}</p>)}
+                  </div>
+                  {navigation.nextModule ? (
+                    <Link className="btn btn-primary" href={`/cours/${encodeURIComponent(course.slug)}/modules/${encodeURIComponent(navigation.nextModule.id)}`}>
+                      Continuer le parcours <ArrowRight size={17} aria-hidden="true" />
+                    </Link>
+                  ) : (
+                    <Link className="btn btn-primary" href={`/cours/${encodeURIComponent(course.slug)}`}>Voir mon parcours terminé</Link>
+                  )}
+                </div>
+              ) : (
+                <div className="module-complete-action">
+                  <div>
+                    <span className="course-eyebrow">Votre progression</span>
+                    <h2>{isQuiz ? "Prêt à valider vos réponses ?" : "Vous avez terminé votre lecture ?"}</h2>
+                    <p>{startStatus === "pending" ? "Initialisation de votre progression…" : isQuiz ? "Le module sera validé à partir de 80 %." : "Cette action débloquera le module suivant."}</p>
+                  </div>
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    onClick={markComplete}
+                    disabled={saving || startStatus !== "ready" || engagementSecondsRemaining > 0 || (isQuiz && !allQuizQuestionsAnswered)}
+                  >
+                    {(saving || startStatus === "pending") && <Loader2 className="action-spin" size={18} aria-hidden="true" />}
+                    {saving
+                      ? "Enregistrement..."
+                      : startStatus === "pending"
+                        ? "Préparation…"
+                        : engagementSecondsRemaining > 0
+                          ? `Disponible dans ${engagementSecondsRemaining} s`
+                          : isQuiz ? "Valider le quiz" : "Marquer comme terminé"}
+                  </button>
+                </div>
+              )}
+            </section>
+
+            <CourseModuleNavigation canGoNext={isComplete} courseSlug={course.slug} navigation={navigation} />
+          </section>
         </div>
       </div>
     </section>

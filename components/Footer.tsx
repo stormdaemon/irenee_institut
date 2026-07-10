@@ -1,7 +1,18 @@
+"use client";
+
 import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 export function Footer() {
+  const pathname = usePathname();
+  const isCourseWorkspace = pathname === "/cours"
+    || pathname.startsWith("/cours/")
+    || pathname === "/admin/courses"
+    || pathname.startsWith("/admin/courses/");
+
+  if (isCourseWorkspace) return null;
+
   return (
     <footer className="footer">
       <div className="container">

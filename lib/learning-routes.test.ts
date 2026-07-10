@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 import { GET as getFinalExam, POST as postFinalExam } from "@/app/api/final-exam/route";
+import { GET as getCourseModule } from "@/app/api/learning/courses/[slug]/modules/[moduleId]/route";
 import { GET as getMe } from "@/app/api/me/route";
 import { POST as updateProgress } from "@/app/api/progress/update/route";
 import { FINAL_EXAM_QUESTIONS } from "@/lib/curriculum";
@@ -29,6 +30,7 @@ test("learning routes enforce published entitlements, immutable completion and e
   const moduleId = randomUUID();
   const quizModuleId = randomUUID();
   const draftModuleId = randomUUID();
+  const publishedSlug = `published-security-${suffix}`;
   let userId = "";
 
   try {
@@ -49,7 +51,7 @@ test("learning routes enforce published entitlements, immutable completion and e
     await query(
       `insert into public.courses (id,titre,slug,description,statut)
        values ($1,'Published security course',$2,'','publie'),($3,'Draft security course',$4,'','brouillon')`,
-      [courseId, `published-security-${suffix}`, draftCourseId, `draft-security-${suffix}`]
+      [courseId, publishedSlug, draftCourseId, `draft-security-${suffix}`]
     );
     await query(
       `insert into public.course_modules (id,course_id,titre,ordre,type_contenu,quiz)
@@ -86,9 +88,19 @@ test("learning routes enforce published entitlements, immutable completion and e
     const initialPayload = await initialMe.json();
     assert.ok(initialPayload.courses.some((course: { id: string }) => course.id === courseId));
     assert.equal(initialPayload.courses.some((course: { id: string }) => course.id === draftCourseId), false);
-    const publicQuiz = initialPayload.courses
+    const dashboardModule = initialPayload.courses
       .find((course: { id: string }) => course.id === courseId)
-      ?.modules.find((module: { id: string }) => module.id === moduleId)?.quiz;
+      ?.modules.find((module: { id: string }) => module.id === moduleId);
+    assert.ok(dashboardModule);
+    assert.equal(Object.hasOwn(dashboardModule, "quiz"), false);
+    assert.equal(Object.hasOwn(dashboardModule, "contenu_html"), false);
+
+    const moduleResponse = await getCourseModule(
+      authenticatedRequest(`/api/learning/courses/${publishedSlug}/modules/${moduleId}`, token),
+      { params: Promise.resolve({ slug: publishedSlug, moduleId }) }
+    );
+    assert.equal(moduleResponse.status, 200);
+    const publicQuiz = (await moduleResponse.json()).module.quiz;
     assert.deepEqual(publicQuiz, [{
       id: "q-secret",
       options: ["Nicée", "Constantinople"],
@@ -103,12 +115,33 @@ test("learning routes enforce published entitlements, immutable completion and e
     }));
     assert.equal(manipulated.status, 400);
 
+    await query(
+      `insert into public.module_progress
+        (etudiant_id,course_id,module_id,complete,progression,statut,date_debut)
+       values ($1,$2,$3,false,0,'en_cours',null)`,
+      [userId, courseId, moduleId]
+    );
+
     const started = await updateProgress(authenticatedRequest("/api/progress/update", token, {
       action: "start",
       course_id: courseId,
       module_id: moduleId
     }));
     assert.equal(started.status, 200);
+    const startedPayload = await started.json();
+    assert.ok(Number.isFinite(Date.parse(String(startedPayload.data.date_debut || ""))));
+    const repairedStart = await query<{ date_debut: string | null }>(
+      "select date_debut from public.module_progress where etudiant_id=$1 and module_id=$2",
+      [userId, moduleId]
+    );
+    assert.ok(Number.isFinite(Date.parse(String(repairedStart.rows[0]?.date_debut || ""))));
+    const repeatedStart = await updateProgress(authenticatedRequest("/api/progress/update", token, {
+      action: "start",
+      course_id: courseId,
+      module_id: moduleId
+    }));
+    assert.equal(repeatedStart.status, 200);
+    assert.equal((await repeatedStart.json()).data.date_debut, startedPayload.data.date_debut);
     await query(
       "update public.module_progress set date_debut=now()-interval '31 seconds' where etudiant_id=$1 and module_id=$2",
       [userId, moduleId]

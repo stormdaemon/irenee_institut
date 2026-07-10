@@ -4,12 +4,20 @@ import { describe, test } from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import AdminCoursesPage, {
+  courseStatusForSave,
   courseDraftSignature,
+  draftAfterFailedCourseSave,
   serializeCourseModules,
   validateCourseDraft,
   type CourseDraft,
 } from "../app/admin/courses/page";
 import { RichHtmlEditor } from "../components/RichHtmlEditor";
+import {
+  courseDraftRecoveryKey,
+  createCourseDraftRecovery,
+  getCourseEditorReadiness,
+  parseCourseDraftRecovery,
+} from "./course-editor-workspace";
 
 const draft = (overrides: Partial<CourseDraft> = {}): CourseDraft => ({
   titre: "Introduction",
@@ -93,6 +101,76 @@ describe("course editor draft safeguards", () => {
     assert.equal(courseDraftSignature(first), courseDraftSignature(sameContent));
     assert.notEqual(courseDraftSignature({ ...sameContent, titre: "Titre changé" }), courseDraftSignature(first));
   });
+
+  test("computes an actionable publication checklist instead of a vague completion score", () => {
+    const incomplete = getCourseEditorReadiness(draft());
+    assert.deepEqual(incomplete.items.map(item => [item.id, item.complete]), [
+      ["identity", true],
+      ["pedagogy", true],
+      ["modules", false],
+      ["content", false],
+      ["publication", true],
+    ]);
+    assert.equal(incomplete.completed, 3);
+    assert.equal(incomplete.total, 5);
+
+    const ready = getCourseEditorReadiness(draft({
+      modules: [{
+        clientId: "local-1",
+        titre: "Module 1",
+        description: "Une introduction",
+        contenu_html: "<p>Un contenu pédagogique.</p>",
+        url_video: "",
+        duree: 30,
+        type_contenu: "texte",
+        ordre: 1,
+      }],
+    }));
+    assert.equal(ready.completed, ready.total);
+  });
+
+  test("restores only a recent local draft based on the same server version", () => {
+    const now = Date.UTC(2026, 6, 10, 12, 0, 0);
+    const serverDraft = draft();
+    const editedDraft = draft({ titre: "Introduction enrichie" });
+    const recovery = createCourseDraftRecovery(editedDraft, serverDraft, now, {
+      activeModuleClientId: "local-1",
+      activeSection: "modules",
+    });
+
+    assert.deepEqual(parseCourseDraftRecovery(JSON.stringify(recovery), serverDraft, now + 1_000)?.draft, editedDraft);
+    assert.deepEqual(parseCourseDraftRecovery(JSON.stringify(recovery), serverDraft, now + 1_000)?.workspace, {
+      activeModuleClientId: "local-1",
+      activeSection: "modules",
+    });
+    assert.equal(parseCourseDraftRecovery(JSON.stringify(recovery), draft({ description: "Version serveur plus récente" }), now + 1_000)?.serverConflict, true);
+    assert.equal(parseCourseDraftRecovery(JSON.stringify(recovery), serverDraft, now + 8 * 24 * 60 * 60 * 1_000), null);
+    assert.equal(parseCourseDraftRecovery("{not-json", serverDraft, now), null);
+  });
+
+  test("isolates local drafts by authenticated editor and browser tab", () => {
+    assert.notEqual(
+      courseDraftRecoveryKey("course-1", "user-a", "tab-1"),
+      courseDraftRecoveryKey("course-1", "user-a", "tab-2"),
+    );
+    assert.notEqual(
+      courseDraftRecoveryKey("course-1", "user-a", "tab-1"),
+      courseDraftRecoveryKey("course-1", "user-b", "tab-1"),
+    );
+  });
+
+  test("never turns a failed explicit publication into an implicit published save", () => {
+    const workingDraft = draft({ statut: "en_preparation" });
+    const submittedPublication = { ...workingDraft, statut: "publie" };
+
+    assert.equal(courseStatusForSave("en_preparation", "brouillon", true), "publie");
+    assert.equal(courseStatusForSave("publie", "brouillon", false), null);
+    assert.equal(courseStatusForSave("publie", "publie", false), "publie");
+    assert.equal(
+      draftAfterFailedCourseSave(workingDraft, submittedPublication, true).statut,
+      "en_preparation",
+    );
+  });
 });
 
 describe("course editor accessibility contracts", () => {
@@ -103,6 +181,8 @@ describe("course editor accessibility contracts", () => {
     assert.match(html, /id="course-title"/);
     assert.match(html, /for="course-description"/);
     assert.match(html, /id="course-description"/);
+    assert.match(html, /aria-label="Étapes de création du cours"/);
+    assert.match(html, /Aperçu/);
   });
 
   test("exposes the rich editor as a named multiline textbox and its controls as a toolbar", () => {
@@ -128,5 +208,9 @@ test("save and navigation safeguards stay wired", async () => {
   assert.match(source, /"beforeunload"/);
   assert.match(source, /window\.confirm/);
   assert.match(source, /finally\s*\{\s*setSaving\(false\)/);
+  assert.match(source, /localStorage/);
+  assert.match(source, /Brouillon local/);
+  assert.match(source, /Ajouter une question/);
+  assert.match(source, /publishRequested/);
   assert.doesNotMatch(source, /draft\.modules\.filter\(module => module\.titre\.trim\(\)\)/);
 });

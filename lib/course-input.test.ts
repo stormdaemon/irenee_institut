@@ -95,3 +95,81 @@ test("parseCourseForm rejects module identifiers that are not UUIDs", () => {
   form.set("modules", JSON.stringify([{ id: "1 OR 1=1", titre: "Leçon", contenu_html: "<p>x</p>" }]));
   assert.throws(() => parseCourseForm(form), /identifiant/i);
 });
+
+test("quiz questions are bounded, normalized and keep their private correction", () => {
+  const form = validForm();
+  form.set("modules", JSON.stringify([{
+    titre: "Quiz final",
+    contenu_html: "<p>Choisissez la meilleure réponse.</p>",
+    duree: 20,
+    type_contenu: "quiz",
+    quiz: [{
+      id: "question-foi-1",
+      question: "Quelle réponse est structurée ?",
+      options: ["Une affirmation sans source", "Une thèse étayée"],
+      answer: 1,
+    }],
+  }]));
+
+  const parsed = parseCourseForm(form);
+  assert.deepEqual(parsed.modules[0].quiz, [{
+    id: "question-foi-1",
+    question: "Quelle réponse est structurée ?",
+    options: ["Une affirmation sans source", "Une thèse étayée"],
+    answer: 1,
+  }]);
+
+  const unsafe = validForm();
+  unsafe.set("modules", JSON.stringify([{
+    titre: "Quiz dangereux",
+    type_contenu: "quiz",
+    quiz: [{ id: "__proto__", question: "Question", options: ["A", "B"], answer: 0 }],
+  }]));
+  assert.throws(() => parseCourseForm(unsafe), /identifiant.*question/i);
+});
+
+test("a published course cannot contain an empty or unfinished programme", () => {
+  const noModules = validForm();
+  noModules.set("statut", "publie");
+  noModules.set("modules", "[]");
+  assert.throws(() => parseCourseForm(noModules), /publier.*module/i);
+
+  const emptyQuiz = validForm();
+  emptyQuiz.set("statut", "publie");
+  emptyQuiz.set("modules", JSON.stringify([{ titre: "Quiz vide", type_contenu: "quiz", quiz: [] }]));
+  assert.throws(() => parseCourseForm(emptyQuiz), /quiz.*question/i);
+});
+
+test("an incomplete quiz remains recoverable in draft but cannot be published", () => {
+  const partialQuestion = [{
+    id: "question-en-cours",
+    question: "",
+    options: ["", "Une option déjà rédigée"],
+    answer: null,
+  }];
+  const draft = validForm();
+  draft.set("modules", JSON.stringify([{
+    titre: "Quiz en préparation",
+    type_contenu: "quiz",
+    quiz: partialQuestion,
+  }]));
+
+  assert.deepEqual(parseCourseForm(draft).modules[0].quiz, [{
+    id: "question-en-cours",
+    question: "",
+    options: ["", "Une option déjà rédigée"],
+  }]);
+
+  draft.set("statut", "publie");
+  assert.throws(() => parseCourseForm(draft), /quiz.*(?:intitulé|réponses)|question.*(?:intitulé|réponses)/i);
+});
+
+test("the exact optimistic-concurrency token is preserved and malformed tokens are rejected", () => {
+  const exactToken = "2026-07-10T06:45:12.123456Z";
+  const form = validForm();
+  form.set("expected_updated_at", exactToken);
+  assert.equal(parseCourseForm(form).expectedUpdatedAt, exactToken);
+
+  form.set("expected_updated_at", "not-a-timestamp");
+  assert.throws(() => parseCourseForm(form), /version.*invalide/i);
+});

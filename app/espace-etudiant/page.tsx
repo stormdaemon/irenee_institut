@@ -14,6 +14,7 @@ import type { LearningDocument } from "@/lib/learning-documents";
 type StudentCourse = Course & {
   progress?: number;
   completedModules?: number;
+  resumeModuleId?: string | null;
 };
 
 type StudentPayload = {
@@ -163,7 +164,7 @@ export default function StudentSpacePage() {
             <h2 className="font-display" style={{ color: "var(--navy)" }}>Mes formations</h2>
             {activeCourses.length ? activeCourses.map((course) => {
               const progress = Number(course.progress || 0);
-              const nextModule = course.modules.find(module => !module.id || progress < 100) || course.modules[0];
+              const nextModule = course.modules.find(module => module.id === course.resumeModuleId) || course.modules[0];
               return (
                 <article className="card" key={course.id} style={{ padding: 26, marginBottom: 18 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>

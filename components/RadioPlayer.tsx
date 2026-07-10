@@ -1,14 +1,20 @@
 "use client";
 
 import { Pause, Play, Radio, X } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useRef, useState } from "react";
 
 const streamUrl = "https://play.radioking.io/heavenradio/731077";
 
 export function RadioPlayer() {
+  const pathname = usePathname();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState("");
+  const isCourseWorkspace = pathname === "/cours"
+    || pathname.startsWith("/cours/")
+    || pathname === "/admin/courses"
+    || pathname.startsWith("/admin/courses/");
 
   async function toggle() {
     const audio = audioRef.current;
@@ -38,6 +44,8 @@ export function RadioPlayer() {
     setPlaying(false);
     setError("");
   }
+
+  if (isCourseWorkspace) return null;
 
   return (
     <div className="radio-bar">

@@ -8,6 +8,17 @@ import {
 
 const originalEncryptionKey = process.env.SETTINGS_ENCRYPTION_KEY;
 const testEncryptionKey = Buffer.alloc(32, 0x5a).toString("base64");
+const base64UrlAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+function nonCanonicalEquivalentBase64Url(value: string) {
+  const remainder = value.length % 4;
+  assert.ok(remainder === 2 || remainder === 3, "the fixture must have unused base64url tail bits");
+  const finalIndex = base64UrlAlphabet.indexOf(value.at(-1) || "");
+  assert.notEqual(finalIndex, -1);
+
+  // Only an unused padding bit changes: permissive decoders produce the same bytes.
+  return `${value.slice(0, -1)}${base64UrlAlphabet[finalIndex ^ 1]}`;
+}
 
 afterEach(() => {
   if (originalEncryptionKey === undefined) delete process.env.SETTINGS_ENCRYPTION_KEY;
@@ -31,8 +42,14 @@ test("secret settings use randomized authenticated encryption at rest", () => {
 test("ciphertexts are bound to their setting key and reject tampering", () => {
   process.env.SETTINGS_ENCRYPTION_KEY = testEncryptionKey;
   const protectedValue = protectSettingValue("stripeSecretKey", "sk_test_sensitive");
-  const finalCharacter = protectedValue.at(-1) === "a" ? "b" : "a";
-  const tampered = `${protectedValue.slice(0, -1)}${finalCharacter}`;
+  const parts = protectedValue.split(":");
+  const nonCanonicalCiphertext = nonCanonicalEquivalentBase64Url(parts[4]);
+  assert.deepEqual(
+    Buffer.from(nonCanonicalCiphertext, "base64url"),
+    Buffer.from(parts[4], "base64url"),
+    "the regression fixture must preserve the decoded ciphertext bytes"
+  );
+  const tampered = [...parts.slice(0, 4), nonCanonicalCiphertext].join(":");
 
   assert.throws(() => unprotectSettingValue("paypalClientSecret", protectedValue), /déchiffr/i);
   assert.throws(() => unprotectSettingValue("stripeSecretKey", tampered), /déchiffr/i);

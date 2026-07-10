@@ -12,7 +12,14 @@ type CourseActor = {
   role: "directeur" | "formateur";
 };
 
-type CourseRow = Record<string, unknown> & { id: string; slug: string; auteur_id?: string | null };
+type CourseRow = Record<string, unknown> & {
+  id: string;
+  slug: string;
+  auteur_id?: string | null;
+  updated_at?: Date | string;
+  updated_at_token?: string;
+  version_matches?: boolean;
+};
 type ModuleRow = Record<string, unknown> & { id: string; course_id: string };
 
 export class CoursePersistenceError extends Error {
@@ -45,15 +52,16 @@ function moduleValues(courseId: string, module: ParsedCourseModule) {
     module.type_contenu,
     module.contenu_html,
     module.contenu,
-    module.url_video
+    module.url_video,
+    JSON.stringify(module.quiz ?? [])
   ];
 }
 
 async function insertModule(client: PoolClient, courseId: string, module: ParsedCourseModule) {
   const result = await client.query<ModuleRow>(
     `insert into public.course_modules
-      (course_id,titre,description,ordre,duree,type_contenu,contenu_html,contenu,url_video)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      (course_id,titre,description,ordre,duree,type_contenu,contenu_html,contenu,url_video,quiz)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb)
      returning *`,
     moduleValues(courseId, module)
   );
@@ -61,13 +69,19 @@ async function insertModule(client: PoolClient, courseId: string, module: Parsed
 }
 
 async function readCompleteCourse(client: PoolClient, id: string) {
-  const courseResult = await client.query<CourseRow>("select * from public.courses where id = $1", [id]);
+  const courseResult = await client.query<CourseRow>(
+    `select courses.*,
+            to_char(courses.updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as updated_at_token
+     from public.courses courses where id = $1`,
+    [id]
+  );
   if (!courseResult.rows[0]) throw new CoursePersistenceError("Cours introuvable.", 404);
   const moduleResult = await client.query<ModuleRow>(
     "select * from public.course_modules where course_id = $1 order by ordre asc",
     [id]
   );
-  return { ...courseResult.rows[0], course_modules: moduleResult.rows };
+  const { updated_at_token: updatedAtToken, ...course } = courseResult.rows[0];
+  return { ...course, updated_at: updatedAtToken || course.updated_at, course_modules: moduleResult.rows };
 }
 
 export async function createCourse(input: ParsedCourse, actor: CourseActor) {
@@ -88,11 +102,21 @@ export async function createCourse(input: ParsedCourse, actor: CourseActor) {
 
 export async function updateCourse(id: string, input: ParsedCourse, actor: CourseActor) {
   return withTransaction(async client => {
-    const existing = await client.query<CourseRow>("select * from public.courses where id = $1 for update", [id]);
+    const existing = await client.query<CourseRow>(
+      `select courses.*, (courses.updated_at = $2::timestamptz) as version_matches
+       from public.courses courses where id = $1 for update`,
+      [id, input.expectedUpdatedAt]
+    );
     const current = existing.rows[0];
     if (!current) throw new CoursePersistenceError("Cours introuvable.", 404);
     if (actor.role !== "directeur" && current.auteur_id !== actor.id) {
       throw new CoursePersistenceError("Vous ne pouvez modifier que vos propres cours.", 403);
+    }
+    if (!input.expectedUpdatedAt) {
+      throw new CoursePersistenceError("Le cours doit être rechargé avant de pouvoir être modifié.", 409);
+    }
+    if (current.version_matches !== true) {
+      throw new CoursePersistenceError("Ce cours a été modifié dans un autre onglet ou par une autre personne. Rechargez-le avant de continuer.", 409);
     }
 
     const submittedIds = input.modules.flatMap(module => module.id ? [module.id] : []);
@@ -107,10 +131,17 @@ export async function updateCourse(id: string, input: ParsedCourse, actor: Cours
     }
 
     const assignments = courseColumns.map((column, index) => `${column} = $${index + 1}`);
-    await client.query(
-      `update public.courses set ${assignments.join(",")}, updated_at = now() where id = $${courseColumns.length + 1}`,
-      [...courseValues(input.course), id]
+    const courseUpdate = await client.query<{ id: string }>(
+      `update public.courses
+       set ${assignments.join(",")}, updated_at = now()
+       where id = $${courseColumns.length + 1}
+         and updated_at = $${courseColumns.length + 2}::timestamptz
+       returning id`,
+      [...courseValues(input.course), id, input.expectedUpdatedAt]
     );
+    if (courseUpdate.rows.length !== 1) {
+      throw new CoursePersistenceError("Ce cours a été modifié dans un autre onglet ou par une autre personne. Rechargez-le avant de continuer.", 409);
+    }
 
     // Move existing positions out of the unique range before applying a reordered list.
     await client.query("update public.course_modules set ordre = ordre + 10000 where course_id = $1", [id]);
@@ -127,8 +158,9 @@ export async function updateCourse(id: string, input: ParsedCourse, actor: Cours
       }
       const result = await client.query<ModuleRow>(
         `update public.course_modules
-         set titre=$1,description=$2,ordre=$3,duree=$4,type_contenu=$5,contenu_html=$6,contenu=$7,url_video=$8,updated_at=now()
-         where id=$9 and course_id=$10 returning *`,
+         set titre=$1,description=$2,ordre=$3,duree=$4,type_contenu=$5,contenu_html=$6,contenu=$7,url_video=$8,
+             quiz=coalesce($9::jsonb,quiz),updated_at=greatest(now(),updated_at + interval '1 millisecond')
+         where id=$10 and course_id=$11 returning *`,
         [
           module.titre,
           module.description,
@@ -138,6 +170,7 @@ export async function updateCourse(id: string, input: ParsedCourse, actor: Cours
           module.contenu_html,
           module.contenu,
           module.url_video,
+          module.quiz === undefined ? null : JSON.stringify(module.quiz),
           module.id,
           id
         ]

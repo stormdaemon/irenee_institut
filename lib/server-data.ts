@@ -2,6 +2,7 @@ import { courses as fallbackCourses, fallbackProfile, homework as fallbackHomewo
 import { legalPages, type LegalPageKey } from "./legal";
 import { createServerClient } from "./supabase";
 import { cloudinaryAvatarUrl } from "./cloudinary";
+import { query } from "./db";
 import type { BookRequest, Course, CourseModule, Homework, Profile } from "./types";
 
 type RawCourse = Omit<Course, "modules" | "objectifs" | "competences" | "prerequis"> & {
@@ -151,9 +152,12 @@ export async function getCourses(
   const courses = data as RawCourse[];
   if (scope === "public") return courses.map(course => normalizeCourse(course, []));
   const ids = courses.map(course => course.id);
-  const { data: moduleRows } = ids.length
+  const { data: moduleRows, error: moduleError } = ids.length
     ? await supabase.from("course_modules").select("*").in("course_id", ids).order("ordre", { ascending: true })
-    : { data: [] };
+    : { data: [], error: null };
+  if (moduleError) {
+    throw new Error("Les modules des cours n'ont pas pu être chargés sans risque.");
+  }
 
   const modulesByCourse = new Map<string, CourseModule[]>();
   for (const row of (moduleRows || []) as RawModule[]) {
@@ -162,7 +166,21 @@ export async function getCourses(
     modulesByCourse.set(row.course_id, list);
   }
 
-  return courses.map(course => normalizeCourse(course, modulesByCourse.get(course.id) || []));
+  const updateTokenRows = ids.length
+    ? await query<{ id: string; updated_at_token: string }>(
+      `select id,
+              to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as updated_at_token
+       from public.courses
+       where id = any($1::uuid[])`,
+      [ids]
+    )
+    : { rows: [] as { id: string; updated_at_token: string }[] };
+  const updateTokens = new Map(updateTokenRows.rows.map(row => [row.id, row.updated_at_token]));
+
+  return courses.map(course => normalizeCourse({
+    ...course,
+    updated_at: updateTokens.get(course.id) || course.updated_at,
+  }, modulesByCourse.get(course.id) || []));
 }
 
 export async function getCourseBySlug(slug: string): Promise<Course | null> {

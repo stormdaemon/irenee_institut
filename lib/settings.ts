@@ -55,6 +55,18 @@ function encryptionAssociatedData(key: string) {
   return Buffer.from(`irenee:system_settings:${key}`, "utf8");
 }
 
+function decodeCanonicalBase64Url(value: string) {
+  if (!/^[A-Za-z0-9_-]+$/.test(value) || value.length % 4 === 1) {
+    throw new Error("Invalid base64url encoding.");
+  }
+
+  const decoded = Buffer.from(value, "base64url");
+  if (decoded.toString("base64url") !== value) {
+    throw new Error("Non-canonical base64url encoding.");
+  }
+  return decoded;
+}
+
 export function isEncryptedSettingValue(value: unknown): value is string {
   return typeof value === "string" && value.startsWith(encryptedSettingPrefix);
 }
@@ -83,9 +95,9 @@ export function unprotectSettingValue(key: string, value: unknown) {
   }
 
   try {
-    const iv = Buffer.from(parts[2], "base64url");
-    const authenticationTag = Buffer.from(parts[3], "base64url");
-    const ciphertext = Buffer.from(parts[4], "base64url");
+    const iv = decodeCanonicalBase64Url(parts[2]);
+    const authenticationTag = decodeCanonicalBase64Url(parts[3]);
+    const ciphertext = decodeCanonicalBase64Url(parts[4]);
     if (iv.length !== 12 || authenticationTag.length !== 16 || !ciphertext.length) {
       throw new Error("Invalid encrypted setting payload.");
     }

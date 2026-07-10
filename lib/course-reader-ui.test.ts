@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getModuleNavigation, getSafeCourseAssetUrl } from "../components/course-reader-utils";
+import { buildCourseJourney, parseReaderPreferences } from "./course-experience";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -48,17 +49,63 @@ test("module navigation exposes a stable previous/next position", () => {
   });
 });
 
+test("course journey exposes exactly one current module and locks later work", () => {
+  const modules = [
+    { id: "one", titre: "Un" },
+    { id: "two", titre: "Deux" },
+    { id: "three", titre: "Trois" },
+  ];
+  const journey = buildCourseJourney(modules, [
+    { module_id: "one", progression: 100, complete: true },
+    { module_id: "two", progression: 35, complete: false },
+  ]);
+
+  assert.equal(journey.completedCount, 1);
+  assert.equal(journey.overallProgress, 45);
+  assert.equal(journey.resumeModule?.id, "two");
+  assert.equal(journey.resumeLabel, "Reprendre le module 2");
+  assert.deepEqual(journey.modules.map(item => item.state), ["complete", "current", "locked"]);
+});
+
+test("course journey never treats client progression as server completion", () => {
+  const modules = [{ id: "one" }, { id: "two" }];
+  const journey = buildCourseJourney(modules, [{ module_id: "one", progression: 100, complete: false }]);
+
+  assert.equal(journey.completedCount, 0);
+  assert.equal(journey.resumeModule?.id, "one");
+  assert.deepEqual(journey.modules.map(item => item.state), ["current", "locked"]);
+});
+
+test("reader preferences are bounded and reject malformed persisted values", () => {
+  assert.deepEqual(parseReaderPreferences('{"fontScale":"large","measure":"focused"}'), {
+    fontScale: "large",
+    measure: "focused",
+  });
+  assert.deepEqual(parseReaderPreferences('{"fontScale":"999","measure":"huge"}'), {
+    fontScale: "normal",
+    measure: "comfortable",
+  });
+  assert.deepEqual(parseReaderPreferences("not-json"), {
+    fontScale: "normal",
+    measure: "comfortable",
+  });
+});
+
 test("course overview exposes semantic progress and objectives", () => {
   const page = source("app/cours/[slug]/page.tsx");
 
   assert.match(page, /role="progressbar"/);
-  assert.match(page, /aria-valuenow=\{progress\}/);
+  assert.match(page, /aria-valuenow=\{journey\.overallProgress\}/);
+  assert.match(page, /aria-valuenow=\{item\.progress\}/);
   assert.match(page, /aria-valuemin=\{0\}/);
   assert.match(page, /aria-valuemax=\{100\}/);
   assert.match(page, /<ul className="course-objectives-list">/);
   assert.match(page, /<li key=\{item\}>/);
   assert.match(page, /\/auth\/login\?next=/);
   assert.match(page, /role="status" aria-live="polite" aria-busy="true"/);
+  assert.match(page, /buildCourseJourney/);
+  assert.match(page, /Reprendre/);
+  assert.match(page, /Verrouillé/);
 });
 
 test("module reader keeps save failures inline and always releases its busy state", () => {
@@ -94,6 +141,9 @@ test("module reader provides previous and next navigation with position", () => 
   assert.match(page, /navigation\.previousModule/);
   assert.match(page, /navigation\.nextModule/);
   assert.match(page, /\/auth\/login\?next=/);
+  assert.match(page, /Plan du cours/);
+  assert.match(page, /Confort de lecture/);
+  assert.match(page, /parseReaderPreferences/);
 });
 
 test("reader styles scope guaranteed fallback contrast and readable measure", () => {
@@ -103,8 +153,18 @@ test("reader styles scope guaranteed fallback contrast and readable measure", ()
   assert.match(css, /\.module-text-content\s*\{[^}]*color:\s*#172033[^}]*background:\s*#fffaf0/);
   assert.match(css, /\.module-empty-content\s*\{[^}]*color:\s*#172033/);
   assert.match(modulePage, /\.module-content\s*\{[^}]*max-width:\s*72ch/);
+  assert.match(modulePage, /FORBID_TAGS:\s*\[[\s\S]*"style"/);
+  assert.match(modulePage, /querySelectorAll<HTMLElement>\("\[style\]"\)/);
+  assert.doesNotMatch(modulePage, /\$\{sanitizedCss\}/);
   assert.match(css, /\.course-module-navigation\s*\{/);
   assert.match(css, /\.module-video-player\s*\{/);
+});
+
+test("course editor quiz layout never overrides student answer alignment", () => {
+  const css = source("app/globals.css");
+
+  assert.match(css, /\.course-quiz-builder \.course-quiz-option\s*\{\s*display:\s*grid;\s*grid-template-columns:\s*118px minmax\(0, 1fr\) 44px/);
+  assert.doesNotMatch(css, /(?<!\.course-quiz-builder )\.course-quiz-option\s*\{\s*display:\s*grid;\s*grid-template-columns:\s*118px/);
 });
 
 test("private workspaces do not render donation and network distractions", () => {
@@ -115,4 +175,17 @@ test("private workspaces do not render donation and network distractions", () =>
   assert.match(chrome, /!privateWorkspace && <FloatingNetworkMenu \/>/);
   assert.match(chrome, /!privateWorkspace && <DonationPrompt \/>/);
   assert.match(chrome, /<OnboardingGate \/>/);
+});
+
+test("course workspaces replace marketing chrome with focused navigation", () => {
+  const header = source("components/Header.tsx");
+  const radio = source("components/RadioPlayer.tsx");
+  const footer = source("components/Footer.tsx");
+
+  assert.match(header, /isCourseReader/);
+  assert.match(header, /course-workspace-header/);
+  assert.match(header, /Espace de cours/);
+  assert.match(header, /Atelier des cours/);
+  assert.match(radio, /if \(isCourseWorkspace\) return null/);
+  assert.match(footer, /if \(isCourseWorkspace\) return null/);
 });

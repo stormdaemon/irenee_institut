@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, Phone, X } from "lucide-react";
+import { ArrowLeft, Menu, Phone, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { UserMenu } from "@/components/UserMenu";
@@ -19,8 +19,42 @@ const links = [
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const isCourseReader = pathname === "/cours" || pathname.startsWith("/cours/");
+  const isCourseEditor = pathname === "/admin/courses" || pathname.startsWith("/admin/courses/");
 
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+
+  if (isCourseReader || isCourseEditor) {
+    const contextLabel = isCourseEditor ? "Atelier des cours" : "Espace de cours";
+    const exitHref = isCourseEditor ? "/admin" : "/espace-etudiant";
+    const exitLabel = isCourseEditor ? "Retour au tableau de bord" : "Retour à mon espace";
+
+    return (
+      <header className={`main-header course-workspace-header ${isCourseEditor ? "course-workspace-header-admin" : "course-workspace-header-reader"}`}>
+        <div className="container header-row course-workspace-header-row">
+          <div className="brand course-workspace-brand">
+            <span className="brand-seal course-workspace-brand-seal" aria-hidden="true">
+              <Image src="/images/logo_without_text.png" alt="" width={52} height={52} priority />
+            </span>
+            <span className="brand-copy course-workspace-brand-copy">
+              <strong>Institut Saint Irénée</strong>
+              <span className="course-workspace-context" aria-current="page">{contextLabel}</span>
+            </span>
+          </div>
+
+          <div className="nav-actions course-workspace-actions">
+            <Link href={exitHref} className="course-workspace-exit" prefetch={false}>
+              <ArrowLeft size={18} aria-hidden="true" />
+              <span>{exitLabel}</span>
+            </Link>
+            <div className="course-workspace-user-menu">
+              <UserMenu />
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="main-header">
