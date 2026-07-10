@@ -7,6 +7,8 @@ import { BuyCourseButton } from "@/components/BuyCourseButton";
 import { ANNUAL_PASS_NAME } from "@/lib/curriculum";
 import { siteUrl } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
+import { courseCatalogAccess } from "@/lib/course-catalog-access";
+import { getOptionalPageProfile } from "@/lib/page-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +82,8 @@ const reassuranceItems = [
 ];
 
 export default async function FormationsPage() {
-  const courses = await getCourses();
+  const [courses, profile] = await Promise.all([getCourses(), getOptionalPageProfile()]);
+  const isStaff = profile?.role === "directeur" || profile?.role === "formateur";
   const totalModules = courses.reduce((sum, course) => sum + Number(course.nb_modules || course.modules.length || 0), 0);
   const totalMinutes = courses.reduce((sum, course) => sum + Number(course.duree_totale || 0), 0);
   const totalHours = Math.round(totalMinutes / 60);
@@ -137,8 +140,8 @@ export default async function FormationsPage() {
             <span>Premières rencontres en visio conférence à partir de septembre 2026</span>
           </div>
           <div className="hero-actions formation-hero-actions">
-            <Link className="btn btn-gold" href="/formations?checkout=annual-pass">
-              Obtenir le pass annuel <ArrowRight size={18} />
+            <Link className="btn btn-gold" href={isStaff ? "/espace-etudiant" : "/formations?checkout=annual-pass"}>
+              {isStaff ? "Ouvrir les cours" : "Obtenir le pass annuel"} <ArrowRight size={18} />
             </Link>
             <Link className="btn btn-outline" href="/programme-apologetique">
               Voir le programme détaillé
@@ -157,18 +160,31 @@ export default async function FormationsPage() {
               contenus dans un espace étudiant personnel dès confirmation du paiement.
             </p>
           </div>
-          <aside className="annual-pass-aside" aria-label="Achat du pass annuel">
-            <p className="pass-price">
-              <strong>{formatPrice(9900)}</strong>
-              <span>conseillés / participation libre</span>
-            </p>
-            <BuyCourseButton />
-            <p className="payment-note">
-              <ShieldCheck size={17} /> Paiement sécurisé par Stripe. Activation automatique du pass après confirmation.
-            </p>
-            <p className="payment-note">
-              <CreditCard size={17} /> Vous pouvez ajuster librement le montant dans la fenêtre de paiement selon vos moyens.
-            </p>
+          <aside className="annual-pass-aside" aria-label={isStaff ? "Accès de prévisualisation équipe" : "Achat du pass annuel"}>
+            {isStaff ? (
+              <>
+                <span className="badge">Accès équipe actif</span>
+                <h3 className="font-display">Prévisualisation sans pass</h3>
+                <p>Votre rôle {profile?.role} ouvre tous les cours et modules publiés, sans achat et sans modifier la progression d’un étudiant.</p>
+                <Link className="btn btn-primary" href="/espace-etudiant">
+                  Voir les cours <ArrowRight size={17} />
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="pass-price">
+                  <strong>{formatPrice(9900)}</strong>
+                  <span>conseillés / participation libre</span>
+                </p>
+                <BuyCourseButton />
+                <p className="payment-note">
+                  <ShieldCheck size={17} /> Paiement sécurisé par Stripe. Activation automatique du pass après confirmation.
+                </p>
+                <p className="payment-note">
+                  <CreditCard size={17} /> Vous pouvez ajuster librement le montant dans la fenêtre de paiement selon vos moyens.
+                </p>
+              </>
+            )}
           </aside>
           <div className="annual-pass-main">
             <div className="pass-stat-grid" aria-label="Contenu du pass annuel">
@@ -211,8 +227,8 @@ export default async function FormationsPage() {
                   <span><User size={16} /> {course.auteur_nom || "Institut Saint Irénée"}</span>
                   <span><Award size={16} /> Certificat</span>
                 </p>
-                <Link className="feature-link" href="/formations?checkout=annual-pass">
-                  Accéder avec le pass annuel <ArrowRight size={14} />
+                <Link className="feature-link" href={courseCatalogAccess(course.slug, isStaff).href}>
+                  {courseCatalogAccess(course.slug, isStaff).label} <ArrowRight size={14} />
                 </Link>
               </article>
             ))}
@@ -261,8 +277,8 @@ export default async function FormationsPage() {
             ))}
           </div>
           <p className="center" style={{ marginTop: 34 }}>
-            <Link className="btn btn-gold" href="/formations?checkout=annual-pass">
-              Obtenir le pass annuel <ArrowRight size={17} />
+            <Link className="btn btn-gold" href={isStaff ? "/espace-etudiant" : "/formations?checkout=annual-pass"}>
+              {isStaff ? "Ouvrir les cours" : "Obtenir le pass annuel"} <ArrowRight size={17} />
             </Link>
           </p>
         </div>
