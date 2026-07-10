@@ -3,6 +3,7 @@
 import DOMPurify from "dompurify";
 import { AlignCenter, AlignLeft, AlignRight, Bold, Code2, Heading2, Heading3, Italic, Link, List, ListOrdered, Pilcrow, Quote, Sparkles, Underline } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
+import { sanitizeCourseClassAttribute, sanitizeCourseStyleAttribute } from "../lib/course-html-style";
 
 type RichHtmlEditorProps = {
   id?: string;
@@ -12,27 +13,53 @@ type RichHtmlEditorProps = {
   disabled?: boolean;
 };
 
-const templates = {
-  info: `<div style="border-left:4px solid #2563eb;background:#eff6ff;padding:16px 18px;border-radius:8px;margin:18px 0;"><strong>À retenir</strong><p>Ajoutez ici l'idée importante du module.</p></div>`,
-  warning: `<div style="border-left:4px solid #e5bd34;background:#fff8dd;padding:16px 18px;border-radius:8px;margin:18px 0;"><strong>Point d'attention</strong><p>Précisez ici une nuance, une objection ou une limite.</p></div>`,
-  quote: `<blockquote style="border-left:4px solid #071d49;margin:20px 0;padding:12px 18px;background:#f6f8fc;font-style:italic;">Insérez ici une citation ou un extrait important.</blockquote>`,
-  card: `<section style="border:1px solid #dce3ee;border-radius:8px;padding:18px;margin:20px 0;background:#ffffff;"><h3>Bloc pédagogique</h3><p>Présentez ici une notion, un exemple ou une activité.</p></section>`,
+export const richEditorTemplates = {
+  info: `<div class="course-callout course-callout-info"><strong>À retenir</strong><p>Ajoutez ici l'idée importante du module.</p></div>`,
+  warning: `<div class="course-callout course-callout-warning"><strong>Point d'attention</strong><p>Précisez ici une nuance, une objection ou une limite.</p></div>`,
+  quote: `<blockquote class="course-quote">Insérez ici une citation ou un extrait important.</blockquote>`,
+  card: `<section class="course-block"><h3>Bloc pédagogique</h3><p>Présentez ici une notion, un exemple ou une activité.</p></section>`,
 };
 
 function sanitizeForEditing(html: string) {
   if (typeof window === "undefined" || typeof DOMPurify.sanitize !== "function") return html;
-  return DOMPurify.sanitize(html, {
-    FORBID_TAGS: ["script", "style", "iframe", "object", "embed", "form"],
+  const template = document.createElement("template");
+  template.innerHTML = DOMPurify.sanitize(html, {
+    FORBID_TAGS: ["audio", "script", "source", "style", "iframe", "object", "embed", "form", "track", "video"],
   });
+  template.content.querySelectorAll<HTMLElement>("[style]").forEach(element => {
+    const safeStyle = sanitizeCourseStyleAttribute(element.getAttribute("style") || "");
+    if (safeStyle) element.setAttribute("style", safeStyle);
+    else element.removeAttribute("style");
+  });
+  template.content.querySelectorAll<HTMLElement>("[class]").forEach(element => {
+    const safeClass = sanitizeCourseClassAttribute(element.getAttribute("class") || "");
+    if (safeClass) element.setAttribute("class", safeClass);
+    else element.removeAttribute("class");
+  });
+  template.content.querySelectorAll<HTMLImageElement>("img").forEach(image => {
+    image.alt = image.alt.trim() || image.title.trim() || "Illustration du cours";
+    image.loading = "lazy";
+  });
+  template.content.querySelectorAll<HTMLTableElement>("table").forEach(table => {
+    table.tabIndex = 0;
+    table.setAttribute("aria-label", table.getAttribute("aria-label") || "Tableau du cours — défilement horizontal");
+  });
+  return template.innerHTML;
 }
 
 function safeLink(value: string) {
   const candidate = value.trim();
-  if (/[\u0000-\u001f\u007f\\]/.test(candidate)) return "";
+  if (!candidate || candidate.length > 2_048 || /[\u0000-\u001f\u007f\\]/.test(candidate)) return "";
+  try {
+    const decoded = decodeURIComponent(candidate);
+    if (/[\u0000-\u001f\u007f\\]/.test(decoded) || decoded.startsWith("//")) return "";
+  } catch {
+    return "";
+  }
   if (candidate.startsWith("/") && !candidate.startsWith("//")) return candidate;
   try {
     const url = new URL(candidate);
-    return ["https:", "mailto:", "tel:"].includes(url.protocol) ? candidate : "";
+    return ["https:", "mailto:", "tel:"].includes(url.protocol) && !url.username && !url.password ? candidate : "";
   } catch {
     return "";
   }
@@ -47,6 +74,7 @@ export function RichHtmlEditor({
 }: RichHtmlEditorProps) {
   const generatedId = useId();
   const editorId = id || `rich-editor-${generatedId.replace(/:/g, "")}`;
+  const containsTable = /<table\b/i.test(value);
   const editorRef = useRef<HTMLDivElement | null>(null);
   const selectionRef = useRef<Range | null>(null);
   const [sourceMode, setSourceMode] = useState(false);
@@ -58,7 +86,6 @@ export function RichHtmlEditor({
         editorRef.current.innerHTML = sanitizedValue;
         selectionRef.current = null;
       }
-      if (sanitizedValue !== value) onChange(sanitizedValue);
     }
   }, [sourceMode, value]);
 
@@ -139,16 +166,18 @@ export function RichHtmlEditor({
     return (
       <div className="rich-editor">
         <div className="rich-toolbar" role="toolbar" aria-label={`Mise en forme de ${label}`} aria-controls={`${editorId}-source`}>
-          <button
-            type="button"
-            className="toolbar-button active"
-            aria-label="Revenir à l'éditeur visuel"
-            aria-pressed="true"
-            disabled={disabled}
-            onClick={() => setSourceMode(false)}
-          >
-            <Sparkles size={16} aria-hidden="true" /> Revenir au visuel
-          </button>
+          <div className="rich-toolbar-group" role="group" aria-label="Mode d’édition">
+            <button
+              type="button"
+              className="toolbar-button active"
+              aria-label="Revenir à l'éditeur visuel"
+              aria-pressed="true"
+              disabled={disabled}
+              onClick={() => setSourceMode(false)}
+            >
+              <Sparkles size={16} aria-hidden="true" /> Revenir au visuel
+            </button>
+          </div>
         </div>
         <textarea
           id={`${editorId}-source`}
@@ -164,34 +193,44 @@ export function RichHtmlEditor({
 
   return (
     <div className="rich-editor">
+      <span className="rich-toolbar-mobile-hint">Outils de mise en forme · faites glisser →</span>
       <div className="rich-toolbar" role="toolbar" aria-label={`Mise en forme de ${label}`} aria-controls={editorId}>
-        <button type="button" className="toolbar-button" aria-label="Paragraphe" disabled={disabled} onPointerDown={preserveSelection} onClick={() => block("p")} title="Paragraphe"><Pilcrow size={16} aria-hidden="true" /></button>
-        <button type="button" className="toolbar-button" aria-label="Titre de niveau 2" disabled={disabled} onPointerDown={preserveSelection} onClick={() => block("h2")} title="Titre 2"><Heading2 size={16} aria-hidden="true" /></button>
-        <button type="button" className="toolbar-button" aria-label="Titre de niveau 3" disabled={disabled} onPointerDown={preserveSelection} onClick={() => block("h3")} title="Titre 3"><Heading3 size={16} aria-hidden="true" /></button>
-        <span className="toolbar-separator" role="separator" aria-orientation="vertical" />
-        <button type="button" className="toolbar-button" aria-label="Gras" aria-keyshortcuts="Control+B Meta+B" disabled={disabled} onPointerDown={preserveSelection} onClick={() => run("bold")} title="Gras"><Bold size={16} aria-hidden="true" /></button>
-        <button type="button" className="toolbar-button" aria-label="Italique" aria-keyshortcuts="Control+I Meta+I" disabled={disabled} onPointerDown={preserveSelection} onClick={() => run("italic")} title="Italique"><Italic size={16} aria-hidden="true" /></button>
-        <button type="button" className="toolbar-button" aria-label="Souligné" aria-keyshortcuts="Control+U Meta+U" disabled={disabled} onPointerDown={preserveSelection} onClick={() => run("underline")} title="Souligné"><Underline size={16} aria-hidden="true" /></button>
-        <button type="button" className="toolbar-button" aria-label="Ajouter un lien" disabled={disabled} onPointerDown={preserveSelection} onClick={createLink} title="Lien"><Link size={16} aria-hidden="true" /></button>
-        <span className="toolbar-separator" role="separator" aria-orientation="vertical" />
-        <button type="button" className="toolbar-button" aria-label="Liste à puces" disabled={disabled} onPointerDown={preserveSelection} onClick={() => run("insertUnorderedList")} title="Liste"><List size={16} aria-hidden="true" /></button>
-        <button type="button" className="toolbar-button" aria-label="Liste numérotée" disabled={disabled} onPointerDown={preserveSelection} onClick={() => run("insertOrderedList")} title="Liste numérotée"><ListOrdered size={16} aria-hidden="true" /></button>
-        <button type="button" className="toolbar-button" aria-label="Aligner à gauche" disabled={disabled} onPointerDown={preserveSelection} onClick={() => run("justifyLeft")} title="Aligner à gauche"><AlignLeft size={16} aria-hidden="true" /></button>
-        <button type="button" className="toolbar-button" aria-label="Centrer" disabled={disabled} onPointerDown={preserveSelection} onClick={() => run("justifyCenter")} title="Centrer"><AlignCenter size={16} aria-hidden="true" /></button>
-        <button type="button" className="toolbar-button" aria-label="Aligner à droite" disabled={disabled} onPointerDown={preserveSelection} onClick={() => run("justifyRight")} title="Aligner à droite"><AlignRight size={16} aria-hidden="true" /></button>
-        <span className="toolbar-separator" role="separator" aria-orientation="vertical" />
-        <button type="button" className="toolbar-button text" aria-label="Insérer un encadré d'information" disabled={disabled} onPointerDown={preserveSelection} onClick={() => insertHtml(templates.info)}>Info</button>
-        <button type="button" className="toolbar-button text" aria-label="Insérer un encadré d'alerte" disabled={disabled} onPointerDown={preserveSelection} onClick={() => insertHtml(templates.warning)}>Alerte</button>
-        <button type="button" className="toolbar-button" aria-label="Insérer une citation" disabled={disabled} onPointerDown={preserveSelection} onClick={() => insertHtml(templates.quote)} title="Citation"><Quote size={16} aria-hidden="true" /></button>
-        <button type="button" className="toolbar-button text" aria-label="Insérer un bloc pédagogique" disabled={disabled} onPointerDown={preserveSelection} onClick={() => insertHtml(templates.card)}>Bloc</button>
-        <button type="button" className="toolbar-button" aria-label="Modifier le code HTML" aria-pressed="false" disabled={disabled} onPointerDown={preserveSelection} onClick={() => setSourceMode(true)} title="Voir le HTML"><Code2 size={16} aria-hidden="true" /></button>
+        <div className="rich-toolbar-group" role="group" aria-label="Structure du texte">
+          <button type="button" className="toolbar-button" aria-label="Paragraphe" disabled={disabled} onPointerDown={preserveSelection} onClick={() => block("p")} title="Paragraphe"><Pilcrow size={16} aria-hidden="true" /></button>
+          <button type="button" className="toolbar-button" aria-label="Titre de niveau 2" disabled={disabled} onPointerDown={preserveSelection} onClick={() => block("h2")} title="Titre 2"><Heading2 size={16} aria-hidden="true" /></button>
+          <button type="button" className="toolbar-button" aria-label="Titre de niveau 3" disabled={disabled} onPointerDown={preserveSelection} onClick={() => block("h3")} title="Titre 3"><Heading3 size={16} aria-hidden="true" /></button>
+        </div>
+        <div className="rich-toolbar-group" role="group" aria-label="Mise en forme">
+          <button type="button" className="toolbar-button" aria-label="Gras" aria-keyshortcuts="Control+B Meta+B" disabled={disabled} onPointerDown={preserveSelection} onClick={() => run("bold")} title="Gras"><Bold size={16} aria-hidden="true" /></button>
+          <button type="button" className="toolbar-button" aria-label="Italique" aria-keyshortcuts="Control+I Meta+I" disabled={disabled} onPointerDown={preserveSelection} onClick={() => run("italic")} title="Italique"><Italic size={16} aria-hidden="true" /></button>
+          <button type="button" className="toolbar-button" aria-label="Souligné" aria-keyshortcuts="Control+U Meta+U" disabled={disabled} onPointerDown={preserveSelection} onClick={() => run("underline")} title="Souligné"><Underline size={16} aria-hidden="true" /></button>
+          <button type="button" className="toolbar-button" aria-label="Ajouter un lien" disabled={disabled} onPointerDown={preserveSelection} onClick={createLink} title="Lien"><Link size={16} aria-hidden="true" /></button>
+        </div>
+        <div className="rich-toolbar-group" role="group" aria-label="Listes et alignement">
+          <button type="button" className="toolbar-button" aria-label="Liste à puces" disabled={disabled} onPointerDown={preserveSelection} onClick={() => run("insertUnorderedList")} title="Liste"><List size={16} aria-hidden="true" /></button>
+          <button type="button" className="toolbar-button" aria-label="Liste numérotée" disabled={disabled} onPointerDown={preserveSelection} onClick={() => run("insertOrderedList")} title="Liste numérotée"><ListOrdered size={16} aria-hidden="true" /></button>
+          <button type="button" className="toolbar-button" aria-label="Aligner à gauche" disabled={disabled} onPointerDown={preserveSelection} onClick={() => run("justifyLeft")} title="Aligner à gauche"><AlignLeft size={16} aria-hidden="true" /></button>
+          <button type="button" className="toolbar-button" aria-label="Centrer" disabled={disabled} onPointerDown={preserveSelection} onClick={() => run("justifyCenter")} title="Centrer"><AlignCenter size={16} aria-hidden="true" /></button>
+          <button type="button" className="toolbar-button" aria-label="Aligner à droite" disabled={disabled} onPointerDown={preserveSelection} onClick={() => run("justifyRight")} title="Aligner à droite"><AlignRight size={16} aria-hidden="true" /></button>
+        </div>
+        <div className="rich-toolbar-group" role="group" aria-label="Blocs pédagogiques">
+          <button type="button" className="toolbar-button text" aria-label="Insérer un encadré d'information" disabled={disabled} onPointerDown={preserveSelection} onClick={() => insertHtml(richEditorTemplates.info)}>Info</button>
+          <button type="button" className="toolbar-button text" aria-label="Insérer un encadré d'alerte" disabled={disabled} onPointerDown={preserveSelection} onClick={() => insertHtml(richEditorTemplates.warning)}>Alerte</button>
+          <button type="button" className="toolbar-button" aria-label="Insérer une citation" disabled={disabled} onPointerDown={preserveSelection} onClick={() => insertHtml(richEditorTemplates.quote)} title="Citation"><Quote size={16} aria-hidden="true" /></button>
+          <button type="button" className="toolbar-button text" aria-label="Insérer un bloc pédagogique" disabled={disabled} onPointerDown={preserveSelection} onClick={() => insertHtml(richEditorTemplates.card)}>Bloc</button>
+        </div>
+        <div className="rich-toolbar-group" role="group" aria-label="Outils du contenu">
+          <button type="button" className="toolbar-button" aria-label="Modifier le code HTML" aria-pressed="false" disabled={disabled} onPointerDown={preserveSelection} onClick={() => setSourceMode(true)} title="Voir le HTML"><Code2 size={16} aria-hidden="true" /></button>
+        </div>
       </div>
+      {containsTable && <p className="rich-table-hint" id={`${editorId}-table-help`}>Tableau · faites glisser horizontalement ; la première colonne reste visible.</p>}
       <div
         id={editorId}
         ref={editorRef}
         className="rich-canvas"
         role="textbox"
         aria-label={label}
+        aria-describedby={containsTable ? `${editorId}-table-help` : undefined}
         aria-multiline="true"
         aria-readonly={disabled}
         data-placeholder="Écrivez le contenu du module ici..."

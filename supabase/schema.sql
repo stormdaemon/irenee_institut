@@ -74,6 +74,7 @@ create table if not exists public.course_modules (
   contenu text,
   contenu_html text,
   url_video text,
+  url_sous_titres text check (url_sous_titres is null or octet_length(url_sous_titres) <= 4096),
   duree integer not null default 0,
   ressources jsonb not null default '[]'::jsonb,
   type_contenu text not null default 'texte',

@@ -72,6 +72,7 @@ export async function GET(
     status: enrollmentResult.data?.statut
   });
   const isStaff = profileResult.data.role === "directeur" || profileResult.data.role === "formateur";
+  const accessMode = isStaff ? "preview" : "learning";
   if (!hasPublishedCourseAccess({ activeAnnualPass, activeEnrollment, isStaff, published: true })) {
     return privateJson({ ok: false, error: "Ce cours n'est pas disponible sur votre compte." }, 403);
   }
@@ -118,7 +119,7 @@ export async function GET(
   const missingPreviousModule = outline
     .slice(0, currentIndex)
     .find(module => !completedModuleIds.has(module.id));
-  if (missingPreviousModule) {
+  if (!isStaff && missingPreviousModule) {
     return privateJson({
       error: "Terminez les modules précédents dans l'ordre du cours.",
       ok: false,
@@ -128,7 +129,7 @@ export async function GET(
 
   const moduleResult = await auth.supabase
     .from("course_modules")
-    .select("id,course_id,titre,description,ordre,contenu,contenu_html,url_video,duree,ressources,type_contenu,quiz")
+    .select("id,course_id,titre,description,ordre,contenu,contenu_html,url_video,url_sous_titres,duree,ressources,type_contenu,quiz")
     .eq("course_id", courseResult.data.id)
     .eq("id", moduleId)
     .maybeSingle();
@@ -152,10 +153,12 @@ export async function GET(
     titre: moduleResult.data.titre,
     type: moduleResult.data.type_contenu || "texte",
     type_contenu: moduleResult.data.type_contenu || "texte",
-    url_video: moduleResult.data.url_video || ""
+    url_video: moduleResult.data.url_video || "",
+    url_sous_titres: moduleResult.data.url_sous_titres || ""
   };
 
   return privateJson({
+    accessMode,
     course: {
       ...courseResult.data,
       competences: Array.isArray(courseResult.data.competences) ? courseResult.data.competences : [],

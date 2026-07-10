@@ -1,4 +1,5 @@
 import sanitizeHtml from "sanitize-html";
+import { sanitizeCourseClassAttribute, sanitizeCourseStyleAttribute } from "./course-html-style";
 
 const MAX_HTML_LENGTH = 1_000_000;
 const MAX_MODULES = 100;
@@ -151,6 +152,9 @@ function validatePublishedCourse(
     throw new CourseInputError("Pour publier ce cours, ajoutez au moins un objectif et une compétence.");
   }
   modules.forEach((module, index) => {
+    if (module.url_video && !module.url_sous_titres) {
+      throw new CourseInputError(`Le module vidéo ${index + 1} doit inclure un fichier WebVTT de sous-titres avant publication.`);
+    }
     if (module.type_contenu === "quiz") {
       if (!module.quiz?.length) {
         throw new CourseInputError(`Le quiz du module ${index + 1} doit contenir au moins une question avant publication.`);
@@ -206,25 +210,59 @@ export function sanitizeExternalUrl(value: unknown) {
   }
 }
 
+export function sanitizeCourseMediaUrl(value: unknown) {
+  const safeUrl = sanitizeExternalUrl(value);
+  if (!safeUrl || safeUrl.startsWith("/")) return safeUrl;
+  try {
+    const url = new URL(safeUrl);
+    const cloudName = String(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "da52mpv3g").trim();
+    return url.hostname === "res.cloudinary.com" && url.pathname.startsWith(`/${cloudName}/`) ? safeUrl : "";
+  } catch {
+    return "";
+  }
+}
+
+function sanitizeCourseLinkUrl(value: unknown) {
+  const candidate = String(value || "").trim();
+  if (!candidate || candidate.length > 2_048 || /[\u0000-\u001f\u007f\\]/.test(candidate) || candidate.startsWith("//")) return "";
+  try {
+    const decoded = decodeURIComponent(candidate);
+    if (/[\u0000-\u001f\u007f\\]/.test(decoded) || decoded.startsWith("//")) return "";
+  } catch {
+    return "";
+  }
+  if (candidate.startsWith("/")) return sanitizeExternalUrl(candidate);
+  if (/^(?:mailto:|tel:)/i.test(candidate)) return candidate;
+  return sanitizeExternalUrl(candidate);
+}
+
 export function sanitizeCourseHtml(value: unknown) {
   const source = String(value || "");
   if (source.length > MAX_HTML_LENGTH) throw new CourseInputError("Le contenu HTML est trop volumineux.");
+  const boundedAttributes = (attributes: Record<string, string>) => {
+    const next = { ...attributes };
+    if (next.style) {
+      next.style = sanitizeCourseStyleAttribute(next.style);
+      if (!next.style) delete next.style;
+    }
+    if (next.class) {
+      next.class = sanitizeCourseClassAttribute(next.class);
+      if (!next.class) delete next.class;
+    }
+    return next;
+  };
 
   return sanitizeHtml(source, {
     allowedAttributes: {
       "*": ["class", "style"],
       a: ["href", "title", "target", "rel"],
       img: ["src", "alt", "title", "width", "height", "loading"],
-      source: ["src", "type"],
       td: ["colspan", "rowspan"],
-      th: ["colspan", "rowspan", "scope"],
-      video: ["src", "controls", "preload", "poster", "width", "height"]
+      th: ["colspan", "rowspan", "scope"]
     },
     allowedSchemes: ["https", "mailto", "tel"],
     allowedSchemesByTag: {
       img: ["https", "data"],
-      source: ["https"],
-      video: ["https"]
     },
     allowedStyles: {
       "*": {
@@ -244,23 +282,26 @@ export function sanitizeCourseHtml(value: unknown) {
     },
     allowedTags: [
       "a", "b", "blockquote", "br", "code", "details", "div", "em", "figcaption", "figure",
-      "h2", "h3", "h4", "hr", "i", "img", "li", "ol", "p", "pre", "section", "source",
+      "h2", "h3", "h4", "hr", "i", "img", "li", "ol", "p", "pre", "section",
       "span", "strong", "summary", "table", "tbody", "td", "tfoot", "th", "thead", "tr", "u",
-      "ul", "video"
+      "ul"
     ],
     disallowedTagsMode: "discard",
     enforceHtmlBoundary: true,
     nonTextTags: ["script", "style", "textarea", "option"],
     transformTags: {
+      "*": (tagName, attributes) => ({ tagName, attribs: boundedAttributes(attributes) }),
       a: (_tagName, attributes) => {
-        const href = attributes.href || "";
-        const safeHref = href.startsWith("/") || /^(?:https:|mailto:|tel:)/i.test(href) ? href : "";
+        const bounded = boundedAttributes(attributes);
+        const safeHref = sanitizeCourseLinkUrl(bounded.href);
         return {
           tagName: "a",
           attribs: {
+            ...(bounded.class ? { class: bounded.class } : {}),
+            ...(bounded.style ? { style: bounded.style } : {}),
             ...(safeHref ? { href: safeHref } : {}),
-            ...(attributes.title ? { title: attributes.title.slice(0, 300) } : {}),
-            ...(attributes.target === "_blank" ? { target: "_blank", rel: "noopener noreferrer" } : {})
+            ...(bounded.title ? { title: bounded.title.slice(0, 300) } : {}),
+            ...(bounded.target === "_blank" ? { target: "_blank", rel: "noopener noreferrer" } : {})
           }
         };
       }
@@ -275,6 +316,7 @@ export type ParsedCourseModule = {
   contenu_html: string;
   contenu: string;
   url_video: string | null;
+  url_sous_titres?: string | null;
   duree: number;
   type_contenu: string;
   ordre: number;
@@ -303,8 +345,25 @@ export function parseCourseForm(form: FormData) {
     if (id && !UUID_PATTERN.test(id)) throw new CourseInputError("L'identifiant du module est invalide.");
     const type = String(module.type_contenu || module.type || "texte");
     if (!moduleTypes.has(type)) throw new CourseInputError(`Le type du module ${index + 1} est invalide.`);
-    const urlVideo = sanitizeExternalUrl(module.url_video);
-    if (module.url_video && !urlVideo) throw new CourseInputError(`L'URL vidéo du module ${index + 1} est invalide.`);
+    const urlVideo = sanitizeCourseMediaUrl(module.url_video);
+    if (module.url_video && !urlVideo) throw new CourseInputError(`L'URL vidéo du module ${index + 1} est invalide. Utilisez un chemin local ou un média Cloudinary.`);
+    const hasCaptionsField = Object.hasOwn(module, "url_sous_titres");
+    const rawCaptionsUrl = hasCaptionsField
+      ? optionalText(module.url_sous_titres, `L'URL de sous-titres du module ${index + 1}`, 4_096)
+      : "";
+    if (new TextEncoder().encode(rawCaptionsUrl).byteLength > 4_096) {
+      throw new CourseInputError(`L'URL de sous-titres du module ${index + 1} est trop longue (4 096 octets maximum).`);
+    }
+    const captionsUrl = sanitizeCourseMediaUrl(rawCaptionsUrl);
+    if (rawCaptionsUrl && !captionsUrl) throw new CourseInputError(`L'URL de sous-titres du module ${index + 1} est invalide. Utilisez un chemin local ou un média Cloudinary.`);
+    if (captionsUrl) {
+      const path = captionsUrl.startsWith("/")
+        ? captionsUrl.split(/[?#]/, 1)[0]
+        : new URL(captionsUrl).pathname;
+      if (!/\.vtt$/i.test(path)) {
+        throw new CourseInputError(`Les sous-titres du module ${index + 1} doivent utiliser un fichier WebVTT (.vtt).`);
+      }
+    }
     const html = sanitizeCourseHtml(module.contenu_html || module.contenu || "");
     const quiz = parseModuleQuiz(module.quiz, index);
     return {
@@ -314,6 +373,7 @@ export function parseCourseForm(form: FormData) {
       contenu_html: html,
       contenu: html,
       url_video: urlVideo || null,
+      ...(hasCaptionsField ? { url_sous_titres: captionsUrl || null } : {}),
       duree: boundedInteger(module.duree ?? 0, `La durée du module ${index + 1}`, 0, 100_000),
       type_contenu: type,
       ordre: index + 1,

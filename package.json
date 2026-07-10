@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "bun scripts/run-tests.mjs",
-    "test:unit": "bun test lib/library-surfaces.test.ts lib/course-editor-ui.test.ts lib/stripe.test.ts lib/paypal.test.ts lib/payment-reversals.test.ts lib/request-security.test.ts lib/course-input.test.ts lib/course-reader-ui.test.ts lib/webhook-security.test.ts lib/paypal-sdk.test.ts lib/paypal-ui.test.ts lib/library.test.ts lib/auth-redirect-surfaces.test.ts lib/learning-documents.test.ts lib/learning-security.test.ts lib/learning-security-surfaces.test.ts lib/live-sessions.test.ts lib/live-security.test.ts lib/settings-security.test.ts lib/request-body.test.ts lib/homework-admin.test.ts lib/profile-input.test.ts lib/avatar-storage.test.ts lib/password-reset-surfaces.test.ts lib/security-maintenance-surfaces.test.ts lib/postgres-function-privileges.test.ts",
+    "test:unit": "bun scripts/run-tests.mjs",
     "settings:encrypt": "bun scripts/encrypt-settings-at-rest.ts",
     "daily:harden": "bun scripts/harden-daily-rooms.ts",
     "db:migrate": "bun scripts/apply-database-migrations.ts",

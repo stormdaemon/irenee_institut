@@ -98,6 +98,16 @@ export async function POST(request: Request) {
   if (!hasAccess) {
     return NextResponse.json({ ok: false, error: "Ce cours n'est pas disponible sur votre compte." }, { status: 403 });
   }
+  if (isStaff) {
+    return NextResponse.json({
+      accessMode: "preview",
+      error: "La prévisualisation ne modifie pas la progression.",
+      ok: false
+    }, {
+      headers: { "Cache-Control": "private, no-store" },
+      status: 403
+    });
+  }
 
   const [courseModulesResult, progressRowsResult] = await Promise.all([
     auth.supabase.from("course_modules").select("id,ordre").eq("course_id", courseId).order("ordre", { ascending: true }),
@@ -252,9 +262,8 @@ export async function POST(request: Request) {
 
   const documents = [];
   const warnings = [];
-  // Staff may use the reader and keep a useful preview progression without a
-  // paid entitlement, but that operational access must never mint a student
-  // certificate or a verifiable annual-programme credential.
+  // The early preview return above is the primary guard. Keep document
+  // issuance independently scoped to students as defense in depth.
   if (!isStaff) {
     try {
       documents.push(await issueLearningDocument(auth.supabase, {

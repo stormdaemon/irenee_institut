@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { getModuleNavigation, getSafeCourseAssetUrl } from "../components/course-reader-utils";
+import { getModuleNavigation, getSafeCourseAssetUrl, getSafeCourseMediaUrl } from "../components/course-reader-utils";
 import { buildCourseJourney, parseReaderPreferences } from "./course-experience";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -21,6 +21,33 @@ test("course asset URLs only keep web and root-relative destinations", () => {
   assert.equal(getSafeCourseAssetUrl("data:text/html,<script>alert(1)</script>"), null);
   assert.equal(getSafeCourseAssetUrl("//evil.example/file.pdf"), null);
   assert.equal(getSafeCourseAssetUrl(""), null);
+});
+
+test("course media only permits local files and the institute Cloudinary account", () => {
+  assert.equal(getSafeCourseMediaUrl("/videos/course.mp4"), "/videos/course.mp4");
+  assert.equal(getSafeCourseMediaUrl("https://res.cloudinary.com/da52mpv3g/video/upload/video.mp4"), "https://res.cloudinary.com/da52mpv3g/video/upload/video.mp4");
+  assert.equal(getSafeCourseMediaUrl("https://res.cloudinary.com/foreign/video/upload/video.mp4"), null);
+  assert.equal(getSafeCourseMediaUrl("https://cdn.example.org/video.mp4"), null);
+});
+
+test("production course media never targets browser-local HTTP services", () => {
+  const previousEnvironment = Object.getOwnPropertyDescriptor(process.env, "NODE_ENV");
+  Object.defineProperty(process.env, "NODE_ENV", { configurable: true, enumerable: true, value: "production", writable: true });
+  try {
+    assert.equal(getSafeCourseMediaUrl("http://127.0.0.1:8080/admin"), null);
+    assert.equal(getSafeCourseMediaUrl("http://localhost:3000/private"), null);
+  } finally {
+    if (previousEnvironment === undefined) Reflect.deleteProperty(process.env, "NODE_ENV");
+    else Object.defineProperty(process.env, "NODE_ENV", previousEnvironment);
+  }
+});
+
+test("course assets reject legacy credential, backslash and encoded local-request bypasses", () => {
+  assert.equal(getSafeCourseAssetUrl("https://user:pass@example.org/video.mp4"), null);
+  assert.equal(getSafeCourseAssetUrl("https:\\evil.example/video.mp4"), null);
+  assert.equal(getSafeCourseAssetUrl("/%5c%5cevil.example/video.mp4"), null);
+  assert.equal(getSafeCourseAssetUrl("/%2f%2fevil.example/video.mp4"), null);
+  assert.equal(getSafeCourseAssetUrl("//evil.example/video.mp4"), null);
 });
 
 test("module navigation exposes a stable previous/next position", () => {
@@ -106,6 +133,8 @@ test("course overview exposes semantic progress and objectives", () => {
   assert.match(page, /buildCourseJourney/);
   assert.match(page, /Reprendre/);
   assert.match(page, /Verrouillé/);
+  assert.match(page, /"Intermédiaire"/);
+  assert.match(page, /isAvailable \? <Eye/);
 });
 
 test("module reader keeps save failures inline and always releases its busy state", () => {
@@ -128,8 +157,15 @@ test("module reader renders accessible video and adjacent text alternative", () 
   assert.match(page, /<video[\s\S]*controls[\s\S]*playsInline[\s\S]*preload="metadata"/);
   assert.match(page, /<summary>Résumé textuel de la vidéo<\/summary>/);
   assert.match(page, /Votre navigateur ne peut pas lire cette vidéo/);
-  assert.match(page, /getSafeCourseAssetUrl\(module\.url_video/);
+  assert.match(page, /getSafeCourseMediaUrl\(module\.url_video/);
+  assert.match(page, /getSafeCourseMediaUrl\(module\.url_sous_titres/);
+  assert.match(page, /<track[\s\S]*default[\s\S]*kind="captions"[\s\S]*srcLang="fr"[\s\S]*label="Français"/);
+  assert.match(page, /className="module-video-caption-error" role="alert"/);
   assert.match(page, /className="module-video-unavailable" role="status"/);
+  assert.match(page, /if \(captionsStatus === "error"\)/);
+  assert.match(page, /videoRef\.current\?\.pause\(\)/);
+  assert.match(page, /controls=\{captionsStatus === "ready"\}/);
+  assert.match(page, /captionsStatus !== "error" && \(/);
 });
 
 test("module reader provides previous and next navigation with position", () => {
@@ -142,8 +178,20 @@ test("module reader provides previous and next navigation with position", () => 
   assert.match(page, /navigation\.nextModule/);
   assert.match(page, /\/auth\/login\?next=/);
   assert.match(page, /Plan du cours/);
-  assert.match(page, /Confort de lecture/);
+  assert.match(page, /Réglages de lecture/);
   assert.match(page, /parseReaderPreferences/);
+});
+
+test("module reader prioritizes the lesson and preserves a long reading session", () => {
+  const page = source("app/cours/[slug]/modules/[moduleId]/page.tsx");
+
+  assert.match(page, /className="module-session-bar"/);
+  assert.match(page, /aria-label="Progression de lecture"/);
+  assert.match(page, /className="module-reading-anchor"/);
+  assert.match(page, /irenee:reader-position:v1:/);
+  assert.match(page, /<details className="reader-preferences">/);
+  assert.match(page, /<summary>[\s\S]*Réglages de lecture/);
+  assert.match(page, /className="module-preview-notice"/);
 });
 
 test("reader styles scope guaranteed fallback contrast and readable measure", () => {

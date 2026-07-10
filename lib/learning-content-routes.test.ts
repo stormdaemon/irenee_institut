@@ -22,7 +22,7 @@ function authenticatedJsonRequest(path: string, token: string, body: Record<stri
   });
 }
 
-const privateFields = ["contenu", "contenu_html", "url_video", "ressources", "quiz"] as const;
+const privateFields = ["contenu", "contenu_html", "url_video", "url_sous_titres", "ressources", "quiz"] as const;
 
 test("course overview is metadata-only and module content is delivered in sequence", async () => {
   const database = await query<{ name: string }>("select current_database() as name");
@@ -58,10 +58,10 @@ test("course overview is metadata-only and module content is delivered in sequen
     );
     await query(
       `insert into public.course_modules
-       (id,course_id,titre,description,ordre,type_contenu,contenu,contenu_html,url_video,ressources,quiz)
+       (id,course_id,titre,description,ordre,type_contenu,contenu,contenu_html,url_video,url_sous_titres,ressources,quiz)
        values
-        ($1,$3,'Premier module','Premier résumé',1,'quiz','Premier texte',$4,'https://cdn.example.test/first.mp4',$6::jsonb,$7::jsonb),
-        ($2,$3,'Module verrouillé','Second résumé',2,'texte','Second texte',$5,'https://cdn.example.test/locked.mp4',$8::jsonb,'[]'::jsonb)`,
+        ($1,$3,'Premier module','Premier résumé',1,'quiz','Premier texte',$4,'https://cdn.example.test/first.mp4','https://cdn.example.test/first-fr.vtt',$6::jsonb,$7::jsonb),
+        ($2,$3,'Module verrouillé','Second résumé',2,'texte','Second texte',$5,'https://cdn.example.test/locked.mp4','https://cdn.example.test/locked-fr.vtt',$8::jsonb,'[]'::jsonb)`,
       [
         firstModuleId,
         secondModuleId,
@@ -95,6 +95,7 @@ test("course overview is metadata-only and module content is delivered in sequen
     assert.equal(overviewResponse.headers.get("cache-control"), "private, no-store");
     const overview = await overviewResponse.json();
     assert.equal(overview.ok, true);
+    assert.equal(overview.accessMode, "learning");
     assert.equal(overview.course.modules.length, 2);
     for (const module of overview.course.modules) {
       for (const field of privateFields) assert.equal(Object.hasOwn(module, field), false, `${field} must not be in the course outline`);
@@ -136,7 +137,9 @@ test("course overview is metadata-only and module content is delivered in sequen
     );
     assert.equal(firstResponse.status, 200);
     const first = await firstResponse.json();
+    assert.equal(first.accessMode, "learning");
     assert.equal(first.module.contenu_html, `<p>${firstSecret}</p>`);
+    assert.equal(first.module.url_sous_titres, "https://cdn.example.test/first-fr.vtt");
     assert.deepEqual(first.module.quiz, [{
       id: "private-answer",
       options: ["Non", "Oui"],
@@ -160,11 +163,12 @@ test("course overview is metadata-only and module content is delivered in sequen
     const unlocked = await unlockedResponse.json();
     assert.equal(unlocked.module.id, secondModuleId);
     assert.equal(unlocked.module.contenu_html, `<p>${lockedSecret}</p>`);
+    assert.equal(unlocked.module.url_sous_titres, "https://cdn.example.test/locked-fr.vtt");
     assert.equal(JSON.stringify(unlocked.course.modules).includes(firstSecret), false);
 
     // Staff access is derived exclusively from the server-owned profile role.
-    // It must not depend on a paid pass or an enrollment, while the normal
-    // sequential module rules continue to apply.
+    // Preview mode does not depend on a paid pass or an enrollment, unlocks
+    // every published module, and must remain entirely read-only.
     await query("delete from public.annual_access_passes where user_id=$1", [userId]);
     await query("delete from public.module_progress where etudiant_id=$1 and course_id=$2", [userId, courseId]);
     for (const role of ["formateur", "directeur"] as const) {
@@ -175,34 +179,44 @@ test("course overview is metadata-only and module content is delivered in sequen
         { params: Promise.resolve({ slug }) }
       );
       assert.equal(staffOverview.status, 200, `${role} must read a published course without an annual pass`);
+      assert.equal((await staffOverview.json()).accessMode, "preview");
 
       const staffModule = await getCourseModule(
-        authenticatedRequest(`/api/learning/courses/${slug}/modules/${firstModuleId}`, token),
-        { params: Promise.resolve({ slug, moduleId: firstModuleId }) }
+        authenticatedRequest(`/api/learning/courses/${slug}/modules/${secondModuleId}`, token),
+        { params: Promise.resolve({ slug, moduleId: secondModuleId }) }
       );
-      assert.equal(staffModule.status, 200, `${role} must read a module without an annual pass`);
+      assert.equal(staffModule.status, 200, `${role} must preview a later module without prior progress`);
+      const staffModulePayload = await staffModule.json();
+      assert.equal(staffModulePayload.accessMode, "preview");
+      assert.equal(staffModulePayload.module.contenu_html, `<p>${lockedSecret}</p>`);
 
       const staffStart = await updateModuleProgress(authenticatedJsonRequest("/api/progress/update", token, {
         action: "start",
         course_id: courseId,
         module_id: firstModuleId
       }));
-      assert.equal(staffStart.status, 200, `${role} must be able to start the reader without an annual pass`);
+      assert.equal(staffStart.status, 403, `${role} preview must never start student progress`);
+      assert.deepEqual(await staffStart.json(), {
+        accessMode: "preview",
+        error: "La prévisualisation ne modifie pas la progression.",
+        ok: false
+      });
+
+      const staffCompletion = await updateModuleProgress(authenticatedJsonRequest("/api/progress/update", token, {
+        answers: { "private-answer": 1 },
+        complete: true,
+        course_id: courseId,
+        module_id: firstModuleId,
+        progression: 100
+      }));
+      assert.equal(staffCompletion.status, 403, `${role} preview must never complete student progress`);
     }
 
-    await query(
-      "update public.module_progress set date_debut=now()-interval '31 seconds' where etudiant_id=$1 and module_id=$2",
-      [userId, firstModuleId]
+    const staffProgress = await query<{ count: string }>(
+      "select count(*)::text as count from public.module_progress where etudiant_id=$1 and course_id=$2",
+      [userId, courseId]
     );
-    const staffCompletion = await updateModuleProgress(authenticatedJsonRequest("/api/progress/update", token, {
-      answers: { "private-answer": 1 },
-      complete: true,
-      course_id: courseId,
-      module_id: firstModuleId,
-      progression: 100
-    }));
-    assert.equal(staffCompletion.status, 200);
-    assert.deepEqual((await staffCompletion.json()).documents, [], "staff preview progress must never mint student credentials");
+    assert.equal(staffProgress.rows[0]?.count, "0", "staff preview must never create progress rows");
     const staffDocuments = await query<{ count: string }>(
       "select count(*)::text as count from public.learning_documents where user_id=$1 and course_id=$2",
       [userId, courseId]

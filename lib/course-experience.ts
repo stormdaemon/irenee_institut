@@ -26,7 +26,11 @@ type JourneyProgress = {
 export type CourseJourneyModule<T extends JourneyModule> = {
   module: T;
   progress: number;
-  state: "complete" | "current" | "locked";
+  state: "available" | "complete" | "current" | "locked";
+};
+
+type CourseJourneyOptions = {
+  unlockAll?: boolean;
 };
 
 function normalizedProgress(progress?: JourneyProgress) {
@@ -35,7 +39,11 @@ function normalizedProgress(progress?: JourneyProgress) {
   return Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 0;
 }
 
-export function buildCourseJourney<T extends JourneyModule>(modules: readonly T[], progressRows: readonly JourneyProgress[]) {
+export function buildCourseJourney<T extends JourneyModule>(
+  modules: readonly T[],
+  progressRows: readonly JourneyProgress[],
+  options: CourseJourneyOptions = {},
+) {
   const progressByModule = new Map(progressRows.map(progress => [progress.module_id, progress]));
   const values = modules.map(module => normalizedProgress(progressByModule.get(module.id)));
   const completed = modules.map(module => progressByModule.get(module.id)?.complete === true);
@@ -48,7 +56,13 @@ export function buildCourseJourney<T extends JourneyModule>(modules: readonly T[
   const journeyModules: CourseJourneyModule<T>[] = modules.map((module, index) => ({
     module,
     progress: values[index] || 0,
-    state: completed[index] ? "complete" : index === currentIndex ? "current" : "locked",
+    state: completed[index]
+      ? "complete"
+      : index === currentIndex
+        ? "current"
+        : options.unlockAll
+          ? "available"
+          : "locked",
   }));
   const resumeModule = currentIndex >= 0 ? modules[currentIndex] || null : null;
   const resumeLabel = !resumeModule

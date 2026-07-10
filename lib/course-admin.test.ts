@@ -32,7 +32,8 @@ function formFor(slug: string, title = "Cours transactionnel") {
       contenu_html: "<p>Contenu <strong>sûr</strong><script>alert(1)</script></p>",
       duree: 45,
       type_contenu: "video",
-      url_video: "https://cdn.example.test/course.mp4"
+      url_video: "https://res.cloudinary.com/da52mpv3g/video/upload/course.mp4",
+      url_sous_titres: "https://res.cloudinary.com/da52mpv3g/raw/upload/course-fr.vtt"
     }
   ]));
   return form;
@@ -75,7 +76,8 @@ test("createCourse persists a sanitized course and its video module atomically",
   createdCourseIds.push(course.id);
 
   assert.equal(course.course_modules.length, 1);
-  assert.equal(course.course_modules[0].url_video, "https://cdn.example.test/course.mp4");
+  assert.equal(course.course_modules[0].url_video, "https://res.cloudinary.com/da52mpv3g/video/upload/course.mp4");
+  assert.equal(course.course_modules[0].url_sous_titres, "https://res.cloudinary.com/da52mpv3g/raw/upload/course-fr.vtt");
   assert.doesNotMatch(String(course.course_modules[0].contenu_html), /script|alert\(1\)/i);
 });
 
@@ -161,6 +163,39 @@ test("updating legacy module fields does not erase an omitted quiz", async () =>
   const updated = await updateCourse(created.id, parseCourseForm(updateForm), actor);
 
   assert.deepEqual(updated.course_modules[0].quiz, [{ id: "q-keep", question: "Réponse ?", options: ["A", "B"], answer: 0 }]);
+});
+
+test("legacy editors preserve captions while an explicit empty value clears them", async () => {
+  const actor = await author();
+  const created = await createCourse(parseCourseForm(formFor(`captions-preserved-${randomUUID()}`)), actor);
+  createdCourseIds.push(created.id);
+
+  const legacyUpdate = formFor(String(created.slug), "Sous-titres préservés");
+  legacyUpdate.set("expected_updated_at", String(created.updated_at));
+  legacyUpdate.set("modules", JSON.stringify([{
+    id: created.course_modules[0].id,
+    titre: "Module vidéo historique",
+    contenu_html: "<p>Transcription</p>",
+    duree: 45,
+    type_contenu: "video",
+    url_video: "https://res.cloudinary.com/da52mpv3g/video/upload/course.mp4",
+  }]));
+  const preserved = await updateCourse(created.id, parseCourseForm(legacyUpdate), actor);
+  assert.equal(preserved.course_modules[0].url_sous_titres, "https://res.cloudinary.com/da52mpv3g/raw/upload/course-fr.vtt");
+
+  const explicitClear = formFor(String(created.slug), "Sous-titres effacés");
+  explicitClear.set("expected_updated_at", String(preserved.updated_at));
+  explicitClear.set("modules", JSON.stringify([{
+    id: created.course_modules[0].id,
+    titre: "Module vidéo sans média",
+    contenu_html: "<p>Le texte remplace la vidéo retirée.</p>",
+    duree: 45,
+    type_contenu: "texte",
+    url_video: "",
+    url_sous_titres: "",
+  }]));
+  const cleared = await updateCourse(created.id, parseCourseForm(explicitClear), actor);
+  assert.equal(cleared.course_modules[0].url_sous_titres, null);
 });
 
 test("the admin course list fails closed when its module query fails", async () => {

@@ -37,7 +37,7 @@ test("student course overview cannot serialize module content and module deliver
   assert.doesNotMatch(overview, /projectPublicQuiz/);
 
   assert.doesNotMatch(moduleRoute, /\.select\("\*"\)/);
-  assert.match(moduleRoute, /\.select\("id,course_id,titre,description,ordre,contenu,contenu_html,url_video,duree,ressources,type_contenu,quiz"\)/);
+  assert.match(moduleRoute, /\.select\("id,course_id,titre,description,ordre,contenu,contenu_html,url_video,url_sous_titres,duree,ressources,type_contenu,quiz"\)/);
   assert.match(moduleRoute, /projectPublicQuiz/);
   assert.match(moduleRoute, /completedModuleIds/);
   assert.match(moduleRoute, /resumeModuleId/);

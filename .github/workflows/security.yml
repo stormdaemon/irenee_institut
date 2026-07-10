@@ -17,24 +17,72 @@ concurrency:
 jobs:
   application:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: irenee_security_test
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d irenee_security_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     env:
       AUDIT_LOG_PEPPER: ci-audit-pepper-with-at-least-thirty-two-characters
       AUTH_COOKIE_SECURE: "true"
-      DATABASE_URL: postgresql://ci:ci@127.0.0.1:65432/irenee_ci_unavailable
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/irenee_security_test
       LOCAL_AUTH_JWT_SECRET: ci-jwt-secret-with-at-least-thirty-two-characters
+      NEXT_TELEMETRY_DISABLED: "1"
       RATE_LIMIT_PEPPER: ci-rate-pepper-with-at-least-thirty-two-characters
       SETTINGS_ENCRYPTION_KEY: WlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlo=
+      TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/irenee_security_test
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.13
       - run: bun install --frozen-lockfile
+      - name: Initialize isolated test database
+        run: |
+          psql "$TEST_DATABASE_URL" -f .github/bootstrap-test-database.sql
+          psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/schema.sql
+          psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          alter table public.module_progress
+            drop constraint if exists module_progress_etudiant_id_module_id_key;
+          alter table public.homework_assignments
+            rename column student_id to etudiant_id;
+          alter table public.course_enrollments
+            add column if not exists updated_at timestamptz not null default now();
+          SQL
+          for migration in supabase/migrations/*.sql; do
+            psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"
+          done
       - run: bun audit
       - run: bunx tsc --noEmit
       - run: bun run test:unit
       - run: bun run build
+      - run: bunx playwright install --with-deps chromium
+      - name: Course experience visual QA (Chromium)
+        run: bun run test:e2e --project=chromium
+      - if: github.event_name == 'schedule'
+        run: bunx playwright install --with-deps webkit
+      - if: github.event_name == 'schedule'
+        name: Course experience mobile QA (WebKit)
+        env:
+          E2E_SKIP_BUILD: "true"
+          E2E_WEBKIT: "true"
+        run: bun run test:e2e --project=webkit-iphone
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-course-experience-${{ github.run_attempt }}
+          path: .playwright-artifacts
+          retention-days: 7
 
   codeql:
     runs-on: ubuntu-24.04

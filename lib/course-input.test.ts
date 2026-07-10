@@ -42,13 +42,42 @@ test("sanitizeCourseHtml removes executable markup while preserving pedagogical 
     <h2 onclick="steal()">Titre</h2>
     <script>alert(1)</script>
     <img src=x onerror="steal()">
+    <video src="https://evil.test/video.mp4"><source src="https://evil.test/video.mp4"></video>
     <a href="javascript:steal()" target="_blank">piège</a>
     <blockquote><strong>Texte sûr</strong></blockquote>
   `);
 
-  assert.doesNotMatch(clean, /script|onerror|onclick|javascript:|@import/i);
+  assert.doesNotMatch(clean, /script|onerror|onclick|javascript:|@import|<video|<source/i);
   assert.match(clean, /<h2>Titre<\/h2>/);
   assert.match(clean, /<blockquote><strong>Texte sûr<\/strong><\/blockquote>/);
+});
+
+test("sanitizeCourseHtml bounds layout styles and strips application classes", () => {
+  const clean = sanitizeCourseHtml(`
+    <div class="course-callout course-callout-info main-header course-studio-mobile-save"
+      style="padding:999999999rem; margin:-999999999px; border:999999px solid red; text-align:center">
+      Contenu borné
+    </div>
+  `);
+
+  assert.match(clean, /class="course-callout course-callout-info"/);
+  assert.match(clean, /style="text-align:center"/);
+  assert.doesNotMatch(clean, /999999|main-header|course-studio-mobile-save/);
+  assert.doesNotMatch(sanitizeCourseHtml('<p style="border:9e8px solid red;border-left:999999vh solid blue">Texte</p>'), /border/);
+});
+
+test("sanitizeCourseHtml rejects protocol-relative and encoded-control links", () => {
+  const sanitized = sanitizeCourseHtml(`
+    <a href="//evil.example/path">externe ambigu</a>
+    <a href="mailto:test@example.org%0d%0abcc:evil@example.org">courriel injecté</a>
+    <a href="/cours/introduction">cours local</a>
+    <a href="https://example.org/resource">ressource HTTPS</a>
+  `);
+
+  assert.doesNotMatch(sanitized, /evil\.example/);
+  assert.doesNotMatch(sanitized, /%0d|bcc:/i);
+  assert.match(sanitized, /href="\/cours\/introduction"/);
+  assert.match(sanitized, /href="https:\/\/example\.org\/resource"/);
 });
 
 test("sanitizeExternalUrl only accepts explicit HTTPS and safe local paths", () => {
@@ -58,6 +87,88 @@ test("sanitizeExternalUrl only accepts explicit HTTPS and safe local paths", () 
   assert.equal(sanitizeExternalUrl("data:text/html,<script>alert(1)</script>"), "");
   assert.equal(sanitizeExternalUrl("//evil.test/file"), "");
   assert.equal(sanitizeExternalUrl("http://evil.test/file"), "");
+});
+
+test("published videos require a bounded WebVTT captions URL", () => {
+  const form = validForm();
+  form.set("statut", "publie");
+  form.set("modules", JSON.stringify([{
+    titre: "Leçon filmée",
+    description: "Une vidéo sous-titrée.",
+    contenu_html: "<p>Transcription complémentaire.</p>",
+    duree: 20,
+    type_contenu: "video",
+    url_video: "https://res.cloudinary.com/da52mpv3g/video/upload/course.mp4",
+    url_sous_titres: "",
+  }]));
+  assert.throws(() => parseCourseForm(form), /WebVTT.*sous-titres/i);
+
+  const wrongFormat = validForm();
+  wrongFormat.set("modules", JSON.stringify([{
+    titre: "Leçon filmée",
+    contenu_html: "<p>Texte</p>",
+    duree: 20,
+    type_contenu: "video",
+    url_video: "/media/course.mp4",
+    url_sous_titres: "/media/course.txt",
+  }]));
+  assert.throws(() => parseCourseForm(wrongFormat), /WebVTT \(\.vtt\)/i);
+
+  const unsafe = validForm();
+  unsafe.set("modules", JSON.stringify([{
+    titre: "Leçon filmée",
+    contenu_html: "<p>Texte</p>",
+    duree: 20,
+    type_contenu: "video",
+    url_video: "/media/course.mp4",
+    url_sous_titres: "javascript:alert(1).vtt",
+  }]));
+  assert.throws(() => parseCourseForm(unsafe), /URL de sous-titres.*invalide/i);
+
+  const foreignMedia = validForm();
+  foreignMedia.set("modules", JSON.stringify([{
+    titre: "Leçon filmée",
+    contenu_html: "<p>Texte</p>",
+    duree: 20,
+    type_contenu: "video",
+    url_video: "https://res.cloudinary.com/compte-non-controle/video/upload/course.mp4",
+    url_sous_titres: "/media/course-fr.vtt",
+  }]));
+  assert.throws(() => parseCourseForm(foreignMedia), /URL vidéo.*Cloudinary/i);
+
+  const oversized = validForm();
+  oversized.set("modules", JSON.stringify([{
+    titre: "Leçon filmée",
+    contenu_html: "<p>Texte</p>",
+    duree: 20,
+    type_contenu: "video",
+    url_video: "/media/course.mp4",
+    url_sous_titres: `/${"x".repeat(4_097)}.vtt`,
+  }]));
+  assert.throws(() => parseCourseForm(oversized), /URL de sous-titres.*trop long/i);
+
+  const oversizedUtf8 = validForm();
+  oversizedUtf8.set("modules", JSON.stringify([{
+    titre: "Leçon filmée",
+    contenu_html: "<p>Texte</p>",
+    duree: 20,
+    type_contenu: "video",
+    url_video: "/media/course.mp4",
+    url_sous_titres: `/media/${"é".repeat(2_045)}.vtt`,
+  }]));
+  assert.throws(() => parseCourseForm(oversizedUtf8), /URL de sous-titres.*4 096 octets/i);
+
+  const valid = validForm();
+  valid.set("statut", "publie");
+  valid.set("modules", JSON.stringify([{
+    titre: "Leçon filmée",
+    contenu_html: "<p>Texte</p>",
+    duree: 20,
+    type_contenu: "video",
+    url_video: "/media/course.mp4",
+    url_sous_titres: "/media/course-fr.vtt?version=1",
+  }]));
+  assert.equal(parseCourseForm(valid).modules[0]?.url_sous_titres, "/media/course-fr.vtt?version=1");
 });
 
 test("parseCourseForm validates, normalizes and sanitizes the complete payload", () => {

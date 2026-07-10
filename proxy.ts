@@ -18,7 +18,11 @@ export function proxy(request: NextRequest) {
   }
 
   const nonce = nonceForRequest();
-  const csp = buildContentSecurityPolicy(nonce, process.env.NODE_ENV === "development");
+  const csp = buildContentSecurityPolicy(
+    nonce,
+    process.env.NODE_ENV === "development",
+    process.env.AUTH_COOKIE_SECURE !== "false",
+  );
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", csp);

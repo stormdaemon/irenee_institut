@@ -36,6 +36,7 @@ export type CourseModule = {
   type: "texte" | "video" | "quiz" | string;
   type_contenu?: string | null;
   url_video?: string | null;
+  url_sous_titres?: string | null;
   ressources?: unknown;
   contenu?: string | null;
   contenu_html?: string;

@@ -12,6 +12,7 @@ type DraftModule = {
   titre?: string;
   type_contenu?: string;
   url_video?: string;
+  url_sous_titres?: string;
   [key: string]: unknown;
 };
 
@@ -56,6 +57,10 @@ function cleanStrings(values: unknown) {
   return Array.isArray(values) ? values.map(String).map(value => value.trim()).filter(Boolean) : [];
 }
 
+export function utf8ByteLength(value: string) {
+  return new TextEncoder().encode(value).byteLength;
+}
+
 function stableDraftSignature(draft: RecoverableCourseDraft) {
   return JSON.stringify({
     ...draft,
@@ -85,8 +90,9 @@ function isRecoverableDraft(value: unknown): value is RecoverableCourseDraft {
     && draft.modules.every(module => {
       if (!module || typeof module !== "object" || Array.isArray(module)) return false;
       const item = module as Record<string, unknown>;
-      const textFields = ["clientId", "titre", "description", "contenu_html", "url_video", "type_contenu"];
+      const textFields = ["clientId", "titre", "description", "contenu_html", "url_video", "url_sous_titres", "type_contenu"];
       if (!textFields.every(key => item[key] === undefined || (typeof item[key] === "string" && String(item[key]).length <= 1_000_000))) return false;
+      if (typeof item.url_sous_titres === "string" && utf8ByteLength(item.url_sous_titres) > 4_096) return false;
       if (item.duree !== undefined && (!Number.isFinite(item.duree) || Number(item.duree) < 0)) return false;
       if (item.ordre !== undefined && (!Number.isInteger(item.ordre) || Number(item.ordre) < 0)) return false;
       if (item.quiz === undefined) return true;
@@ -152,13 +158,17 @@ export function getCourseEditorReadiness(draft: RecoverableCourseDraft) {
       complete: modules.length > 0 && modules.every(module => {
         const type = String(module.type_contenu || "texte");
         const hasText = String(module.contenu_html || "").replace(/<[^>]*>/g, " ").trim().length > 0;
-        const hasVideo = /^https:\/\//i.test(String(module.url_video || "").trim());
+        const videoValue = String(module.url_video || "").trim();
+        const hasVideo = /^(?:\/(?!\/)|https:\/\/)/i.test(videoValue);
+        const captionsValue = String(module.url_sous_titres || "").trim();
+        const hasCaptions = utf8ByteLength(captionsValue) <= 4_096
+          && /(?:^\/|^https:\/\/).+\.vtt(?:[?#].*)?$/i.test(captionsValue);
         const hasContent = type === "quiz"
           ? hasReadyQuiz(module.quiz)
           : type === "video"
-            ? hasText || hasVideo
+            ? (hasText || hasVideo) && (!hasVideo || hasCaptions)
             : hasText;
-        return Boolean(String(module.titre || "").trim() && hasContent);
+        return Boolean(String(module.titre || "").trim() && hasContent && (!hasVideo || hasCaptions));
       }),
       id: "content",
       label: "Contenu de chaque module",

@@ -21,6 +21,7 @@ type RawModule = {
   contenu?: string | null;
   contenu_html?: string | null;
   url_video?: string | null;
+  url_sous_titres?: string | null;
   duree?: number | null;
   ressources?: unknown;
   type_contenu?: string | null;
@@ -97,6 +98,7 @@ function normalizeModule(module: RawModule): CourseModule {
     contenu: module.contenu,
     contenu_html: module.contenu_html || module.contenu || "",
     url_video: module.url_video,
+    url_sous_titres: module.url_sous_titres,
     ressources: module.ressources,
     quiz: module.quiz || undefined
   };

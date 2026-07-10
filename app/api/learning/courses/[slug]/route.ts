@@ -62,6 +62,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     status: enrollmentResult.data?.statut
   });
   const isStaff = profileResult.data.role === "directeur" || profileResult.data.role === "formateur";
+  const accessMode = isStaff ? "preview" : "learning";
   if (!hasPublishedCourseAccess({ activeAnnualPass, activeEnrollment, isStaff, published: true })) {
     return privateJson({ ok: false, error: "Ce cours n'est pas disponible sur votre compte." }, 403);
   }
@@ -97,6 +98,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   }
 
   return privateJson({
+    accessMode,
     course: {
       ...courseResult.data,
       competences: Array.isArray(courseResult.data.competences) ? courseResult.data.competences : [],

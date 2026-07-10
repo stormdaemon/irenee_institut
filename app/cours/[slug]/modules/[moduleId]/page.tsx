@@ -10,6 +10,7 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  Eye,
   ExternalLink,
   Film,
   Loader2,
@@ -21,15 +22,16 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { getModuleNavigation, getSafeCourseAssetUrl } from "@/components/course-reader-utils";
+import { getModuleNavigation, getSafeCourseAssetUrl, getSafeCourseMediaUrl } from "@/components/course-reader-utils";
 import {
   buildCourseJourney,
   defaultReaderPreferences,
   parseReaderPreferences,
   type ReaderPreferences,
 } from "@/lib/course-experience";
+import { sanitizeCourseClassAttribute, sanitizeCourseStyleAttribute } from "@/lib/course-html-style";
 import { createBrowserClient } from "@/lib/supabase";
-import type { Course, CourseModule, ModuleProgress } from "@/lib/types";
+import type { Course, CourseModule, ModuleProgress, Profile } from "@/lib/types";
 
 type StudentCourse = Course & {
   progress?: number;
@@ -37,7 +39,9 @@ type StudentCourse = Course & {
 };
 
 type ModulePayload = {
+  accessMode?: "learning" | "preview";
   courses: StudentCourse[];
+  profile: Profile;
   progress: ModuleProgress[];
 };
 
@@ -49,15 +53,18 @@ type Resource = {
   url: string;
 };
 
+const MODULE_CONTENT_RESIZED_EVENT = "irenee:module-content-resized";
+const MODULE_READER_INTERACTION_EVENT = "irenee:module-reader-interaction";
+
 const moduleFrameThemeCss = `
   html { background: #fffaf0; }
   body {
     color: #172033;
     background: #fffaf0;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: Charter, "Bitstream Charter", "Iowan Old Style", Georgia, serif;
     font-size: 18px;
-    line-height: 1.72;
-    padding: 30px;
+    line-height: 1.76;
+    padding: 38px clamp(26px, 6vw, 72px) 54px;
   }
   .module-content,
   .module-content *,
@@ -73,15 +80,20 @@ const moduleFrameThemeCss = `
   .module-content h4,
   h1, h2, h3, h4 {
     color: #071d49 !important;
+    font-family: Georgia, "Times New Roman", serif;
     line-height: 1.18;
     overflow-wrap: anywhere;
   }
   p, li, blockquote, td, th, span, strong, em {
     color: #172033 !important;
   }
-  a {
+  .module-content a,
+  .module-content a * {
     color: #7a1717 !important;
-    font-weight: 800;
+    font-weight: 800 !important;
+    text-decoration: underline !important;
+    text-decoration-thickness: .09em !important;
+    text-underline-offset: .16em !important;
   }
   img, video, iframe {
     max-width: 100% !important;
@@ -108,6 +120,8 @@ const moduleFrameThemeCss = `
   }
   .module-content ul.styled-list li::before { color: #7a1717 !important; }
   .module-content :is(.definition-box, .quote-box, .biblical-quote, .note-box, .warning-box, .success-box, .example-box) {
+    margin: 1.45rem 0;
+    padding: 16px 18px;
     color: #172033 !important;
     background: #fff3d8 !important;
     border-color: #b88a3a !important;
@@ -121,11 +135,39 @@ const moduleFrameThemeCss = `
   .module-content .comparison-table td { color: #182235 !important; }
   .module-content .comparison-table thead,
   .module-content .comparison-table th { color: #ffffff !important; background: #071d49 !important; }
+  .module-content .course-callout,
+  .module-content .course-block,
+  .module-content .course-quote {
+    margin: 1.7rem 0;
+    padding: 18px 20px;
+    color: #172033 !important;
+    border-radius: 12px;
+  }
+  .module-content .course-callout {
+    border-left: 5px solid #2f67a7;
+    background: #eef5fc;
+  }
+  .module-content .course-callout-warning {
+    border-left-color: #b7791f;
+    background: #fff4d8;
+  }
+  .module-content .course-block {
+    border: 1px solid #dfd3ba;
+    background: #fffdf8;
+  }
+  .module-content .course-quote {
+    border-left: 5px solid #7a1717;
+    background: #f7f1e8;
+    font-size: 1.08em;
+    font-style: italic;
+  }
+  .module-content :is(.course-callout, .course-block, .course-quote) > :first-child { margin-top: 0; }
+  .module-content :is(.course-callout, .course-block, .course-quote) > :last-child { margin-bottom: 0; }
   @media (max-width: 640px) {
     body {
       font-size: 17px;
       line-height: 1.68;
-      padding: 20px;
+      padding: 24px 20px 32px;
     }
     h1 { font-size: 1.8rem !important; }
     h2 { font-size: 1.5rem !important; }
@@ -164,10 +206,16 @@ const moduleFrameThemeCss = `
       overflow: hidden !important;
     }
     .module-responsive-table td {
-      padding: 16px 18px !important;
+      display: grid !important;
+      grid-template-columns: minmax(76px, .62fr) minmax(0, 1fr) !important;
+      gap: 8px !important;
+      align-items: start !important;
+      padding: 11px 10px !important;
       border: 0 !important;
       border-top: 1px solid #eadbb7 !important;
       background: transparent !important;
+      overflow-wrap: anywhere !important;
+      word-break: break-word !important;
     }
     .module-responsive-table td:first-child {
       border-top: 0 !important;
@@ -175,7 +223,7 @@ const moduleFrameThemeCss = `
     .module-responsive-table td::before {
       content: attr(data-label);
       display: block;
-      margin-bottom: 7px;
+      margin: 0;
       color: #071d49;
       font-weight: 800;
       font-style: normal;
@@ -184,21 +232,39 @@ const moduleFrameThemeCss = `
 `;
 
 function sanitizeModuleHtml(html: string) {
-  const normalizedHtml = html.replace(
-    /<div(\s+[^>]*class=["'][^"']*\bcomparison-table\b[^"']*["'][^>]*)>/gi,
-    "<table$1>"
-  );
-  const document = new DOMParser().parseFromString(DOMPurify.sanitize(normalizedHtml, {
+  const document = new DOMParser().parseFromString(DOMPurify.sanitize(html, {
     FORBID_TAGS: [
-      "base", "button", "embed", "form", "iframe", "input", "link", "math", "meta", "object",
-      "option", "script", "select", "style", "svg", "textarea",
+      "audio", "base", "button", "embed", "form", "iframe", "input", "link", "math", "meta", "object",
+      "option", "script", "select", "source", "style", "svg", "textarea", "track", "video",
     ],
   }), "text/html");
   document.querySelectorAll<HTMLElement>("[style]").forEach(element => {
-    element.removeAttribute("style");
+    const safeStyle = sanitizeCourseStyleAttribute(element.getAttribute("style") || "");
+    if (safeStyle) element.setAttribute("style", safeStyle);
+    else element.removeAttribute("style");
+  });
+  document.querySelectorAll<HTMLElement>("[class]").forEach(element => {
+    const safeClass = sanitizeCourseClassAttribute(element.getAttribute("class") || "");
+    if (safeClass) element.setAttribute("class", safeClass);
+    else element.removeAttribute("class");
   });
   document.querySelectorAll<HTMLElement>(".comparison-table:not(table)").forEach(element => {
     element.classList.remove("comparison-table");
+  });
+  document.querySelectorAll<HTMLImageElement>("img").forEach(image => {
+    if (!image.hasAttribute("alt")) image.alt = image.title.trim() || "Illustration du cours";
+    image.loading = "lazy";
+  });
+  document.querySelectorAll<HTMLAnchorElement>("a").forEach(anchor => {
+    const href = anchor.getAttribute("href") || "";
+    const safeHref = getSafeCourseLinkUrl(href);
+    if (safeHref) anchor.setAttribute("href", safeHref);
+    else anchor.removeAttribute("href");
+    anchor.removeAttribute("target");
+    anchor.setAttribute("rel", "noopener noreferrer");
+    anchor.dataset.readerLink = "true";
+    const accessibleName = anchor.textContent?.trim() || anchor.querySelector("img")?.getAttribute("alt")?.trim() || "";
+    if (!accessibleName) anchor.setAttribute("aria-label", anchor.title.trim() || "Ressource du cours");
   });
   document.querySelectorAll<HTMLTableElement>("table").forEach(table => {
     table.classList.add("module-responsive-table");
@@ -212,9 +278,29 @@ function sanitizeModuleHtml(html: string) {
   return document.body.innerHTML;
 }
 
+function getSafeCourseLinkUrl(value: string) {
+  const candidate = value.trim();
+  if (!candidate || candidate.length > 2_048 || /[\u0000-\u001f\u007f\\]/.test(candidate) || candidate.startsWith("//")) return "";
+  try {
+    const decoded = decodeURIComponent(candidate);
+    if (/[\u0000-\u001f\u007f\\]/.test(decoded) || decoded.startsWith("//")) return "";
+  } catch {
+    return "";
+  }
+  if (candidate.startsWith("/") && !candidate.startsWith("//")) return candidate;
+  if (/^(?:mailto:|tel:)/i.test(candidate)) return candidate;
+  try {
+    const url = new URL(candidate);
+    return url.protocol === "https:" && !url.username && !url.password ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
 function ModuleHtmlContent({ html, preferences, title }: { html: string; preferences: ReaderPreferences; title: string }) {
   const frameRef = useRef<HTMLIFrameElement | null>(null);
-  const document = useMemo(() => {
+  const frameCleanupRef = useRef<() => void>(() => undefined);
+  const srcDocument = useMemo(() => {
     const sanitizedHtml = sanitizeModuleHtml(html);
     const preferenceCss = `
       body { font-size: ${preferences.fontScale === "small" ? "16px" : preferences.fontScale === "large" ? "20px" : "18px"}; }
@@ -247,27 +333,61 @@ function ModuleHtmlContent({ html, preferences, title }: { html: string; prefere
     const verticalPadding = Number.parseFloat(bodyStyle.paddingTop || "0") + Number.parseFloat(bodyStyle.paddingBottom || "0");
     const contentHeight = Math.max(content.scrollHeight, Math.ceil(content.getBoundingClientRect().height));
     frame.style.height = `${Math.max(160, Math.ceil(contentHeight + verticalPadding))}px`;
+    window.dispatchEvent(new Event(MODULE_CONTENT_RESIZED_EVENT));
   }, []);
 
-  useEffect(() => {
+  const bindFrameDocument = useCallback(() => {
+    frameCleanupRef.current();
+    frameCleanupRef.current = () => undefined;
     const frame = frameRef.current;
     if (!frame) return;
     const doc = frame.contentDocument;
+    if (!doc?.body || !doc.documentElement) return;
     const observer = new ResizeObserver(syncHeight);
-    if (doc?.body) observer.observe(doc.body);
-    if (doc?.documentElement) observer.observe(doc.documentElement);
-    doc?.querySelectorAll("img").forEach(image => {
+    let active = true;
+    const onDocumentClick = (event: MouseEvent) => {
+      const anchor = (event.target as Element | null)?.closest?.("a[data-reader-link='true']") as HTMLAnchorElement | null;
+      if (!anchor) return;
+      event.preventDefault();
+      const safeHref = getSafeCourseLinkUrl(anchor.getAttribute("href") || "");
+      if (!safeHref) return;
+      const destination = safeHref.startsWith("/") ? new URL(safeHref, window.location.origin).toString() : safeHref;
+      window.open(destination, "_blank", "noopener,noreferrer");
+    };
+    const notifyReaderInteraction = () => window.dispatchEvent(new Event(MODULE_READER_INTERACTION_EVENT));
+    observer.observe(doc.body);
+    observer.observe(doc.documentElement);
+    const pendingImages = Array.from(doc.querySelectorAll("img")).filter(image => !image.complete);
+    pendingImages.forEach(image => {
       if (!image.complete) image.addEventListener("load", syncHeight, { once: true });
     });
-    doc?.fonts?.ready.then(syncHeight).catch(() => undefined);
+    doc.fonts?.ready.then(() => { if (active) syncHeight(); }).catch(() => undefined);
+    doc.addEventListener("click", onDocumentClick);
+    doc.addEventListener("keydown", notifyReaderInteraction);
+    doc.addEventListener("pointerdown", notifyReaderInteraction, { passive: true });
+    doc.addEventListener("touchstart", notifyReaderInteraction, { passive: true });
+    doc.addEventListener("wheel", notifyReaderInteraction, { passive: true });
     const delayedSync = window.setTimeout(syncHeight, 300);
     window.addEventListener("resize", syncHeight);
-    return () => {
+    syncHeight();
+    frameCleanupRef.current = () => {
+      active = false;
       window.clearTimeout(delayedSync);
       observer.disconnect();
+      pendingImages.forEach(image => image.removeEventListener("load", syncHeight));
+      doc.removeEventListener("click", onDocumentClick);
+      doc.removeEventListener("keydown", notifyReaderInteraction);
+      doc.removeEventListener("pointerdown", notifyReaderInteraction);
+      doc.removeEventListener("touchstart", notifyReaderInteraction);
+      doc.removeEventListener("wheel", notifyReaderInteraction);
       window.removeEventListener("resize", syncHeight);
     };
-  }, [syncHeight, document]);
+  }, [syncHeight]);
+
+  useEffect(() => {
+    bindFrameDocument();
+    return () => frameCleanupRef.current();
+  }, [bindFrameDocument, srcDocument]);
 
   return (
     <iframe
@@ -275,9 +395,9 @@ function ModuleHtmlContent({ html, preferences, title }: { html: string; prefere
       className="module-html-frame"
       sandbox="allow-same-origin"
       referrerPolicy="no-referrer"
-      srcDoc={document}
+      srcDoc={srcDocument}
       title={`Contenu du module : ${title}`}
-      onLoad={syncHeight}
+      onLoad={bindFrameDocument}
     />
   );
 }
@@ -299,11 +419,22 @@ function getResources(module: CourseModule): Resource[] {
     .filter(Boolean) as Resource[];
 }
 
-function AccessibleModuleVideo({ module, url }: { module: CourseModule; url: string }) {
+function AccessibleModuleVideo({ module, url, captionsUrl }: { module: CourseModule; url: string; captionsUrl: string }) {
   const summaryId = useId();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [captionsStatus, setCaptionsStatus] = useState<"loading" | "ready" | "error">("loading");
   const textAlternative = module.contenu?.trim()
     || module.description?.trim()
     || "Aucun résumé textuel n'est encore disponible pour cette vidéo.";
+
+  useEffect(() => setCaptionsStatus("loading"), [captionsUrl]);
+
+  useEffect(() => {
+    if (captionsStatus === "error") {
+      videoRef.current?.pause();
+      if (videoRef.current) videoRef.current.currentTime = 0;
+    }
+  }, [captionsStatus]);
 
   return (
     <section className="card module-video-section" aria-labelledby={`${summaryId}-title`}>
@@ -311,18 +442,37 @@ function AccessibleModuleVideo({ module, url }: { module: CourseModule; url: str
         <Film size={22} aria-hidden="true" />
         <h2 id={`${summaryId}-title`}>Vidéo du module</h2>
       </div>
+      {captionsStatus !== "error" && (
       <video
+        ref={videoRef}
         className="module-video-player"
-        controls
+        controls={captionsStatus === "ready"}
+        crossOrigin="anonymous"
         playsInline
         preload="metadata"
+        aria-busy={captionsStatus === "loading"}
         aria-label={`Vidéo : ${module.titre}`}
         aria-describedby={summaryId}
       >
         <source src={url} />
+        <track
+          default
+          kind="captions"
+          src={captionsUrl}
+          srcLang="fr"
+          label="Français"
+          onLoad={() => setCaptionsStatus("ready")}
+          onError={() => setCaptionsStatus("error")}
+        />
         Votre navigateur ne peut pas lire cette vidéo.{" "}
         <a href={url} target="_blank" rel="noopener noreferrer">Ouvrir la vidéo dans un nouvel onglet</a>.
       </video>
+      )}
+      {captionsStatus === "error" && (
+        <div className="module-video-caption-error" role="alert">
+          La vidéo a été désactivée car ses sous-titres ne sont plus disponibles. Le contenu textuel reste accessible ci-dessous.
+        </div>
+      )}
       <details className="module-video-transcript">
         <summary>Résumé textuel de la vidéo</summary>
         <p id={summaryId}>{textAlternative}</p>
@@ -332,16 +482,36 @@ function AccessibleModuleVideo({ module, url }: { module: CourseModule; url: str
   );
 }
 
-function CoursePlan({ course, currentModuleId, progress }: {
+function CoursePlan({ course, currentModuleId, progress, unlockAll = false }: {
   course: StudentCourse;
   currentModuleId: string;
   progress: ModuleProgress[];
+  unlockAll?: boolean;
 }) {
-  const journey = buildCourseJourney(course.modules, progress);
+  const journey = buildCourseJourney(course.modules, progress, { unlockAll });
   const href = (id: string) => `/cours/${encodeURIComponent(course.slug)}/modules/${encodeURIComponent(id)}`;
+  const planRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const plan = planRef.current;
+    if (!plan) return;
+    const details = plan.closest("details");
+    const revealActiveModule = () => {
+      if (details && !details.open) return;
+      const active = plan.querySelector<HTMLElement>(".is-active");
+      if (!active || plan.scrollHeight <= plan.clientHeight) return;
+      plan.scrollTop = Math.max(0, active.offsetTop - Math.max(0, (plan.clientHeight - active.offsetHeight) / 2));
+    };
+    const timer = window.setTimeout(revealActiveModule, 0);
+    details?.addEventListener("toggle", revealActiveModule);
+    return () => {
+      window.clearTimeout(timer);
+      details?.removeEventListener("toggle", revealActiveModule);
+    };
+  }, [currentModuleId]);
 
   return (
-    <nav className="module-course-plan" aria-label="Plan du cours">
+    <nav ref={planRef} className="module-course-plan" aria-label="Plan du cours">
       <ol>
         {journey.modules.map((item, index) => {
           const active = item.module.id === currentModuleId;
@@ -391,27 +561,25 @@ function CourseModuleNavigation({
 
   return (
     <nav className="course-module-navigation" aria-label="Navigation entre les modules">
-      {navigation.previousModule ? (
-        <Link className="btn btn-outline" href={moduleHref(navigation.previousModule.id)}>
-          <ArrowLeft size={17} aria-hidden="true" /> Précédent
-        </Link>
-      ) : (
-        <span className="course-module-navigation-disabled" aria-disabled="true">
-          <ArrowLeft size={17} aria-hidden="true" /> Précédent
-        </span>
-      )}
       <span className="course-module-position" aria-current="step">
         Module {navigation.position} sur {navigation.total}
       </span>
-      {navigation.nextModule && canGoNext ? (
-        <Link className="btn btn-outline" href={moduleHref(navigation.nextModule.id)}>
-          Suivant <ArrowRight size={17} aria-hidden="true" />
-        </Link>
-      ) : (
-        <span className="course-module-navigation-disabled" aria-disabled="true">
-          {navigation.nextModule ? "Terminez pour continuer" : "Fin du cours"} <ArrowRight size={17} aria-hidden="true" />
-        </span>
-      )}
+      <div className="course-module-navigation-actions">
+        {navigation.previousModule && (
+          <Link className="btn btn-outline" href={moduleHref(navigation.previousModule.id)}>
+            <ArrowLeft size={17} aria-hidden="true" /> Précédent
+          </Link>
+        )}
+        {navigation.nextModule && canGoNext ? (
+          <Link className="btn btn-primary" href={moduleHref(navigation.nextModule.id)}>
+            Module suivant <ArrowRight size={17} aria-hidden="true" />
+          </Link>
+        ) : (
+          <span className="course-module-navigation-status">
+            {navigation.nextModule ? "Le module suivant se débloque après validation." : "Vous êtes au dernier module."}
+          </span>
+        )}
+      </div>
     </nav>
   );
 }
@@ -434,10 +602,13 @@ export default function ModulePage() {
   const [clock, setClock] = useState(() => Date.now());
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
   const [quizScore, setQuizScore] = useState<number | null>(null);
+  const [quizFeedback, setQuizFeedback] = useState("");
   const [completionDocuments, setCompletionDocuments] = useState(0);
   const [completionWarnings, setCompletionWarnings] = useState<string[]>([]);
   const [preferences, setPreferences] = useState<ReaderPreferences>(defaultReaderPreferences);
   const [preferencesReady, setPreferencesReady] = useState(false);
+  const [readingProgress, setReadingProgress] = useState(0);
+  const readingAnchorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -479,7 +650,9 @@ export default function ModulePage() {
             : data.module ? [data.module] : [],
         } : null;
         setPayload({
+          accessMode: data.accessMode === "preview" ? "preview" : "learning",
           courses: courseWithModule ? [courseWithModule] : [],
+          profile: data.profile,
           progress: data.progress || [],
         });
         setStatus("ready");
@@ -502,6 +675,8 @@ export default function ModulePage() {
     setClock(Date.now());
     setQuizAnswers({});
     setQuizScore(null);
+    setQuizFeedback("");
+    setReadingProgress(0);
     setStartStatus("idle");
     setCompletionDocuments(0);
     setCompletionWarnings([]);
@@ -527,10 +702,12 @@ export default function ModulePage() {
 
   const course = useMemo(() => payload?.courses.find(item => item.slug === slug), [payload, slug]);
   const module = useMemo(() => course?.modules.find(item => item.id === moduleId), [course, moduleId]);
+  const readerProfileId = String(payload?.profile?.id || "");
   const progress = useMemo(() => payload?.progress.find(item => item.module_id === moduleId), [payload, moduleId]);
   const resources = module ? getResources(module) : [];
   const isComplete = Boolean(progress?.complete);
   const isQuiz = module?.type === "quiz" || module?.type_contenu === "quiz";
+  const isStaffPreview = payload?.accessMode === "preview";
   const quizQuestions = isQuiz && Array.isArray(module?.quiz) ? module.quiz : [];
   const allQuizQuestionsAnswered = quizQuestions.length > 0 && quizQuestions.every((question, index) => {
     const id = String(question.id || `question-${index + 1}`);
@@ -539,7 +716,102 @@ export default function ModulePage() {
   const engagementSecondsRemaining = Math.max(0, Math.ceil((completionAvailableAt - clock) / 1000));
 
   useEffect(() => {
+    if (status !== "ready" || !module || !readerProfileId) return;
+    const storageKey = `irenee:reader-position:v1:${readerProfileId}:${slug}:${module.id}`;
+    let animationFrame = 0;
+    let lastSavedAt = 0;
+    let userInteracted = false;
+    const restoreDeadline = Date.now() + 5_000;
+    let restoreTarget = 0;
+    try {
+      const stored = Number(window.localStorage.getItem(storageKey));
+      restoreTarget = Number.isFinite(stored) && stored > 0 ? stored : 0;
+    } catch {
+      restoreTarget = 0;
+    }
+
+    const updateReadingProgress = () => {
+      window.cancelAnimationFrame(animationFrame);
+      animationFrame = window.requestAnimationFrame(() => {
+        const anchor = readingAnchorRef.current;
+        if (!anchor) return;
+        const top = window.scrollY + anchor.getBoundingClientRect().top;
+        const distance = Math.max(1, anchor.scrollHeight - window.innerHeight * .55);
+        const value = Math.max(0, Math.min(100, Math.round(((window.scrollY - top) / distance) * 100)));
+        setReadingProgress(current => current === value ? current : value);
+      });
+    };
+    const savePosition = (force = false) => {
+      const now = Date.now();
+      if (!force && now - lastSavedAt < 400) return;
+      lastSavedAt = now;
+      try {
+        window.localStorage.setItem(storageKey, String(Math.max(0, Math.round(window.scrollY))));
+      } catch {
+        // Position restoration is a non-critical local convenience.
+      }
+    };
+    const onScroll = () => {
+      updateReadingProgress();
+      if (userInteracted) savePosition();
+    };
+    const markUserInteraction = () => { userInteracted = true; };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (["ArrowDown", "ArrowUp", "End", "Home", "PageDown", "PageUp", " "].includes(event.key)) markUserInteraction();
+    };
+    const onPageHide = () => {
+      if (userInteracted) savePosition(true);
+    };
+    const restorePosition = () => {
+      if (!restoreTarget || userInteracted || Date.now() > restoreDeadline) return;
+      try {
+        const maximum = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        const root = document.documentElement;
+        const previousScrollBehavior = root.style.scrollBehavior;
+        root.style.scrollBehavior = "auto";
+        window.scrollTo({ top: Math.min(restoreTarget, maximum), behavior: "auto" });
+        root.style.scrollBehavior = previousScrollBehavior;
+      } catch {
+        // Ignore malformed or unavailable local storage.
+      }
+      updateReadingProgress();
+    };
+
+    const firstRestore = window.setTimeout(restorePosition, 120);
+    const settledRestore = window.setTimeout(restorePosition, 700);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", updateReadingProgress);
+    window.addEventListener(MODULE_CONTENT_RESIZED_EVENT, restorePosition);
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("pointerdown", markUserInteraction, { passive: true });
+    window.addEventListener("touchstart", markUserInteraction, { passive: true });
+    window.addEventListener("wheel", markUserInteraction, { passive: true });
+    window.addEventListener(MODULE_READER_INTERACTION_EVENT, markUserInteraction);
+    window.addEventListener("pagehide", onPageHide);
+    updateReadingProgress();
+    return () => {
+      window.clearTimeout(firstRestore);
+      window.clearTimeout(settledRestore);
+      window.cancelAnimationFrame(animationFrame);
+      if (userInteracted) savePosition(true);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", updateReadingProgress);
+      window.removeEventListener(MODULE_CONTENT_RESIZED_EVENT, restorePosition);
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("pointerdown", markUserInteraction);
+      window.removeEventListener("touchstart", markUserInteraction);
+      window.removeEventListener("wheel", markUserInteraction);
+      window.removeEventListener(MODULE_READER_INTERACTION_EVENT, markUserInteraction);
+      window.removeEventListener("pagehide", onPageHide);
+    };
+  }, [module, readerProfileId, slug, status]);
+
+  useEffect(() => {
     if (!course || !module) return;
+    if (isStaffPreview) {
+      setStartStatus("ready");
+      return;
+    }
     if (isComplete) {
       setStartStatus("ready");
       return;
@@ -578,7 +850,7 @@ export default function ModulePage() {
     return () => {
       cancelled = true;
     };
-  }, [course, isComplete, module, startRetryKey]);
+  }, [course, isComplete, isStaffPreview, module, startRetryKey]);
 
   useEffect(() => {
     if (!completionAvailableAt || completionAvailableAt <= Date.now()) return;
@@ -588,6 +860,7 @@ export default function ModulePage() {
 
   async function markComplete() {
     if (!course || !module || saving) return;
+    if (isStaffPreview) return;
     if (startStatus !== "ready") {
       setSaveError("La progression doit être initialisée avant de terminer ce module.");
       return;
@@ -604,6 +877,7 @@ export default function ModulePage() {
 
     setSaving(true);
     setSaveError("");
+    setQuizFeedback("");
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
@@ -628,9 +902,17 @@ export default function ModulePage() {
       const data = await response.json().catch(() => null);
 
       if (!response.ok || data?.ok !== true) {
-        if (Number.isFinite(Number(data?.score))) setQuizScore(Number(data.score));
+        if (isQuiz && response.status === 422 && Number.isFinite(Number(data?.score))) {
+          setQuizScore(Number(data.score));
+          setQuizFeedback(data?.error || "Le score requis n'est pas encore atteint. Vous pouvez modifier vos réponses et réessayer.");
+          return;
+        }
         setSaveError(data?.error || "Votre avancée n'a pas pu être enregistrée. Votre lecture reste disponible.");
         return;
+      }
+
+      if (isQuiz && Number.isFinite(Number(data?.data?.score_quiz))) {
+        setQuizScore(Number(data.data.score_quiz));
       }
 
       setPayload(current => current ? {
@@ -708,24 +990,51 @@ export default function ModulePage() {
   }
 
   const navigation = getModuleNavigation(course.modules, module.id);
-  const safeVideoUrl = getSafeCourseAssetUrl(module.url_video);
+  const safeVideoUrl = getSafeCourseMediaUrl(module.url_video);
+  const safeCaptionsUrl = getSafeCourseMediaUrl(module.url_sous_titres);
   const expectsVideo = module.type === "video" || module.type_contenu === "video" || Boolean(module.url_video);
   const answeredQuizQuestions = quizQuestions.filter((question, index) => {
     const id = String(question.id || `question-${index + 1}`);
     return Number.isInteger(quizAnswers[id]);
   }).length;
+  const completedModuleCount = (payload?.progress || []).filter(item => item.complete === true).length;
+  const moduleKind = module.type === "video" || module.type_contenu === "video"
+    ? "Vidéo"
+    : module.type === "quiz" || module.type_contenu === "quiz"
+      ? "Quiz"
+      : "Lecture";
 
   return (
     <section className="section course-reader-page module-workspace-page">
       <div className="container module-workspace-container">
-        <Link className="course-back-link" href={`/cours/${course.slug}`}>← Vue d'ensemble du cours</Link>
+        <header className="module-session-bar">
+          <Link className="module-session-back" href={`/cours/${course.slug}`}>
+            <ArrowLeft size={18} aria-hidden="true" />
+            <span>Vue d’ensemble</span>
+          </Link>
+          <div
+            className="module-session-progress"
+            role="progressbar"
+            aria-label="Progression de lecture"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={readingProgress}
+          >
+            <span>Module {navigation.position}/{navigation.total}</span>
+            <span className="module-session-progress-track" aria-hidden="true">
+              <span style={{ width: `${readingProgress}%` }} />
+            </span>
+            <strong>{readingProgress} % lu</strong>
+          </div>
+        </header>
 
         <details className="module-mobile-plan">
-          <summary>
-            <span><BookOpen size={18} aria-hidden="true" /> Plan du cours · Module {navigation.position}/{navigation.total}</span>
+          <summary aria-label="Ouvrir ou fermer le plan du cours">
+            <span><BookOpen size={18} aria-hidden="true" /><span className="module-mobile-plan-label">Plan<span className="module-mobile-plan-label-long"> du cours</span></span></span>
+            <small>{isStaffPreview ? "Aperçu libre" : `${completedModuleCount}/${navigation.total} terminés`}</small>
             <ChevronDown size={19} aria-hidden="true" />
           </summary>
-          <CoursePlan course={course} currentModuleId={module.id} progress={payload?.progress || []} />
+          <CoursePlan course={course} currentModuleId={module.id} progress={payload?.progress || []} unlockAll={isStaffPreview} />
         </details>
 
         <div className="module-workspace-grid">
@@ -733,9 +1042,19 @@ export default function ModulePage() {
             <div className="module-plan-sidebar-head">
               <span className="course-eyebrow">{course.titre}</span>
               <h2>Plan du cours</h2>
-              <p>{navigation.total} modules · progression séquentielle</p>
+              <p>{navigation.total} modules · {isStaffPreview ? "prévisualisation libre" : `${completedModuleCount} terminé${completedModuleCount > 1 ? "s" : ""}`}</p>
+              <div
+                className="module-plan-progress"
+                role="progressbar"
+                aria-label="Progression dans le cours"
+                aria-valuemin={0}
+                aria-valuemax={navigation.total}
+                aria-valuenow={isStaffPreview ? navigation.total : completedModuleCount}
+              >
+                <span style={{ width: `${isStaffPreview ? 100 : navigation.total ? (completedModuleCount / navigation.total) * 100 : 0}%` }} />
+              </div>
             </div>
-            <CoursePlan course={course} currentModuleId={module.id} progress={payload?.progress || []} />
+            <CoursePlan course={course} currentModuleId={module.id} progress={payload?.progress || []} unlockAll={isStaffPreview} />
             <Link href={`/cours/${course.slug}`} className="module-plan-overview-link">Voir la progression globale</Link>
           </aside>
 
@@ -747,19 +1066,29 @@ export default function ModulePage() {
           >
             <header className="module-focus-header">
               <div className="module-focus-meta">
-                <span className="badge">Module {navigation.position} sur {navigation.total}</span>
+                <span className="badge">Module {navigation.position}</span>
                 <span>{module.duree || 0} min</span>
-                <span>{module.type || module.type_contenu || "texte"}</span>
+                <span>{moduleKind}</span>
               </div>
               <h1>{module.titre}</h1>
               {module.description && <p>{module.description}</p>}
             </header>
 
-            <section className="reader-preferences" aria-labelledby="reader-preferences-title">
-              <div className="reader-preferences-title">
-                <Settings2 size={18} aria-hidden="true" />
-                <div><h2 id="reader-preferences-title">Confort de lecture</h2><p>Adaptez le texte à votre écran.</p></div>
+            {isStaffPreview && (
+              <div className="module-preview-notice" role="status">
+                <Eye size={19} aria-hidden="true" />
+                <div><strong>Mode aperçu équipe</strong><span>Tous les modules sont accessibles. Aucune progression ni attestation ne sera créée.</span></div>
               </div>
+            )}
+
+            <details className="reader-preferences">
+              <summary aria-label="Réglages de lecture">
+                <span className="reader-preferences-title">
+                  <Settings2 size={18} aria-hidden="true" />
+                  <span><strong>Réglages de lecture</strong><small>Taille et largeur du texte</small></span>
+                </span>
+                <ChevronDown size={18} aria-hidden="true" />
+              </summary>
               <div className="reader-preference-actions">
                 <div className="reader-font-controls" role="group" aria-label="Taille du texte">
                   <button className={preferences.fontScale === "small" ? "active" : ""} type="button" disabled={!preferencesReady} onClick={() => setPreferences(current => ({ ...current, fontScale: "small" }))} aria-label="Réduire la taille du texte" aria-pressed={preferences.fontScale === "small"}><Minus size={17} aria-hidden="true" /> A</button>
@@ -778,7 +1107,7 @@ export default function ModulePage() {
                   <span className="reader-measure-label">{preferences.measure === "focused" ? "Colonne focalisée" : "Colonne confortable"}</span>
                 </button>
               </div>
-            </section>
+            </details>
 
             {startStatus === "error" && (
               <div className="module-start-notice" role="alert">
@@ -788,24 +1117,26 @@ export default function ModulePage() {
               </div>
             )}
 
-            {safeVideoUrl ? (
-              <AccessibleModuleVideo module={module} url={safeVideoUrl} />
-            ) : expectsVideo ? (
-              <div className="module-video-unavailable" role="status">
-                <Film size={22} aria-hidden="true" />
-                <div><h2>Vidéo temporairement indisponible</h2><p>Le contenu textuel du module reste accessible ci-dessous.</p></div>
-              </div>
-            ) : null}
+            <div ref={readingAnchorRef} className="module-reading-anchor">
+              {safeVideoUrl && safeCaptionsUrl ? (
+                <AccessibleModuleVideo module={module} url={safeVideoUrl} captionsUrl={safeCaptionsUrl} />
+              ) : expectsVideo ? (
+                <div className="module-video-unavailable" role="status">
+                  <Film size={22} aria-hidden="true" />
+                  <div><h2>Vidéo temporairement indisponible</h2><p>Le contenu textuel du module reste accessible ci-dessous.</p></div>
+                </div>
+              ) : null}
 
-            <article className="card module-reading-card" aria-label={`Lecture : ${module.titre}`}>
-              {module.contenu_html ? (
-                <ModuleHtmlContent html={module.contenu_html} preferences={preferences} title={module.titre} />
-              ) : module.contenu ? (
-                <section className="module-text-content"><h2>Contenu du module</h2><p>{module.contenu}</p></section>
-              ) : (
-                <section className="module-empty-content" role="status"><h2>Contenu du module</h2><p>Aucun contenu textuel n'est encore publié pour ce module.</p></section>
-              )}
-            </article>
+              <article className="card module-reading-card" aria-label={`Lecture : ${module.titre}`}>
+                {module.contenu_html ? (
+                  <ModuleHtmlContent html={module.contenu_html} preferences={preferences} title={module.titre} />
+                ) : module.contenu ? (
+                  <section className="module-text-content"><h2>Contenu du module</h2><p>{module.contenu}</p></section>
+                ) : (
+                  <section className="module-empty-content" role="status"><h2>Contenu du module</h2><p>Aucun contenu textuel n'est encore publié pour ce module.</p></section>
+                )}
+              </article>
+            </div>
 
             {resources.length > 0 && (
               <section className="card course-resource-card">
@@ -840,6 +1171,7 @@ export default function ModulePage() {
                               onChange={() => {
                                 setQuizAnswers(current => ({ ...current, [questionId]: optionIndex }));
                                 setQuizScore(null);
+                                setQuizFeedback("");
                                 setSaveError("");
                               }}
                               type="radio"
@@ -854,11 +1186,40 @@ export default function ModulePage() {
                 )) : (
                   <div className="module-config-warning" role="alert"><AlertTriangle size={18} aria-hidden="true" /> Ce quiz n'est pas encore correctement configuré. Contactez l'équipe pédagogique.</div>
                 )}
-                {quizScore !== null && <p className="course-quiz-score" role="status">Dernier score : <strong>{quizScore} %</strong></p>}
+                {quizScore !== null && (
+                  <div className={`course-quiz-feedback ${quizScore >= 80 ? "is-success" : "is-retry"}`} role="status">
+                    <div>
+                      <strong>{quizScore >= 80 ? "Quiz réussi" : "Continuez, vous y êtes presque"}</strong>
+                      <span>{quizFeedback || `Dernier score : ${quizScore} %`}</span>
+                    </div>
+                    {quizScore < 80 && (
+                      <button type="button" className="btn btn-outline" onClick={() => {
+                        setQuizAnswers({});
+                        setQuizScore(null);
+                        setQuizFeedback("");
+                      }}>Recommencer</button>
+                    )}
+                  </div>
+                )}
               </section>
             )}
 
-            <section className="card course-complete-card" aria-busy={saving}>
+            {isStaffPreview ? (
+              <section className="module-preview-complete" aria-label="Fin de la prévisualisation">
+                <div>
+                  <span className="course-eyebrow">Aperçu terminé</span>
+                  <h2>Relire ou poursuivre le contrôle du cours</h2>
+                  <p>Cette consultation n’a modifié aucune progression étudiante.</p>
+                </div>
+                {navigation.nextModule ? (
+                  <Link className="btn btn-primary" href={`/cours/${encodeURIComponent(course.slug)}/modules/${encodeURIComponent(navigation.nextModule.id)}`}>
+                    Prévisualiser le module suivant <ArrowRight size={17} aria-hidden="true" />
+                  </Link>
+                ) : (
+                  <Link className="btn btn-outline" href={`/cours/${encodeURIComponent(course.slug)}`}>Retour au cours</Link>
+                )}
+              </section>
+            ) : <section className="card course-complete-card" aria-busy={saving}>
               {saveError && startStatus !== "error" && (
                 <div className="course-save-error" role="alert">
                   <AlertTriangle size={18} aria-hidden="true" />
@@ -907,9 +1268,9 @@ export default function ModulePage() {
                   </button>
                 </div>
               )}
-            </section>
+            </section>}
 
-            <CourseModuleNavigation canGoNext={isComplete} courseSlug={course.slug} navigation={navigation} />
+            <CourseModuleNavigation canGoNext={isStaffPreview || isComplete} courseSlug={course.slug} navigation={navigation} />
           </section>
         </div>
       </div>

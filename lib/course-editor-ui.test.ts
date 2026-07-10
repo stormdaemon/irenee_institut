@@ -6,12 +6,15 @@ import { renderToStaticMarkup } from "react-dom/server";
 import AdminCoursesPage, {
   courseStatusForSave,
   courseDraftSignature,
+  duplicateCourseModuleDraft,
   draftAfterFailedCourseSave,
   serializeCourseModules,
   validateCourseDraft,
   type CourseDraft,
 } from "../app/admin/courses/page";
-import { RichHtmlEditor } from "../components/RichHtmlEditor";
+import { RichHtmlEditor, richEditorTemplates } from "../components/RichHtmlEditor";
+import { sanitizeCourseHtml } from "./course-input";
+import { sanitizeCourseClassAttribute, sanitizeCourseStyleAttribute } from "./course-html-style";
 import {
   courseDraftRecoveryKey,
   createCourseDraftRecovery,
@@ -48,6 +51,7 @@ describe("course editor draft safeguards", () => {
         description: "Une introduction déjà rédigée",
         contenu_html: "<p>Contenu important</p>",
         url_video: "",
+        url_sous_titres: "",
         duree: 30,
         type_contenu: "texte",
         ordre: 1,
@@ -67,6 +71,7 @@ describe("course editor draft safeguards", () => {
         description: "",
         contenu_html: "<p>Texte</p>",
         url_video: "",
+        url_sous_titres: "",
         duree: 15,
         type_contenu: "texte",
         ordre: 1,
@@ -88,6 +93,7 @@ describe("course editor draft safeguards", () => {
         description: "",
         contenu_html: "<p>Texte</p>",
         url_video: "",
+        url_sous_titres: "",
         duree: 15,
         type_contenu: "texte",
         ordre: 1,
@@ -121,12 +127,40 @@ describe("course editor draft safeguards", () => {
         description: "Une introduction",
         contenu_html: "<p>Un contenu pédagogique.</p>",
         url_video: "",
+        url_sous_titres: "",
         duree: 30,
         type_contenu: "texte",
         ordre: 1,
       }],
     }));
     assert.equal(ready.completed, ready.total);
+
+    const videoWithoutCaptions = draft({
+      statut: "publie",
+      modules: [{
+        clientId: "local-video",
+        titre: "Module vidéo",
+        description: "Une leçon filmée",
+        contenu_html: "<p>Résumé textuel</p>",
+        url_video: "/media/course.mp4",
+        url_sous_titres: "",
+        duree: 30,
+        type_contenu: "video",
+        ordre: 1,
+      }],
+    });
+    assert.equal(getCourseEditorReadiness(videoWithoutCaptions).items.find(item => item.id === "content")?.complete, false);
+    assert.deepEqual(validateCourseDraft(videoWithoutCaptions).find(issue => issue.field === "module-captions"), {
+      field: "module-captions",
+      message: "Ajoutez les sous-titres WebVTT du module 1 avant publication.",
+      moduleIndex: 0,
+    });
+    videoWithoutCaptions.modules[0]!.url_sous_titres = "/media/course-fr.vtt";
+    assert.equal(getCourseEditorReadiness(videoWithoutCaptions).items.find(item => item.id === "content")?.complete, true);
+
+    videoWithoutCaptions.modules[0]!.url_sous_titres = `/media/${"é".repeat(2_045)}.vtt`;
+    assert.equal(getCourseEditorReadiness(videoWithoutCaptions).items.find(item => item.id === "content")?.complete, false);
+    assert.match(validateCourseDraft(videoWithoutCaptions).find(issue => issue.field === "module-captions")?.message || "", /4 096 octets/);
   });
 
   test("restores only a recent local draft based on the same server version", () => {
@@ -171,9 +205,63 @@ describe("course editor draft safeguards", () => {
       "en_preparation",
     );
   });
+
+  test("duplicates a module as an independent unsaved copy", () => {
+    const original = {
+      clientId: "saved-module-1",
+      id: "00000000-0000-4000-8000-000000000201",
+      titre: "Module source",
+      description: "Description source",
+      contenu_html: "<p>Contenu source</p>",
+      url_video: "",
+      url_sous_titres: "",
+      duree: 45,
+      type_contenu: "quiz",
+      ordre: 1,
+      quiz: [{
+        id: "question-source",
+        question: "Question source ?",
+        options: ["Réponse A", "Réponse B"],
+        answer: 1,
+      }],
+    };
+
+    const copy = duplicateCourseModuleDraft(original, "local-module-copy", 2);
+
+    assert.equal(copy.id, undefined);
+    assert.equal(Object.hasOwn(copy, "id"), false);
+    assert.equal(copy.clientId, "local-module-copy");
+    assert.equal(copy.ordre, 2);
+    assert.equal(copy.titre, "Module source — copie");
+    assert.notEqual(copy.quiz, original.quiz);
+    assert.notEqual(copy.quiz?.[0], original.quiz[0]);
+    assert.notEqual(copy.quiz?.[0]?.options, original.quiz[0]?.options);
+    assert.notEqual(copy.quiz?.[0]?.id, original.quiz[0]?.id);
+    assert.deepEqual(copy.quiz?.[0]?.options, original.quiz[0]?.options);
+
+    const boundedCopy = duplicateCourseModuleDraft({ ...original, titre: "x".repeat(240) }, "unsafe copy/id", 2);
+    assert.equal(boundedCopy.titre.length, 240);
+    assert.match(boundedCopy.clientId, /^[a-zA-Z0-9_-]+$/);
+  });
 });
 
 describe("course editor accessibility contracts", () => {
+  test("keeps only reader-safe inline presentation shared with the API", () => {
+    assert.equal(
+      sanitizeCourseStyleAttribute("text-align:center; font-weight:700; color:#eee; background:#fff; font-size:9px; white-space:nowrap"),
+      "text-align: center; font-weight: 700",
+    );
+    assert.equal(
+      sanitizeCourseStyleAttribute("border-left: 4px solid #b7791f; padding: 1rem 2rem"),
+      "border-left: 4px solid #b7791f; padding: 1rem 2rem",
+    );
+    assert.equal(sanitizeCourseStyleAttribute("border: url(javascript:alert(1)); text-align:center!important"), "");
+    assert.equal(sanitizeCourseStyleAttribute("padding: 999999999rem; margin: -999999999px; border: 999999px solid red"), "");
+    assert.equal(sanitizeCourseStyleAttribute("border: 9e8px solid red; border-left: 999999in solid blue; border-bottom: calc(1px + 999vh) solid black"), "");
+    assert.equal(sanitizeCourseStyleAttribute("border: 2rem dashed rgba(12, 34, 56, .4)"), "border: 2rem dashed rgba(12, 34, 56, .4)");
+    assert.equal(sanitizeCourseClassAttribute("course-callout course-callout-info main-header course-studio-mobile-save"), "course-callout course-callout-info");
+  });
+
   test("renders explicitly associated labels for the course fields", () => {
     const html = renderToStaticMarkup(createElement(AdminCoursesPage));
 
@@ -183,6 +271,11 @@ describe("course editor accessibility contracts", () => {
     assert.match(html, /id="course-description"/);
     assert.match(html, /aria-label="Étapes de création du cours"/);
     assert.match(html, /Aperçu/);
+    assert.match(html, /Studio des cours/);
+    assert.match(html, /class="course-studio-workbench"/);
+    assert.match(html, /class="course-studio-stage"/);
+    assert.match(html, /class="course-overview-workspace"/);
+    assert.match(html, /class="course-cover-preview"/);
   });
 
   test("exposes the rich editor as a named multiline textbox and its controls as a toolbar", () => {
@@ -199,6 +292,35 @@ describe("course editor accessibility contracts", () => {
     assert.match(html, /aria-multiline="true"/);
     assert.match(html, /aria-label="Contenu du module 1"/);
     assert.match(html, /aria-label="Gras"/);
+    assert.match(html, /class="rich-toolbar-group"/);
+    assert.match(html, /aria-label="Structure du texte"/);
+    assert.match(html, /aria-label="Mise en forme"/);
+    assert.match(html, /aria-label="Listes et alignement"/);
+    assert.match(html, /aria-label="Blocs pédagogiques"/);
+  });
+
+  test("makes wide tables and the mobile toolbar discoverable", () => {
+    const html = renderToStaticMarkup(createElement(RichHtmlEditor, {
+      id: "module-content-table",
+      label: "Contenu avec tableau",
+      value: "<table><tbody><tr><td>Cellule</td></tr></tbody></table>",
+      onChange: () => undefined,
+    }));
+
+    assert.match(html, /Outils de mise en forme · faites glisser/);
+    assert.match(html, /Tableau · faites glisser horizontalement/);
+    assert.match(html, /aria-describedby="module-content-table-table-help"/);
+  });
+
+  test("uses semantic, style-free templates that survive the student reader", () => {
+    assert.match(richEditorTemplates.info, /class="course-callout course-callout-info"/);
+    assert.match(richEditorTemplates.warning, /class="course-callout course-callout-warning"/);
+    assert.match(richEditorTemplates.quote, /class="course-quote"/);
+    assert.match(richEditorTemplates.card, /class="course-block"/);
+    for (const template of Object.values(richEditorTemplates)) {
+      assert.doesNotMatch(template, /\sstyle=/i);
+      assert.match(sanitizeCourseHtml(template), /class="course-(?:callout|quote|block)/);
+    }
   });
 });
 
@@ -211,6 +333,14 @@ test("save and navigation safeguards stay wired", async () => {
   assert.match(source, /localStorage/);
   assert.match(source, /Brouillon local/);
   assert.match(source, /Ajouter une question/);
+  assert.match(source, /course-program-mobile-switch/);
+  assert.match(source, /course-program-mobile-actions/);
+  assert.match(source, /Actions rapides du module actif/);
+  assert.match(source, /Module actif/);
+  assert.match(source, /Dupliquer le module/);
+  assert.match(source, /Sous-titres WebVTT \(\.vtt\)/);
+  assert.match(source, /<track default kind="captions"/);
+  assert.match(source, /module-captions/);
   assert.match(source, /publishRequested/);
   assert.doesNotMatch(source, /draft\.modules\.filter\(module => module\.titre\.trim\(\)\)/);
 });

@@ -2,11 +2,28 @@ import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/api-auth";
 import { CoursePersistenceError, updateCourse } from "@/lib/course-admin";
 import { CourseInputError, parseCourseForm } from "@/lib/course-input";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { readFormDataBodyWithLimit, RequestBodyError } from "@/lib/request-body";
 import { hashAuditSubject, recordSecurityEvent } from "@/lib/security-audit";
 
 const MAX_COURSE_FORM_BYTES = 1_500_000;
+const COURSE_WRITE_LIMIT = 60;
+const COURSE_WRITE_WINDOW_MS = 15 * 60 * 1_000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function courseRateLimitResponse(retryAfterSeconds: number) {
+  return NextResponse.json({
+    ok: false,
+    verified: false,
+    error: "Trop de sauvegardes rapprochées. Réessayez dans quelques instants."
+  }, {
+    headers: {
+      "Cache-Control": "private, no-store",
+      "Retry-After": String(retryAfterSeconds)
+    },
+    status: 429
+  });
+}
 
 function courseErrorResponse(error: unknown) {
   if (error instanceof CourseInputError || error instanceof CoursePersistenceError) {
@@ -22,6 +39,8 @@ function courseErrorResponse(error: unknown) {
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await authorizeRequest(request, ["directeur", "formateur"]);
   if (!auth.ok) return auth.response;
+  const limit = await checkRateLimit(`course-write:user:${auth.user.id}`, COURSE_WRITE_LIMIT, COURSE_WRITE_WINDOW_MS);
+  if (!limit.allowed) return courseRateLimitResponse(limit.retryAfterSeconds);
 
   const { id } = await params;
   if (!UUID_PATTERN.test(id)) {

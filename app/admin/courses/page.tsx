@@ -2,11 +2,12 @@
 
 import type { Course, CourseModule } from "@/lib/types";
 import DOMPurify from "dompurify";
-import { Check, Eye, FileText, GripVertical, Loader2, Plus, Save, Search, Trash2, X } from "lucide-react";
+import { Check, Copy, Eye, FileText, GripVertical, Loader2, MoreHorizontal, Plus, Save, Search, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActionNotice } from "@/components/ActionNotice";
 import { RichHtmlEditor } from "@/components/RichHtmlEditor";
 import { authenticatedFetch } from "@/lib/authenticated-fetch";
+import { sanitizeCourseClassAttribute } from "@/lib/course-html-style";
 import {
   courseDraftRecoveryKey,
   courseDraftRecoveryPrefix,
@@ -14,6 +15,7 @@ import {
   getCourseEditorReadiness,
   getCourseEditorSectionStatus,
   parseCourseDraftRecovery,
+  utf8ByteLength,
   type CourseEditorSection,
 } from "@/lib/course-editor-workspace";
 
@@ -31,6 +33,7 @@ export type ModuleDraft = {
   description: string;
   contenu_html: string;
   url_video: string;
+  url_sous_titres: string;
   duree: number;
   type_contenu: string;
   ordre: number;
@@ -71,11 +74,30 @@ const emptyModule = (ordre = 1, clientId = `local-module-${ordre}`): ModuleDraft
   description: "",
   contenu_html: "",
   url_video: "",
+  url_sous_titres: "",
   duree: 150,
   type_contenu: "texte",
   ordre,
   quiz: [],
 });
+
+export function duplicateCourseModuleDraft(module: ModuleDraft, clientId: string, ordre: number): ModuleDraft {
+  const { id: _savedModuleId, ...authoredModule } = module;
+  const safeClientId = clientId.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 72) || "local-module-copy";
+  const title = module.titre.trim();
+  const copySuffix = " — copie";
+  return {
+    ...authoredModule,
+    clientId: safeClientId,
+    ordre,
+    titre: title ? `${title.slice(0, 240 - copySuffix.length).trimEnd()}${copySuffix}` : "",
+    quiz: module.quiz?.map((question, questionIndex) => ({
+      ...question,
+      id: `quiz-${safeClientId}-copy-${questionIndex + 1}`.slice(0, 100),
+      options: [...question.options],
+    })),
+  };
+}
 
 const emptyDraft = (): CourseDraft => ({
   titre: "",
@@ -110,6 +132,30 @@ function slugify(value: string) {
     .replace(/^-|-$/g, "");
 }
 
+function safeCoverPreviewUrl(value: string) {
+  const candidate = value.trim();
+  if (!candidate || /[\u0000-\u001f\u007f\\]/.test(candidate) || candidate.startsWith("//")) return "";
+  if (candidate.startsWith("/")) return candidate;
+  try {
+    const url = new URL(candidate);
+    return url.protocol === "https:" && !url.username && !url.password ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
+function safeCourseMediaPreviewUrl(value: string) {
+  const safeUrl = safeCoverPreviewUrl(value);
+  if (!safeUrl || safeUrl.startsWith("/")) return safeUrl;
+  try {
+    const url = new URL(safeUrl);
+    const cloudName = String(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "da52mpv3g").trim();
+    return url.hostname === "res.cloudinary.com" && url.pathname.startsWith(`/${cloudName}/`) ? safeUrl : "";
+  } catch {
+    return "";
+  }
+}
+
 function moduleFromDb(module: CourseModule, index: number): ModuleDraft {
   return {
     id: module.id,
@@ -118,6 +164,7 @@ function moduleFromDb(module: CourseModule, index: number): ModuleDraft {
     description: module.description || "",
     contenu_html: module.contenu_html || module.contenu || "",
     url_video: module.url_video || "",
+    url_sous_titres: module.url_sous_titres || "",
     duree: Number(module.duree || 0),
     type_contenu: module.type_contenu || module.type || "texte",
     ordre: module.ordre ?? index + 1,
@@ -158,7 +205,7 @@ function cleanList(values: string[]) {
 }
 
 export type CourseDraftIssue = {
-  field: "course-title" | "course-slug" | "course-description" | "module-title";
+  field: "course-title" | "course-slug" | "course-description" | "module-title" | "module-captions";
   message: string;
   moduleIndex?: number;
 };
@@ -170,6 +217,7 @@ export function serializeCourseModules(modules: ModuleDraft[]) {
     description: module.description,
     contenu_html: module.contenu_html,
     url_video: module.url_video,
+    url_sous_titres: module.url_sous_titres,
     duree: module.duree,
     type_contenu: module.type_contenu,
     ordre: index + 1,
@@ -200,6 +248,12 @@ export function validateCourseDraft(draft: CourseDraft): CourseDraftIssue[] {
   draft.modules.forEach((module, moduleIndex) => {
     if (!module.titre.trim()) {
       issues.push({ field: "module-title", message: `Donnez un titre au module ${moduleIndex + 1}.`, moduleIndex });
+    }
+    if (draft.statut === "publie" && module.url_video.trim() && !(module.url_sous_titres || "").trim()) {
+      issues.push({ field: "module-captions", message: `Ajoutez les sous-titres WebVTT du module ${moduleIndex + 1} avant publication.`, moduleIndex });
+    }
+    if (utf8ByteLength((module.url_sous_titres || "").trim()) > 4_096) {
+      issues.push({ field: "module-captions", message: `L’adresse des sous-titres du module ${moduleIndex + 1} dépasse 4 096 octets.`, moduleIndex });
     }
   });
   return issues;
@@ -261,23 +315,46 @@ function courseFromSaveResponse(value: unknown, fallback: CourseDraft): Course |
 
 function SafeModulePreview({ module }: { module: ModuleDraft }) {
   const [safeHtml, setSafeHtml] = useState("");
+  const [captionsError, setCaptionsError] = useState(false);
+  const safeVideoUrl = safeCourseMediaPreviewUrl(module.url_video);
+  const safeCaptionsUrl = safeCourseMediaPreviewUrl(module.url_sous_titres || "");
+
+  useEffect(() => setCaptionsError(false), [safeCaptionsUrl]);
 
   useEffect(() => {
     if (typeof DOMPurify.sanitize !== "function") {
       setSafeHtml("");
       return;
     }
-    setSafeHtml(DOMPurify.sanitize(module.contenu_html, {
-      ALLOWED_ATTR: ["href", "title"],
+    const sanitized = DOMPurify.sanitize(module.contenu_html, {
+      ALLOWED_ATTR: ["alt", "class", "height", "href", "loading", "referrerpolicy", "src", "title", "width"],
       ALLOWED_TAGS: [
         "a", "b", "blockquote", "br", "code", "details", "div", "em", "figcaption", "figure",
-        "h2", "h3", "h4", "hr", "i", "li", "ol", "p", "pre", "section", "span", "strong",
+        "h2", "h3", "h4", "hr", "i", "img", "li", "ol", "p", "pre", "section", "span", "strong",
         "summary", "table", "tbody", "td", "tfoot", "th", "thead", "tr", "u", "ul",
       ],
       ALLOW_DATA_ATTR: false,
       FORBID_ATTR: ["style"],
       FORBID_TAGS: ["embed", "form", "iframe", "object", "script", "style"],
-    }));
+    });
+    const document = new DOMParser().parseFromString(sanitized, "text/html");
+    document.querySelectorAll<HTMLElement>("[class]").forEach(element => {
+      const safeClass = sanitizeCourseClassAttribute(element.getAttribute("class") || "");
+      if (safeClass) element.setAttribute("class", safeClass);
+      else element.removeAttribute("class");
+    });
+    document.querySelectorAll<HTMLImageElement>("img").forEach(image => {
+      const safeSource = safeCoverPreviewUrl(image.getAttribute("src") || "");
+      if (!safeSource) {
+        image.remove();
+        return;
+      }
+      image.src = safeSource;
+      image.alt = image.alt.trim() || image.title.trim() || "Illustration du cours";
+      image.loading = "lazy";
+      image.referrerPolicy = "no-referrer";
+    });
+    setSafeHtml(document.body.innerHTML);
   }, [module.contenu_html]);
 
   return (
@@ -292,8 +369,18 @@ function SafeModulePreview({ module }: { module: ModuleDraft }) {
         {safeHtml
           ? <div dangerouslySetInnerHTML={{ __html: safeHtml }} />
           : <p className="muted">Ajoutez du contenu pour afficher son aperçu.</p>}
-        {module.type_contenu === "video" && /^https:\/\//i.test(module.url_video.trim()) && (
-          <p className="muted">Une vidéo HTTPS accompagnera ce module.</p>
+        {safeVideoUrl && safeCaptionsUrl && (
+          <video className="module-video-player course-editor-video-preview" controls crossOrigin="anonymous" playsInline preload="metadata">
+            <source src={safeVideoUrl} />
+            <track default kind="captions" src={safeCaptionsUrl} srcLang="fr" label="Français" onLoad={() => setCaptionsError(false)} onError={() => setCaptionsError(true)} />
+            Votre navigateur ne peut pas prévisualiser cette vidéo.
+          </video>
+        )}
+        {captionsError && <div className="module-video-caption-error" role="alert">Le fichier WebVTT ne peut pas être chargé. Vérifiez son adresse, son format text/vtt et sa configuration CORS.</div>}
+        {safeVideoUrl && !safeCaptionsUrl && (
+          <div className="module-video-unavailable" role="status">
+            Ajoutez un fichier WebVTT de sous-titres pour activer l’aperçu vidéo.
+          </div>
         )}
         {module.type_contenu === "quiz" && (
           <div className="course-quiz-preview">
@@ -307,6 +394,47 @@ function SafeModulePreview({ module }: { module: ModuleDraft }) {
         )}
       </div>
     </div>
+  );
+}
+
+function CourseCoverPreview({ draft }: { draft: CourseDraft }) {
+  const coverUrl = safeCoverPreviewUrl(draft.image_url);
+  const moduleCount = draft.modules.length;
+  const totalMinutes = draft.modules.reduce((total, module) => total + Math.max(0, Number(module.duree) || 0), 0)
+    || Math.max(0, Number(draft.duree_totale_minutes) || 0);
+  const level = draft.niveau === "avance"
+    ? "Avancé"
+    : draft.niveau === "intermediaire"
+      ? "Intermédiaire"
+      : "Débutant";
+
+  return (
+    <aside className="course-cover-preview" aria-labelledby="course-cover-preview-heading">
+      <div className="course-cover-preview-media">
+        {coverUrl ? (
+          <img
+            src={coverUrl}
+            alt={`Couverture du cours ${draft.titre.trim() || "sans titre"}`}
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="course-cover-preview-placeholder" role="img" aria-label="Couverture du cours à ajouter">
+            <FileText size={32} aria-hidden="true" />
+            <span>Votre couverture apparaîtra ici</span>
+          </div>
+        )}
+      </div>
+      <div className="course-cover-preview-copy">
+        <span className="badge">Aperçu étudiant</span>
+        <h3 id="course-cover-preview-heading">{draft.titre.trim() || "Titre du cours"}</h3>
+        <p>{draft.description.trim() || "Ajoutez une description courte pour présenter clairement ce parcours."}</p>
+        <dl className="course-cover-preview-meta">
+          <div><dt>Niveau</dt><dd>{level}</dd></div>
+          <div><dt>Programme</dt><dd>{moduleCount} module{moduleCount > 1 ? "s" : ""}</dd></div>
+          <div><dt>Durée</dt><dd>{totalMinutes} min</dd></div>
+        </dl>
+      </div>
+    </aside>
   );
 }
 
@@ -564,6 +692,7 @@ export default function AdminCoursesPage() {
         ...(asCopy ? { id: undefined } : {}),
         clientId: asCopy ? `recovered-copy-${Date.now()}-${index}` : module.clientId || `recovered-module-${Date.now()}-${index}`,
         ordre: index + 1,
+        url_sous_titres: module.url_sous_titres || "",
       })),
     };
     setDraft(restoredDraft);
@@ -715,6 +844,22 @@ export default function AdminCoursesPage() {
     setModuleView("edit");
   }
 
+  function duplicateModule(index: number) {
+    if (saving || !draft.modules[index]) return;
+    markEdited();
+    const clientId = `local-module-${Date.now()}-${localModuleSequence.current++}`;
+    setDraft(current => {
+      const source = current.modules[index];
+      if (!source) return current;
+      const next = [...current.modules];
+      next.splice(index + 1, 0, duplicateCourseModuleDraft(source, clientId, index + 2));
+      return { ...current, modules: next.map((module, moduleIndex) => ({ ...module, ordre: moduleIndex + 1 })) };
+    });
+    setExpandedModuleId(clientId);
+    setActiveSection("modules");
+    setModuleView("edit");
+  }
+
   function removeModule(index: number) {
     if (saving) return;
     const module = draft.modules[index];
@@ -800,8 +945,10 @@ export default function AdminCoursesPage() {
   }
 
   function focusIssue(issue: CourseDraftIssue, issueDraft: CourseDraft) {
-    if (issue.field === "module-title" && issue.moduleIndex !== undefined) {
-      const module = issueDraft.modules[issue.moduleIndex];
+    const moduleIndex = issue.moduleIndex;
+    const isModuleIssue = (issue.field === "module-title" || issue.field === "module-captions") && moduleIndex !== undefined;
+    if (isModuleIssue) {
+      const module = issueDraft.modules[moduleIndex];
       if (module) {
         setActiveSection("modules");
         setExpandedModuleId(module.clientId);
@@ -811,8 +958,10 @@ export default function AdminCoursesPage() {
       setActiveSection("overview");
     }
     window.setTimeout(() => {
-      const id = issue.field === "module-title" && issue.moduleIndex !== undefined
-        ? `module-${issueDraft.modules[issue.moduleIndex]?.clientId}-title`
+      const id = isModuleIssue && moduleIndex !== undefined
+        ? issue.field === "module-captions"
+          ? `module-${issueDraft.modules[moduleIndex]?.clientId}-captions`
+          : `module-${issueDraft.modules[moduleIndex]?.clientId}-title`
         : issue.field;
       const field = document.getElementById(id);
       field?.focus({ preventScroll: true });
@@ -948,8 +1097,8 @@ export default function AdminCoursesPage() {
         <a href="/admin">← Retour au tableau de bord</a>
         <div className="admin-page-head course-studio-page-head">
           <div>
-            <h1 className="title">Gestion des cours</h1>
-            <p className="subtitle">Créer, éditer, publier et structurer les modules.</p>
+            <h1 className="title">Studio des cours</h1>
+            <p className="subtitle">Concevoir, prévisualiser et publier des parcours agréables à apprendre.</p>
           </div>
           <div className="course-studio-page-actions">
             {draft.id && draft.slug && draft.statut === "publie" && (
@@ -967,8 +1116,9 @@ export default function AdminCoursesPage() {
           <ActionNotice status={status} success="Cours enregistré." error={error} />
         </div>
 
-        <div className="course-admin-layout course-studio-layout">
-          <form ref={editorFormRef} className="course-editor card course-studio-editor" onSubmit={submit} noValidate aria-busy={saving}>
+        <div className="course-studio-workbench">
+          <div className="course-studio-stage">
+            <form ref={editorFormRef} className="course-editor card course-studio-editor" onSubmit={submit} noValidate aria-busy={saving}>
             {pendingRecovery && (
               <section className="editor-panel course-recovery-banner" role="alert" aria-labelledby="course-recovery-heading">
                 <div className="module-editor-head">
@@ -990,7 +1140,7 @@ export default function AdminCoursesPage() {
             )}
 
             <fieldset className="course-editor-fields" disabled={saving || Boolean(pendingRecovery) || initialCourseResolving}>
-              <div className="course-studio-mobile-switch">
+              <div className={`course-studio-mobile-switch ${draft.id && draft.slug && draft.statut === "publie" ? "has-read-action" : ""}`}>
                 <label htmlFor="course-mobile-switch">Cours actif</label>
                 <select
                   id="course-mobile-switch"
@@ -1005,6 +1155,11 @@ export default function AdminCoursesPage() {
                   <option value="">Nouveau cours</option>
                   {courses.map(course => <option key={course.id} value={course.id}>{course.titre}</option>)}
                 </select>
+                {draft.id && draft.slug && draft.statut === "publie" && (
+                  <a className="icon-button course-studio-mobile-read" href={`/cours/${draft.slug}`} target="_blank" rel="noopener noreferrer" aria-label="Lire le cours dans un nouvel onglet" title="Lire le cours">
+                    <Eye size={18} aria-hidden="true" />
+                  </a>
+                )}
               </div>
               <div className="course-editor-head course-studio-commandbar">
                 <div>
@@ -1056,20 +1211,23 @@ export default function AdminCoursesPage() {
               </nav>
 
               {activeSection === "overview" && (
-                <section className="editor-panel course-studio-panel" aria-labelledby="course-information-heading">
-                  <div className="editor-panel-heading">
-                    <div>
-                      <h3 id="course-information-heading">Vue d’ensemble</h3>
-                      <p>Le titre, l’adresse et le résumé présentés aux étudiants.</p>
+                <div className="course-overview-workspace">
+                  <section className="editor-panel course-studio-panel" aria-labelledby="course-information-heading">
+                    <div className="editor-panel-heading">
+                      <div>
+                        <h3 id="course-information-heading">Vue d’ensemble</h3>
+                        <p>Le titre, l’adresse et le résumé présentés aux étudiants.</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="grid-2">
-                    <p><label htmlFor="course-title">Titre du cours *</label><input id="course-title" className="input" value={draft.titre} aria-invalid={validationIssue?.field === "course-title"} aria-describedby={validationIssue?.field === "course-title" ? "course-title-error" : undefined} onChange={event => update("titre", event.target.value)} onBlur={() => !draft.slug && update("slug", slugify(draft.titre))} />{validationIssue?.field === "course-title" && <span id="course-title-error" className="editor-field-error">{validationIssue.message}</span>}</p>
-                    <p><label htmlFor="course-slug">Slug URL *</label><input id="course-slug" className="input" value={draft.slug} aria-invalid={validationIssue?.field === "course-slug"} aria-describedby={validationIssue?.field === "course-slug" ? "course-slug-error" : undefined} onChange={event => update("slug", slugify(event.target.value))} autoCapitalize="none" spellCheck={false} />{validationIssue?.field === "course-slug" && <span id="course-slug-error" className="editor-field-error">{validationIssue.message}</span>}</p>
-                  </div>
-                  <p><label htmlFor="course-description">Description courte *</label><textarea id="course-description" className="input" rows={5} value={draft.description} aria-invalid={validationIssue?.field === "course-description"} aria-describedby={validationIssue?.field === "course-description" ? "course-description-error" : undefined} onChange={event => update("description", event.target.value)} />{validationIssue?.field === "course-description" && <span id="course-description-error" className="editor-field-error">{validationIssue.message}</span>}</p>
-                  <p><label htmlFor="course-image">Image de couverture</label><input id="course-image" className="input" type="url" value={draft.image_url} onChange={event => update("image_url", event.target.value)} placeholder="https://… ou /images/…" inputMode="url" /></p>
-                </section>
+                    <div className="grid-2">
+                      <p><label htmlFor="course-title">Titre du cours *</label><input id="course-title" className="input" value={draft.titre} aria-invalid={validationIssue?.field === "course-title"} aria-describedby={validationIssue?.field === "course-title" ? "course-title-error" : undefined} onChange={event => update("titre", event.target.value)} onBlur={() => !draft.slug && update("slug", slugify(draft.titre))} />{validationIssue?.field === "course-title" && <span id="course-title-error" className="editor-field-error">{validationIssue.message}</span>}</p>
+                      <p><label htmlFor="course-slug">Slug URL *</label><input id="course-slug" className="input" value={draft.slug} aria-invalid={validationIssue?.field === "course-slug"} aria-describedby={validationIssue?.field === "course-slug" ? "course-slug-error" : undefined} onChange={event => update("slug", slugify(event.target.value))} autoCapitalize="none" spellCheck={false} />{validationIssue?.field === "course-slug" && <span id="course-slug-error" className="editor-field-error">{validationIssue.message}</span>}</p>
+                    </div>
+                    <p><label htmlFor="course-description">Description courte *</label><textarea id="course-description" className="input" rows={5} value={draft.description} aria-invalid={validationIssue?.field === "course-description"} aria-describedby={validationIssue?.field === "course-description" ? "course-description-error" : undefined} onChange={event => update("description", event.target.value)} />{validationIssue?.field === "course-description" && <span id="course-description-error" className="editor-field-error">{validationIssue.message}</span>}</p>
+                    <p><label htmlFor="course-image">Image de couverture</label><input id="course-image" className="input" type="url" value={draft.image_url} onChange={event => update("image_url", event.target.value)} placeholder="https://… ou /images/…" inputMode="url" /></p>
+                  </section>
+                  <CourseCoverPreview draft={draft} />
+                </div>
               )}
 
               {activeSection === "pedagogy" && (
@@ -1096,6 +1254,40 @@ export default function AdminCoursesPage() {
                     <button type="button" className="btn btn-outline" onClick={addModule}><Plus size={16} aria-hidden="true" /> Ajouter un module</button>
                   </div>
 
+                  <div className="course-program-mobile-switch">
+                    <label htmlFor="course-program-module-switch">Module actif</label>
+                    <select
+                      id="course-program-module-switch"
+                      className="input"
+                      value={activeModule?.clientId || ""}
+                      disabled={!draft.modules.length}
+                      onChange={event => toggleModule(event.target.value)}
+                    >
+                      {!draft.modules.length && <option value="">Aucun module pour le moment</option>}
+                      {draft.modules.map((module, index) => (
+                        <option key={module.clientId} value={module.clientId}>
+                          {index + 1}. {module.titre.trim() || `Module ${index + 1} sans titre`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {activeModule && (
+                    <div className="course-program-mobile-actions" role="group" aria-label="Actions rapides du module actif">
+                      <button type="button" className={`btn btn-outline ${moduleView === "edit" ? "active" : ""}`} aria-pressed={moduleView === "edit"} onClick={() => setModuleView("edit")}>Éditer</button>
+                      <button type="button" className={`btn btn-outline ${moduleView === "preview" ? "active" : ""}`} aria-pressed={moduleView === "preview"} onClick={() => setModuleView("preview")}><Eye size={16} aria-hidden="true" /> Aperçu</button>
+                      <details className="course-program-mobile-more">
+                        <summary className="icon-button" aria-label="Plus d’actions sur le module actif" title="Plus d’actions"><MoreHorizontal size={19} aria-hidden="true" /></summary>
+                        <div className="course-program-mobile-more-menu" role="group" aria-label="Réorganiser ou supprimer le module actif">
+                          <button type="button" className="icon-button" aria-label={`Monter le module ${activeModuleIndex + 1}`} onClick={() => moveModule(activeModuleIndex, activeModuleIndex - 1)} disabled={activeModuleIndex === 0}>↑</button>
+                          <button type="button" className="icon-button" aria-label={`Descendre le module ${activeModuleIndex + 1}`} onClick={() => moveModule(activeModuleIndex, activeModuleIndex + 1)} disabled={activeModuleIndex === draft.modules.length - 1}>↓</button>
+                          <button type="button" className="icon-button" aria-label="Dupliquer le module actif" title="Dupliquer le module" onClick={() => duplicateModule(activeModuleIndex)}><Copy size={16} aria-hidden="true" /></button>
+                          <button type="button" className="icon-button danger" aria-label={`Supprimer le module ${activeModuleIndex + 1}`} onClick={() => removeModule(activeModuleIndex)}><Trash2 size={18} aria-hidden="true" /></button>
+                        </div>
+                      </details>
+                    </div>
+                  )}
+
                   {!draft.modules.length && (
                     <div className="module-empty-state">
                       <FileText size={24} aria-hidden="true" />
@@ -1115,9 +1307,10 @@ export default function AdminCoursesPage() {
                               <small>{activeModule.type_contenu || "texte"} · {activeModule.duree || 0} min</small>
                             </span>
                           </div>
-                          <div className="module-editor-actions" role="group" aria-label="Mode d’affichage du module">
+                          <div className="module-editor-actions" role="group" aria-label="Actions du module actif">
                             <button type="button" className={`btn btn-outline ${moduleView === "edit" ? "active" : ""}`} aria-pressed={moduleView === "edit"} onClick={() => setModuleView("edit")}>Édition</button>
                             <button type="button" className={`btn btn-outline ${moduleView === "preview" ? "active" : ""}`} aria-pressed={moduleView === "preview"} onClick={() => setModuleView("preview")}><Eye size={16} aria-hidden="true" /> Aperçu</button>
+                            <button type="button" className="btn btn-outline" onClick={() => duplicateModule(activeModuleIndex)}><Copy size={16} aria-hidden="true" /> Dupliquer le module</button>
                           </div>
                         </div>
                         <div id={`module-${activeModule.clientId}-body`} className="module-editor-body">
@@ -1128,10 +1321,28 @@ export default function AdminCoursesPage() {
                                 <p><label htmlFor={`module-${activeModule.clientId}-type`}>Type de contenu</label><select id={`module-${activeModule.clientId}-type`} className="input" value={activeModule.type_contenu} onChange={event => changeModuleType(activeModuleIndex, event.target.value)}><option value="texte">Texte</option><option value="video">Vidéo</option><option value="quiz">Quiz</option></select></p>
                               </div>
                               <p><label htmlFor={`module-${activeModule.clientId}-description`}>Description</label><textarea id={`module-${activeModule.clientId}-description`} className="input" rows={3} value={activeModule.description} onChange={event => updateModule(activeModuleIndex, { description: event.target.value })} /></p>
-                              <div className={activeModule.type_contenu === "video" ? "grid-2" : "grid-1"}>
+                              <div className={activeModule.type_contenu === "video" || activeModule.url_video ? "grid-2" : "grid-1"}>
                                 <p><label htmlFor={`module-${activeModule.clientId}-duration`}>Durée (min)</label><input id={`module-${activeModule.clientId}-duration`} className="input" type="number" min={0} value={activeModule.duree} onChange={event => updateModule(activeModuleIndex, { duree: Number(event.target.value) })} /></p>
-                                {activeModule.type_contenu === "video" && <p><label htmlFor={`module-${activeModule.clientId}-video`}>URL vidéo HTTPS</label><input id={`module-${activeModule.clientId}-video`} className="input" type="url" inputMode="url" value={activeModule.url_video} onChange={event => updateModule(activeModuleIndex, { url_video: event.target.value })} placeholder="https://…" /></p>}
+                                {(activeModule.type_contenu === "video" || activeModule.url_video) && <p><label htmlFor={`module-${activeModule.clientId}-video`}>URL vidéo ou chemin local</label><input id={`module-${activeModule.clientId}-video`} className="input" type="url" inputMode="url" value={activeModule.url_video} aria-describedby={`module-${activeModule.clientId}-video-help`} onChange={event => updateModule(activeModuleIndex, { url_video: event.target.value })} placeholder="/medias/module.mp4" /><small id={`module-${activeModule.clientId}-video-help`}>Média hébergé sur ce site ou dans le compte Cloudinary contrôlé par l’Institut.</small></p>}
                               </div>
+                              {(activeModule.type_contenu === "video" || activeModule.url_video || activeModule.url_sous_titres) && (
+                                <p className="course-caption-field">
+                                  <label htmlFor={`module-${activeModule.clientId}-captions`}>Sous-titres WebVTT (.vtt) *</label>
+                                  <input
+                                    id={`module-${activeModule.clientId}-captions`}
+                                    className="input"
+                                    type="url"
+                                    inputMode="url"
+                                    value={activeModule.url_sous_titres || ""}
+                                    aria-invalid={validationIssue?.field === "module-captions" && validationIssue.moduleIndex === activeModuleIndex}
+                                    aria-describedby={`module-${activeModule.clientId}-captions-help${validationIssue?.field === "module-captions" && validationIssue.moduleIndex === activeModuleIndex ? ` module-${activeModule.clientId}-captions-error` : ""}`}
+                                    onChange={event => updateModule(activeModuleIndex, { url_sous_titres: event.target.value })}
+                                    placeholder="/medias/module-fr.vtt"
+                                  />
+                                  <small id={`module-${activeModule.clientId}-captions-help`}>Fichier UTF-8 servi en text/vtt depuis ce site ou Cloudinary, avec dialogues et sons significatifs synchronisés en français.</small>
+                                  {validationIssue?.field === "module-captions" && validationIssue.moduleIndex === activeModuleIndex && <span id={`module-${activeModule.clientId}-captions-error`} className="editor-field-error">{validationIssue.message}</span>}
+                                </p>
+                              )}
                               {activeModule.type_contenu === "quiz" && (
                                 <section className="course-quiz-builder" aria-labelledby={`module-${activeModule.clientId}-quiz-heading`}>
                                   <div className="module-editor-head">
@@ -1296,9 +1507,10 @@ export default function AdminCoursesPage() {
                 </div>
               )}
             </fieldset>
-          </form>
+            </form>
+          </div>
 
-          <aside className="course-list-panel course-studio-library" aria-labelledby="course-list-heading">
+          <nav className="course-list-panel course-studio-library" aria-labelledby="course-list-heading">
             <h2 id="course-list-heading" className="font-display">Cours existants</h2>
             <p>
               <label htmlFor="course-search"><Search size={16} aria-hidden="true" /> Rechercher un cours</label>
@@ -1331,7 +1543,7 @@ export default function AdminCoursesPage() {
                 </div>
               )}
             </div>
-          </aside>
+          </nav>
         </div>
       </div>
     </section>

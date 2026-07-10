@@ -1,4 +1,4 @@
-export function buildContentSecurityPolicy(nonce?: string, development = false) {
+export function buildContentSecurityPolicy(nonce?: string, development = false, upgradeInsecureRequests = true) {
   const scriptSources = [
     "'self'",
     ...(nonce ? [`'nonce-${nonce}'`, "'strict-dynamic'"] : []),
@@ -23,7 +23,7 @@ export function buildContentSecurityPolicy(nonce?: string, development = false) 
     "frame-src https://checkout.stripe.com https://www.paypal.com https://*.paypal.com https://www.google.com https://maps.google.com https://*.daily.co",
     "worker-src 'self' blob:",
     "manifest-src 'self'",
-    "upgrade-insecure-requests"
+    ...(upgradeInsecureRequests ? ["upgrade-insecure-requests"] : [])
   ].join("; ");
 }
 

@@ -8,6 +8,7 @@ import {
   Check,
   CheckCircle2,
   Clock,
+  Eye,
   Loader2,
   LockKeyhole,
   Play,
@@ -27,6 +28,7 @@ type StudentCourse = Course & {
 };
 
 type CoursePayload = {
+  accessMode?: "learning" | "preview";
   courses: StudentCourse[];
   profile: Profile;
   progress: ModuleProgress[];
@@ -79,6 +81,7 @@ export default function CoursePage() {
 
         if (!mounted) return;
         setPayload({
+          accessMode: data.accessMode === "preview" ? "preview" : "learning",
           courses: data.course ? [data.course] : [],
           profile: data.profile,
           progress: data.progress || [],
@@ -98,9 +101,10 @@ export default function CoursePage() {
   }, [reloadKey, slug]);
 
   const course = useMemo(() => payload?.courses.find(item => item.slug === slug), [payload, slug]);
+  const isStaffPreview = payload?.accessMode === "preview";
   const journey = useMemo(
-    () => buildCourseJourney(course?.modules || [], payload?.progress || []),
-    [course?.modules, payload?.progress],
+    () => buildCourseJourney(course?.modules || [], payload?.progress || [], { unlockAll: isStaffPreview }),
+    [course?.modules, isStaffPreview, payload?.progress],
   );
   const remainingMinutes = useMemo(() => journey.modules.reduce((total, item) => {
     const duration = Number(item.module.duree || 0);
@@ -165,34 +169,35 @@ export default function CoursePage() {
   const firstName = payload.profile.prenom || payload.profile.email;
   const competences = course.competences || [];
   const prerequisites = course.prerequis || [];
+  const level = course.niveau === "avance" ? "Avancé" : course.niveau === "intermediaire" ? "Intermédiaire" : "Débutant";
   const progressStyle = { "--journey-progress": `${journey.overallProgress}%` } as CSSProperties;
 
   return (
     <section className="section course-reader-page course-dashboard-page">
       <div className="container course-dashboard-container">
-        <Link className="course-back-link" href="/espace-etudiant">← Mes formations</Link>
+        <Link className="course-back-link" href={isStaffPreview ? "/admin/courses" : "/espace-etudiant"}>← {isStaffPreview ? "Retour au studio" : "Mes formations"}</Link>
 
         <header className="course-dashboard-hero">
           <div className="course-dashboard-copy">
-            <span className="course-eyebrow">Bonjour {firstName} · votre parcours</span>
+            <span className="course-eyebrow">{isStaffPreview ? "Prévisualisation équipe" : `Bonjour ${firstName} · votre parcours`}</span>
             <h1>{course.titre}</h1>
             <p>{course.description}</p>
             <div className="course-dashboard-meta" aria-label="Informations sur le cours">
               <span><BookOpen size={17} aria-hidden="true" /> {course.modules.length} modules</span>
               <span><Clock size={17} aria-hidden="true" /> {formatDuration(course.duree_totale)} au total</span>
-              <span className="badge">{course.niveau}</span>
+              <span className="badge">{level}</span>
             </div>
             {resume ? (
               <Link className="btn btn-primary course-resume-button" href={moduleHref(course.slug, resume.id)}>
-                {finished ? <RotateCcw size={18} aria-hidden="true" /> : <Play size={18} fill="currentColor" aria-hidden="true" />}
-                {journey.resumeLabel}
+                {isStaffPreview ? <Eye size={18} aria-hidden="true" /> : finished ? <RotateCcw size={18} aria-hidden="true" /> : <Play size={18} fill="currentColor" aria-hidden="true" />}
+                {isStaffPreview ? "Prévisualiser le premier module" : journey.resumeLabel}
                 <ArrowRight size={18} aria-hidden="true" />
               </Link>
             ) : (
               <p className="course-empty-program">Le programme de ce cours sera bientôt disponible.</p>
             )}
           </div>
-          <div className="course-progress-summary" style={progressStyle}>
+          <div className={`course-progress-summary ${isStaffPreview ? "is-preview" : ""}`} style={progressStyle}>
             <div
               className="course-progress-dial"
               role="progressbar"
@@ -201,13 +206,13 @@ export default function CoursePage() {
               aria-valuemin={0}
               aria-valuemax={100}
             >
-              <strong>{journey.overallProgress}<span>%</span></strong>
+              {isStaffPreview ? <Eye size={38} aria-hidden="true" /> : <strong>{journey.overallProgress}<span>%</span></strong>}
             </div>
             <div>
-              <strong>{journey.completedCount} sur {course.modules.length}</strong>
-              <span>modules terminés</span>
+              <strong>{isStaffPreview ? "Accès libre" : `${journey.completedCount} sur ${course.modules.length}`}</strong>
+              <span>{isStaffPreview ? "à tous les modules publiés" : "modules terminés"}</span>
             </div>
-            {!finished && remainingMinutes > 0 && <small>Environ {formatDuration(remainingMinutes)} restantes</small>}
+            {!isStaffPreview && !finished && remainingMinutes > 0 && <small>Environ {formatDuration(remainingMinutes)} restantes</small>}
             {finished && <small><Check size={15} aria-hidden="true" /> Parcours terminé</small>}
           </div>
         </header>
@@ -227,11 +232,12 @@ export default function CoursePage() {
                 {journey.modules.map((item, index) => {
                   const isComplete = item.state === "complete";
                   const isCurrent = item.state === "current";
-                  const actionLabel = isComplete ? "Revoir" : item.progress > 0 ? "Reprendre" : "Commencer";
+                  const isAvailable = item.state === "available";
+                  const actionLabel = isStaffPreview ? "Prévisualiser" : isComplete ? "Revoir" : item.progress > 0 ? "Reprendre" : "Commencer";
                   return (
                     <li className={`course-syllabus-item is-${item.state}`} key={item.module.id}>
                       <div className="course-syllabus-marker" aria-hidden="true">
-                        {isComplete ? <Check size={18} /> : isCurrent ? <Play size={16} fill="currentColor" /> : <LockKeyhole size={16} />}
+                        {isComplete ? <Check size={18} /> : isCurrent ? <Play size={16} fill="currentColor" /> : isAvailable ? <Eye size={17} /> : <LockKeyhole size={16} />}
                       </div>
                       <div className="course-syllabus-content">
                         <div className="course-syllabus-title-row">
@@ -240,7 +246,7 @@ export default function CoursePage() {
                             <h3>{item.module.titre}</h3>
                           </div>
                           <span className="course-module-state">
-                            {isComplete ? "Terminé" : isCurrent ? item.progress > 0 ? "En cours" : "À commencer" : "Verrouillé"}
+                            {isStaffPreview && item.state === "available" ? "Accessible" : isComplete ? "Terminé" : isCurrent ? item.progress > 0 ? "En cours" : "À commencer" : "Verrouillé"}
                           </span>
                         </div>
                         {item.module.description && <p>{item.module.description}</p>}

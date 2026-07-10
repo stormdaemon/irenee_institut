@@ -272,8 +272,8 @@ test("module iframe discards authored style blocks before applying its controlle
   assert.match(modulePage, /querySelectorAll<HTMLElement>\("\[style\]"\)[\s\S]*element\.removeAttribute\("style"\)/);
   assert.match(modulePage, /\.module-content,\s*\.module-content \*,\s*body > \* \{ color: #172033 !important;/);
   assert.match(modulePage, /\.module-content :is\(\.definition-box, \.quote-box, \.biblical-quote, \.note-box, \.warning-box, \.success-box, \.example-box\)/);
-  assert.match(modulePage, /const normalizedHtml = html\.replace\(/);
-  assert.match(modulePage, /DOMPurify\.sanitize\(normalizedHtml, \{/);
+  assert.doesNotMatch(modulePage, /const normalizedHtml = html\.replace\(/);
+  assert.match(modulePage, /DOMPurify\.sanitize\(html, \{/);
   assert.match(modulePage, /querySelectorAll<HTMLElement>\("\.comparison-table:not\(table\)"\)/);
 });
 

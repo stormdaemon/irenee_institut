@@ -1,5 +1,6 @@
 import type { PoolClient } from "pg";
 import type { ParsedCourseModule, parseCourseForm } from "./course-input";
+import { validatePublishedCaptionResources } from "./course-caption-validation";
 import { withTransaction } from "./db";
 
 type ParsedCourse = ReturnType<typeof parseCourseForm>;
@@ -53,6 +54,7 @@ function moduleValues(courseId: string, module: ParsedCourseModule) {
     module.contenu_html,
     module.contenu,
     module.url_video,
+    module.url_sous_titres ?? null,
     JSON.stringify(module.quiz ?? [])
   ];
 }
@@ -60,8 +62,8 @@ function moduleValues(courseId: string, module: ParsedCourseModule) {
 async function insertModule(client: PoolClient, courseId: string, module: ParsedCourseModule) {
   const result = await client.query<ModuleRow>(
     `insert into public.course_modules
-      (course_id,titre,description,ordre,duree,type_contenu,contenu_html,contenu,url_video,quiz)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb)
+      (course_id,titre,description,ordre,duree,type_contenu,contenu_html,contenu,url_video,url_sous_titres,quiz)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb)
      returning *`,
     moduleValues(courseId, module)
   );
@@ -85,6 +87,7 @@ async function readCompleteCourse(client: PoolClient, id: string) {
 }
 
 export async function createCourse(input: ParsedCourse, actor: CourseActor) {
+  await validatePublishedCaptionResources(input);
   return withTransaction(async client => {
     const authorName = `${actor.prenom || ""} ${actor.nom || ""}`.trim() || actor.email;
     const placeholders = courseColumns.map((_, index) => `$${index + 1}`);
@@ -101,6 +104,7 @@ export async function createCourse(input: ParsedCourse, actor: CourseActor) {
 }
 
 export async function updateCourse(id: string, input: ParsedCourse, actor: CourseActor) {
+  await validatePublishedCaptionResources(input);
   return withTransaction(async client => {
     const existing = await client.query<CourseRow>(
       `select courses.*, (courses.updated_at = $2::timestamptz) as version_matches
@@ -159,8 +163,9 @@ export async function updateCourse(id: string, input: ParsedCourse, actor: Cours
       const result = await client.query<ModuleRow>(
         `update public.course_modules
          set titre=$1,description=$2,ordre=$3,duree=$4,type_contenu=$5,contenu_html=$6,contenu=$7,url_video=$8,
-             quiz=coalesce($9::jsonb,quiz),updated_at=greatest(now(),updated_at + interval '1 millisecond')
-         where id=$10 and course_id=$11 returning *`,
+             url_sous_titres=case when $9::boolean then $10 else url_sous_titres end,
+             quiz=coalesce($11::jsonb,quiz),updated_at=greatest(now(),updated_at + interval '1 millisecond')
+         where id=$12 and course_id=$13 returning *`,
         [
           module.titre,
           module.description,
@@ -170,6 +175,8 @@ export async function updateCourse(id: string, input: ParsedCourse, actor: Cours
           module.contenu_html,
           module.contenu,
           module.url_video,
+          Object.hasOwn(module, "url_sous_titres"),
+          module.url_sous_titres ?? null,
           module.quiz === undefined ? null : JSON.stringify(module.quiz),
           module.id,
           id
