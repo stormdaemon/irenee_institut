@@ -164,8 +164,8 @@ export function RichHtmlEditor({
 
   if (sourceMode) {
     return (
-      <div className="rich-editor">
-        <div className="rich-toolbar" role="toolbar" aria-label={`Mise en forme de ${label}`} aria-controls={`${editorId}-source`}>
+      <div className="rich-editor" data-sticky-boundary="rich-editor">
+        <div className="rich-toolbar" data-sticky-toolbar="true" role="toolbar" aria-label={`Mise en forme de ${label}`} aria-controls={`${editorId}-source`}>
           <div className="rich-toolbar-group" role="group" aria-label="Mode d’édition">
             <button
               type="button"
@@ -192,9 +192,9 @@ export function RichHtmlEditor({
   }
 
   return (
-    <div className="rich-editor">
+    <div className="rich-editor" data-sticky-boundary="rich-editor">
       <span className="rich-toolbar-mobile-hint">Outils de mise en forme · faites glisser →</span>
-      <div className="rich-toolbar" role="toolbar" aria-label={`Mise en forme de ${label}`} aria-controls={editorId}>
+      <div className="rich-toolbar" data-sticky-toolbar="true" role="toolbar" aria-label={`Mise en forme de ${label}`} aria-controls={editorId}>
         <div className="rich-toolbar-group" role="group" aria-label="Structure du texte">
           <button type="button" className="toolbar-button" aria-label="Paragraphe" disabled={disabled} onPointerDown={preserveSelection} onClick={() => block("p")} title="Paragraphe"><Pilcrow size={16} aria-hidden="true" /></button>
           <button type="button" className="toolbar-button" aria-label="Titre de niveau 2" disabled={disabled} onPointerDown={preserveSelection} onClick={() => block("h2")} title="Titre 2"><Heading2 size={16} aria-hidden="true" /></button>

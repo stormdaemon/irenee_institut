@@ -592,6 +592,27 @@ for (const viewport of viewports) {
         await expect(page.locator(".rich-table-hint")).toBeVisible();
         await expect(page.locator(".course-program-editor .rich-canvas td").first()).toHaveCSS("position", "sticky");
       }
+      const formattingToolbar = page.locator(".course-program-editor .rich-toolbar");
+      await formattingToolbar.evaluate(element => {
+        const stickyTop = Number.parseFloat(getComputedStyle(element).top) || 0;
+        const documentTop = element.getBoundingClientRect().top + window.scrollY;
+        window.scrollTo(0, Math.max(0, documentTop - stickyTop + 80));
+      });
+      await expect.poll(async () => formattingToolbar.evaluate(element => {
+        const toolbar = element.getBoundingClientRect();
+        const chrome = document.querySelector<HTMLElement>(".site-chrome")?.getBoundingClientRect();
+        const commandbarElement = document.querySelector<HTMLElement>(".course-studio-commandbar");
+        const commandbar = commandbarElement?.getBoundingClientRect();
+        const commandbarVisible = commandbarElement ? getComputedStyle(commandbarElement).display !== "none" : false;
+        const obstructionBottom = Math.max(chrome?.bottom || 0, commandbarVisible ? commandbar?.bottom || 0 : 0);
+        return Math.max(0, Math.ceil(obstructionBottom - toolbar.top));
+      }), "La barre de mise en forme sticky ne doit jamais passer sous le header ou les commandes du cours.").toBe(0);
+      const stickyGeometry = await formattingToolbar.evaluate(element => {
+        const toolbar = element.getBoundingClientRect();
+        const boundary = element.closest<HTMLElement>("[data-sticky-boundary='rich-editor']")?.getBoundingClientRect();
+        return { boundaryBottom: boundary?.bottom || 0, toolbarBottom: toolbar.bottom };
+      });
+      expect(stickyGeometry.toolbarBottom, "La barre sticky doit rester contenue dans l’éditeur riche.").toBeLessThanOrEqual(stickyGeometry.boundaryBottom + 1);
       await page.evaluate(() => window.scrollTo(0, 0));
       if (viewport.width <= 390) await expect(page.locator(".course-program-mobile-actions")).toBeVisible();
       if (viewport.width === 320) {
@@ -1247,3 +1268,140 @@ test.describe("reader mobile plan stress", () => {
     assertNoRuntimeErrors(page);
   });
 });
+
+const stickyToolbarViewports = [
+  { name: "desktop", width: 1440, height: 900 },
+  { name: "mobile", width: 390, height: 844 },
+  { name: "mobile-compact", width: 320, height: 568 },
+] as const;
+
+for (const viewport of stickyToolbarViewports) {
+  test.describe(`course editor sticky toolbar ${viewport.name} (${viewport.width}x${viewport.height})`, () => {
+    test.use({
+      hasTouch: viewport.width <= 390,
+      isMobile: viewport.width <= 390,
+      viewport: { width: viewport.width, height: viewport.height },
+    });
+
+    test("follows its natural position, docks below the site chrome, then leaves with the editor", async ({ page }) => {
+      monitorRuntimeErrors(page);
+      await mockApplicationApis(page);
+      await page.goto(`/admin/courses?course=${course.slug}`);
+      await expect(page.getByLabel("Cours actif")).toHaveValue(course.id);
+
+      if (viewport.width <= 390) {
+        await openProgrammeByTouch(page);
+      } else {
+        const programme = page.getByRole("button", { name: /Programme/ });
+        await programme.click();
+        await expect(programme).toHaveAttribute("aria-current", "step");
+      }
+
+      const toolbar = page.locator(".course-program-editor .rich-toolbar");
+      await expect(toolbar).toBeVisible();
+      await expect(toolbar).toHaveCSS("position", "sticky");
+
+      await page.evaluate(() => {
+        document.documentElement.style.scrollBehavior = "auto";
+        window.scrollTo(0, 0);
+      });
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+
+      const initial = await page.evaluate(() => {
+        const chrome = document.querySelector<HTMLElement>(".site-chrome");
+        const commandbar = document.querySelector<HTMLElement>(".course-studio-commandbar");
+        const editor = document.querySelector<HTMLElement>(".course-program-editor .rich-editor");
+        const toolbar = editor?.querySelector<HTMLElement>(".rich-toolbar");
+        if (!chrome || !editor || !toolbar) return null;
+        const chromeRect = chrome.getBoundingClientRect();
+        const commandbarRect = commandbar?.getBoundingClientRect();
+        const commandbarVisible = Boolean(commandbar && getComputedStyle(commandbar).display !== "none" && commandbarRect?.height);
+        const editorRect = editor.getBoundingClientRect();
+        const toolbarRect = toolbar.getBoundingClientRect();
+        return {
+          chromeBottom: chromeRect.bottom,
+          editorLeft: editorRect.left,
+          editorRight: editorRect.right,
+          expectedDockTop: chromeRect.bottom + (commandbarVisible ? commandbarRect?.height || 0 : 0),
+          toolbarDocumentTop: toolbarRect.top + window.scrollY,
+          toolbarLeft: toolbarRect.left,
+          toolbarRight: toolbarRect.right,
+          toolbarTop: toolbarRect.top,
+        };
+      });
+      expect(initial, "The toolbar, its editor and the sticky site chrome must be measurable.").not.toBeNull();
+      if (!initial) return;
+
+      expect(initial.toolbarTop, "Before reaching the viewport top, the toolbar must keep its natural document position.")
+        .toBeGreaterThan(initial.chromeBottom + 24);
+      expect(initial.toolbarLeft).toBeGreaterThanOrEqual(initial.editorLeft - 1);
+      expect(initial.toolbarRight).toBeLessThanOrEqual(initial.editorRight + 1);
+
+      const stickyThreshold = initial.toolbarDocumentTop - initial.expectedDockTop;
+      const beforeStickyScroll = Math.max(0, stickyThreshold * .55);
+      await page.evaluate(scrollY => window.scrollTo(0, scrollY), beforeStickyScroll);
+      const beforeSticky = await toolbar.evaluate(element => {
+        const rect = element.getBoundingClientRect();
+        return { scrollY: window.scrollY, top: rect.top };
+      });
+      expect(beforeSticky.top, "The toolbar must still follow normal document flow immediately before its sticky threshold.")
+        .toBeCloseTo(initial.toolbarDocumentTop - beforeSticky.scrollY, 0);
+      expect(beforeSticky.top).toBeGreaterThan(initial.expectedDockTop + 20);
+
+      const maximumScroll = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+      expect(maximumScroll - stickyThreshold, "The page fixture must allow the toolbar to cross its sticky threshold.")
+        .toBeGreaterThan(12);
+      const stickyScroll = Math.min(stickyThreshold + 6, maximumScroll - 6);
+      await page.evaluate(scrollY => window.scrollTo(0, scrollY), stickyScroll);
+
+      const docked = await page.evaluate(() => {
+        const chrome = document.querySelector<HTMLElement>(".site-chrome");
+        const commandbar = document.querySelector<HTMLElement>(".course-studio-commandbar");
+        const editor = document.querySelector<HTMLElement>(".course-program-editor .rich-editor");
+        const toolbar = editor?.querySelector<HTMLElement>(".rich-toolbar");
+        if (!chrome || !editor || !toolbar) return null;
+        const chromeRect = chrome.getBoundingClientRect();
+        const commandbarRect = commandbar?.getBoundingClientRect();
+        const commandbarVisible = Boolean(commandbar && getComputedStyle(commandbar).display !== "none" && commandbarRect?.height);
+        const editorRect = editor.getBoundingClientRect();
+        const toolbarRect = toolbar.getBoundingClientRect();
+        return {
+          chromeBottom: chromeRect.bottom,
+          editorBottom: editorRect.bottom,
+          editorLeft: editorRect.left,
+          editorRight: editorRect.right,
+          toolbarBottom: toolbarRect.bottom,
+          toolbarLeft: toolbarRect.left,
+          toolbarRight: toolbarRect.right,
+          toolbarTop: toolbarRect.top,
+          obstructionBottom: Math.max(chromeRect.bottom, commandbarVisible ? commandbarRect?.bottom || 0 : 0),
+        };
+      });
+      expect(docked, "The docked toolbar must remain measurable.").not.toBeNull();
+      if (!docked) return;
+      expect(docked.toolbarTop, "The toolbar must never be hidden underneath the active sticky header stack.")
+        .toBeGreaterThanOrEqual(docked.obstructionBottom - 1);
+      expect(docked.toolbarTop, "The toolbar must dock directly below the visible sticky headers without a dead gap.")
+        .toBeLessThanOrEqual(docked.obstructionBottom + 8);
+      expect(docked.toolbarLeft).toBeGreaterThanOrEqual(docked.editorLeft - 1);
+      expect(docked.toolbarRight).toBeLessThanOrEqual(docked.editorRight + 1);
+      expect(docked.editorBottom - docked.toolbarBottom, "The toolbar must dock while meaningful module content remains below it.")
+        .toBeGreaterThan(120);
+      await expect(page).toHaveScreenshot(`course-editor-toolbar-sticky-${viewport.name}.png`);
+
+      const secondStickyScroll = Math.min(stickyScroll + 6, maximumScroll);
+      expect(secondStickyScroll).toBeGreaterThan(stickyScroll);
+      await page.evaluate(scrollY => window.scrollTo(0, scrollY), secondStickyScroll);
+      const secondDockedTop = await toolbar.evaluate(element => element.getBoundingClientRect().top);
+      expect(secondDockedTop, "The toolbar must remain at the same viewport position throughout the module content.")
+        .toBeCloseTo(docked.toolbarTop, 0);
+
+      const publication = page.getByRole("button", { name: /Publication/ });
+      await publication.evaluate(element => (element as HTMLButtonElement).click());
+      await expect(publication).toHaveAttribute("aria-current", "step");
+      await expect(page.locator(".course-program-editor .rich-toolbar"), "Leaving the module editor must remove its sticky toolbar instead of leaving an overlay behind.")
+        .toHaveCount(0);
+      assertNoRuntimeErrors(page);
+    });
+  });
+}

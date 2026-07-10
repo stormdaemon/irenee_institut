@@ -468,6 +468,7 @@ export default function AdminCoursesPage() {
   const tabIdRef = useRef("");
   const publishRequested = useRef(false);
   const editorFormRef = useRef<HTMLFormElement | null>(null);
+  const editorCommandbarRef = useRef<HTMLDivElement | null>(null);
   const editorStepsRef = useRef<HTMLElement | null>(null);
   const isDirty = useMemo(() => courseDraftSignature(draft) !== courseDraftSignature(savedDraft), [draft, savedDraft]);
   const readiness = useMemo(() => getCourseEditorReadiness(draft), [draft]);
@@ -554,6 +555,39 @@ export default function AdminCoursesPage() {
     const centeredLeft = activeStep.offsetLeft - ((steps.clientWidth - activeStep.offsetWidth) / 2);
     steps.scrollTo({ behavior: "auto", left: Math.max(0, centeredLeft) });
   }, [activeSection]);
+
+  useEffect(() => {
+    const form = editorFormRef.current;
+    const commandbar = editorCommandbarRef.current;
+    const workspaceChrome = document.querySelector<HTMLElement>(".site-chrome");
+    if (!form || !commandbar || !workspaceChrome) return;
+
+    let animationFrame = 0;
+    const updateStickyOffsets = () => {
+      const chromeHeight = Math.max(0, Math.ceil(workspaceChrome.getBoundingClientRect().height));
+      const commandbarHeight = Math.max(0, Math.ceil(commandbar.getBoundingClientRect().height));
+      form.style.setProperty("--course-editor-chrome-offset", `${chromeHeight}px`);
+      form.style.setProperty("--course-editor-toolbar-offset", `${chromeHeight + commandbarHeight}px`);
+    };
+    const scheduleStickyOffsets = () => {
+      window.cancelAnimationFrame(animationFrame);
+      animationFrame = window.requestAnimationFrame(updateStickyOffsets);
+    };
+
+    scheduleStickyOffsets();
+    const resizeObserver = typeof ResizeObserver === "function" ? new ResizeObserver(scheduleStickyOffsets) : null;
+    resizeObserver?.observe(workspaceChrome);
+    resizeObserver?.observe(commandbar);
+    window.addEventListener("resize", scheduleStickyOffsets);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      window.removeEventListener("resize", scheduleStickyOffsets);
+      resizeObserver?.disconnect();
+      form.style.removeProperty("--course-editor-chrome-offset");
+      form.style.removeProperty("--course-editor-toolbar-offset");
+    };
+  }, []);
 
   useEffect(() => {
     if (localDraftTimer.current) window.clearTimeout(localDraftTimer.current);
@@ -1161,7 +1195,7 @@ export default function AdminCoursesPage() {
                   </a>
                 )}
               </div>
-              <div className="course-editor-head course-studio-commandbar">
+              <div ref={editorCommandbarRef} className="course-editor-head course-studio-commandbar" data-sticky-commandbar="true">
                 <div>
                   <span className="badge">{draft.id ? draft.statut === "publie" ? "Cours publié" : "Modification" : "Création"}</span>
                   <h2 className="font-display">{draft.titre || (draft.id ? "Cours sélectionné" : "Nouveau cours")}</h2>

@@ -13547,6 +13547,28 @@ body .admin-shell .course-studio-page .module-editor-body p > small {
   line-height: 1.45;
 }
 
+/* The rich toolbar follows the measured workspace chrome and command bar.
+   Its .rich-editor parent remains the sticky containing boundary. */
+body .admin-shell .course-studio-page .course-studio-editor {
+  --course-editor-chrome-offset: 68px;
+  --course-editor-toolbar-offset: 150px;
+}
+
+body .admin-shell .course-studio-page .course-studio-commandbar {
+  top: var(--course-editor-chrome-offset, 68px);
+}
+
+body .admin-shell .course-studio-page .course-program-editor .rich-toolbar {
+  top: var(--course-editor-toolbar-offset, 150px);
+}
+
+@media (max-width: 760px) {
+  body .admin-shell .course-studio-page .course-studio-editor {
+    --course-editor-chrome-offset: 62px;
+    --course-editor-toolbar-offset: 62px;
+  }
+}
+
 .module-workspace-page .module-video-caption-error,
 body .admin-shell .course-studio-page .module-video-caption-error {
   margin-top: 10px;

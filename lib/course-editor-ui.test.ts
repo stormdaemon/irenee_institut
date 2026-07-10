@@ -312,6 +312,18 @@ describe("course editor accessibility contracts", () => {
     assert.match(html, /aria-describedby="module-content-table-table-help"/);
   });
 
+  test("keeps the formatting toolbar inside an explicit sticky boundary", () => {
+    const html = renderToStaticMarkup(createElement(RichHtmlEditor, {
+      id: "module-content-sticky",
+      label: "Contenu avec barre fixe",
+      value: "<p>Un module suffisamment long</p>",
+      onChange: () => undefined,
+    }));
+
+    assert.match(html, /class="rich-editor" data-sticky-boundary="rich-editor"/);
+    assert.match(html, /class="rich-toolbar" data-sticky-toolbar="true"/);
+  });
+
   test("uses semantic, style-free templates that survive the student reader", () => {
     assert.match(richEditorTemplates.info, /class="course-callout course-callout-info"/);
     assert.match(richEditorTemplates.warning, /class="course-callout course-callout-warning"/);
@@ -343,4 +355,16 @@ test("save and navigation safeguards stay wired", async () => {
   assert.match(source, /module-captions/);
   assert.match(source, /publishRequested/);
   assert.doesNotMatch(source, /draft\.modules\.filter\(module => module\.titre\.trim\(\)\)/);
+});
+
+test("the course toolbar offset follows the real workspace chrome on every viewport", async () => {
+  const page = await readFile(new URL("../app/admin/courses/page.tsx", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+
+  assert.match(page, /new ResizeObserver\(scheduleStickyOffsets\)/);
+  assert.match(page, /--course-editor-chrome-offset/);
+  assert.match(page, /--course-editor-toolbar-offset/);
+  assert.match(css, /body \.admin-shell \.course-studio-page \.course-studio-commandbar\s*\{[^}]*top:\s*var\(--course-editor-chrome-offset/);
+  assert.match(css, /body \.admin-shell \.course-studio-page \.course-program-editor \.rich-toolbar\s*\{[^}]*top:\s*var\(--course-editor-toolbar-offset/);
+  assert.match(css, /\.course-editor \.rich-toolbar\s*\{[^}]*position:\s*sticky/);
 });
