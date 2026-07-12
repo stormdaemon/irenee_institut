@@ -1,4 +1,5 @@
 import { query } from "@/lib/db";
+import type { ContactInput } from "@/lib/contact";
 import { safeInternalPath } from "@/lib/request-security";
 
 type RegistrationProfile = {
@@ -91,6 +92,31 @@ export async function sendPasswordResetEmail(input: {
       htmlBody: `<p>Bonjour <strong>${safeName}</strong>,</p><p>Une réinitialisation du mot de passe de votre compte Institut Saint Irénée a été demandée.</p><p><a href="${safeUrl}">Choisir un nouveau mot de passe</a></p><p>Ce lien à usage unique expire dans 30 minutes. Si vous n'êtes pas à l'origine de cette demande, ignorez ce message&nbsp;: votre mot de passe reste inchangé.</p>`,
       subject: "Réinitialiser votre mot de passe Institut Saint Irénée",
       to: input.email
+    }
+  });
+}
+
+export async function sendContactMessage(input: ContactInput) {
+  const fullName = `${input.prenom} ${input.nom}`.trim();
+  const phone = input.telephone || "Non renseigné";
+  const recipient = process.env.CONTACT_RECIPIENT_EMAIL || "oeuvrecatholiquefrance@gmail.com";
+  const safeMessage = escapeHtml(input.message).replace(/\r?\n/g, "<br>");
+
+  return postAppsScript({
+    campaign: {
+      body: [
+        `Nouveau message envoyé depuis irenee-institut.org`,
+        "",
+        `Nom : ${fullName}`,
+        `Email : ${input.email}`,
+        `Téléphone : ${phone}`,
+        `Sujet : ${input.sujet}`,
+        "",
+        input.message
+      ].join("\n"),
+      htmlBody: `<p><strong>Nouveau message envoyé depuis irenee-institut.org</strong></p><p><strong>Nom :</strong> ${escapeHtml(fullName)}<br><strong>Email :</strong> ${escapeHtml(input.email)}<br><strong>Téléphone :</strong> ${escapeHtml(phone)}<br><strong>Sujet :</strong> ${escapeHtml(input.sujet)}</p><p>${safeMessage}</p>`,
+      subject: `Contact site — ${input.sujet}`,
+      to: recipient
     }
   });
 }

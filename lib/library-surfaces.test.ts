@@ -340,7 +340,7 @@ test("clean annual pass signup URL stays private and preserves the checkout flow
   assert.match(cleanSignupPage, /metadata = privatePageMetadata/);
   assert.match(proxy, /export function proxy\(request: NextRequest\)/);
   assert.match(proxy, /request\.nextUrl\.searchParams\.get\("next"\) === annualPassCheckoutPath/);
-  assert.match(proxy, /NextResponse\.redirect\(url, 307\)/);
+  assert.match(proxy, /emptyRedirect\(url, 307\)/);
   assert.match(signupPage, /window\.location\.pathname === cleanAnnualPassSignupPath/);
   assert.match(userMenu, /const annualPassSignupHref = cleanAnnualPassSignupPath/);
   assert.match(buyButton, /window\.location\.href = cleanAnnualPassSignupPath/);

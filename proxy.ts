@@ -2,11 +2,54 @@ import { NextRequest, NextResponse } from "next/server";
 import { annualPassCheckoutPath, cleanAnnualPassSignupPath } from "@/lib/routes";
 import { buildContentSecurityPolicy } from "@/lib/security-headers";
 
+const SENSITIVE_LOGIN_QUERY_PARAMETERS = new Set(["code", "email", "pass", "password", "pwd", "token"]);
+const SESSION_COOKIE_NAMES = ["__Host-irenee_session", "irenee_session"];
+
 function nonceForRequest() {
   return Buffer.from(crypto.randomUUID()).toString("base64");
 }
 
+function emptyRedirect(url: URL, status: 302 | 307) {
+  const response = NextResponse.redirect(url, status);
+  response.headers.set("Cache-Control", "no-store");
+  response.headers.set("Content-Security-Policy", "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
+  response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+  return response;
+}
+
 export function proxy(request: NextRequest) {
+  if (request.nextUrl.pathname === "/formations" && request.nextUrl.searchParams.has("checkout")) {
+    const checkoutValues = request.nextUrl.searchParams.getAll("checkout");
+    if (checkoutValues.length !== 1 || checkoutValues[0] !== "annual-pass") {
+      const url = request.nextUrl.clone();
+      url.searchParams.delete("checkout");
+      return emptyRedirect(url, 307);
+    }
+  }
+
+  if (request.nextUrl.pathname === "/auth/login") {
+    const url = request.nextUrl.clone();
+    let removed = false;
+    for (const name of SENSITIVE_LOGIN_QUERY_PARAMETERS) {
+      if (!url.searchParams.has(name)) continue;
+      url.searchParams.delete(name);
+      removed = true;
+    }
+    if (removed) return emptyRedirect(url, 302);
+  }
+
+  if (
+    request.nextUrl.pathname.startsWith("/admin")
+    && !SESSION_COOKIE_NAMES.some(name => request.cookies.has(name))
+  ) {
+    const url = request.nextUrl.clone();
+    const nextPath = `${url.pathname}${url.search}`;
+    url.pathname = "/auth/login";
+    url.search = "";
+    url.searchParams.set("next", nextPath);
+    return emptyRedirect(url, 307);
+  }
+
   if (
     request.nextUrl.pathname === "/auth/signup" &&
     request.nextUrl.searchParams.get("next") === annualPassCheckoutPath
@@ -14,7 +57,7 @@ export function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = cleanAnnualPassSignupPath;
     url.search = "";
-    return NextResponse.redirect(url, 307);
+    return emptyRedirect(url, 307);
   }
 
   const nonce = nonceForRequest();

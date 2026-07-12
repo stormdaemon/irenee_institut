@@ -2,7 +2,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown, Clock, Mail, MapPin, Phone } from "lucide-react";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 
 const faqs = [
   {
@@ -48,6 +48,38 @@ const faqs = [
 
 export default function ContactPage() {
   const [open, setOpen] = useState("Puis-je suivre la formation à mon rythme ?");
+  const [submission, setSubmission] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [submissionMessage, setSubmissionMessage] = useState("");
+
+  async function sendMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submission === "submitting") return;
+    setSubmission("submitting");
+    setSubmissionMessage("");
+
+    const form = event.currentTarget;
+    const fields = new FormData(form);
+    const payload = Object.fromEntries(fields.entries());
+
+    try {
+      const response = await fetch("/api/contact", {
+        body: JSON.stringify(payload),
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        method: "POST"
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || result?.accepted !== true) {
+        throw new Error(result?.error || "Le message n’a pas pu être envoyé.");
+      }
+      form.reset();
+      setSubmission("success");
+      setSubmissionMessage("Votre message a bien été envoyé. Notre équipe vous répondra rapidement.");
+    } catch (error) {
+      setSubmission("error");
+      setSubmissionMessage(error instanceof Error ? error.message : "Le message n’a pas pu être envoyé.");
+    }
+  }
 
   return (
     <>
@@ -59,26 +91,36 @@ export default function ContactPage() {
       </section>
       <section className="section contact-section" style={{ background: "white" }}>
         <div className="container grid-2">
-          <form className="soft-card contact-form-card" style={{ padding: 30 }} action="https://formspree.io/f/mjgzlojl" method="POST">
-            <input type="hidden" name="_subject" value="Nouveau message depuis le site Institut Saint Irenee" />
+          <form className="soft-card contact-form-card" style={{ padding: 30 }} onSubmit={sendMessage}>
             <h2 className="font-display" style={{ color: "var(--navy)" }}>Envoyez-nous un message</h2>
             <div className="grid-2">
-              <div><label>Prénom *</label><input className="input" name="prenom" required /></div>
-              <div><label>Nom *</label><input className="input" name="nom" required /></div>
+              <div><label htmlFor="contact-prenom">Prénom *</label><input className="input" id="contact-prenom" name="prenom" autoComplete="given-name" maxLength={80} required /></div>
+              <div><label htmlFor="contact-nom">Nom *</label><input className="input" id="contact-nom" name="nom" autoComplete="family-name" maxLength={80} required /></div>
             </div>
-            <p><label>Email *</label><input className="input" type="email" name="email" required /></p>
-            <p><label>Téléphone</label><input className="input" name="telephone" /></p>
+            <p><label htmlFor="contact-email">Email *</label><input className="input" id="contact-email" type="email" name="email" autoComplete="email" maxLength={254} required /></p>
+            <p><label htmlFor="contact-telephone">Téléphone</label><input className="input" id="contact-telephone" name="telephone" autoComplete="tel" inputMode="tel" maxLength={32} /></p>
             <p>
-              <label>Sujet *</label>
-              <select className="input" name="sujet" required defaultValue="">
+              <label htmlFor="contact-sujet">Sujet *</label>
+              <select className="input" id="contact-sujet" name="sujet" required defaultValue="">
                 <option value="" disabled>Sélectionnez un sujet</option>
                 <option>Formation</option>
                 <option>Paiement</option>
                 <option>Technique</option>
               </select>
             </p>
-            <p><label>Message *</label><textarea className="input" name="message" rows={7} required placeholder="Décrivez votre demande..." /></p>
-            <button className="btn btn-primary" type="submit" style={{ width: "100%" }}>Envoyer le message</button>
+            <p><label htmlFor="contact-message">Message *</label><textarea className="input" id="contact-message" name="message" rows={7} minLength={20} maxLength={4000} required placeholder="Décrivez votre demande..." /></p>
+            <div hidden aria-hidden="true">
+              <label htmlFor="contact-website">Site web</label>
+              <input id="contact-website" name="website" tabIndex={-1} autoComplete="off" />
+            </div>
+            <button className="btn btn-primary" type="submit" style={{ width: "100%" }} disabled={submission === "submitting"}>
+              {submission === "submitting" ? "Envoi…" : "Envoyer le message"}
+            </button>
+            {submissionMessage && (
+              <p className={submission === "success" ? "form-success" : "form-error"} role="status" aria-live="polite">
+                {submissionMessage}
+              </p>
+            )}
           </form>
           <div className="contact-details">
             <h2 className="font-display" style={{ color: "var(--navy)" }}>Nos coordonnées</h2>

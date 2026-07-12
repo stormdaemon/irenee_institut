@@ -6,6 +6,7 @@ export function buildContentSecurityPolicy(nonce?: string, development = false, 
     "https://www.paypal.com",
     "https://www.paypalobjects.com"
   ];
+  const styleSources = ["'self'", ...(nonce ? [`'nonce-${nonce}'`] : [])];
 
   return [
     "default-src 'self'",
@@ -18,7 +19,12 @@ export function buildContentSecurityPolicy(nonce?: string, development = false, 
     "media-src 'self' https://play.radioking.io https://res.cloudinary.com",
     `script-src ${scriptSources.join(" ")}`,
     "script-src-attr 'none'",
-    "style-src 'self' 'unsafe-inline'",
+    `style-src ${styleSources.join(" ")}`,
+    `style-src-elem ${styleSources.join(" ")}`,
+    // React's typed style properties are still used throughout the current UI.
+    // Confine that compatibility exception to attributes; inline <style>
+    // elements must carry the per-response nonce above.
+    "style-src-attr 'unsafe-inline'",
     "connect-src 'self' https://www.paypal.com https://*.paypal.com",
     "frame-src https://checkout.stripe.com https://www.paypal.com https://*.paypal.com https://www.google.com https://maps.google.com https://*.daily.co",
     "worker-src 'self' blob:",
