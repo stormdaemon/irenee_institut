@@ -29,7 +29,11 @@ import {
   parseReaderPreferences,
   type ReaderPreferences,
 } from "@/lib/course-experience";
-import { sanitizeCourseClassAttribute, sanitizeCourseStyleAttribute } from "@/lib/course-html-style";
+import {
+  sanitizeCourseClassAttribute,
+  sanitizeCourseStyleAttribute,
+  stripAuthoredStyleBlocksBeforeParsing,
+} from "@/lib/course-html-style";
 import { createBrowserClient } from "@/lib/supabase";
 import type { Course, CourseModule, ModuleProgress, Profile } from "@/lib/types";
 
@@ -55,6 +59,13 @@ type Resource = {
 
 const MODULE_CONTENT_RESIZED_EVENT = "irenee:module-content-resized";
 const MODULE_READER_INTERACTION_EVENT = "irenee:module-reader-interaction";
+const CSP_NONCE_PATTERN = /^[A-Za-z0-9+/_-]+={0,2}$/;
+
+function getDocumentStyleNonce() {
+  if (typeof document === "undefined") return "";
+  const nonce = document.querySelector<HTMLElement>("script[nonce], style[nonce]")?.nonce || "";
+  return CSP_NONCE_PATTERN.test(nonce) ? nonce : "";
+}
 
 const moduleFrameThemeCss = `
   html { background: #fffaf0; }
@@ -232,7 +243,7 @@ const moduleFrameThemeCss = `
 `;
 
 function sanitizeModuleHtml(html: string) {
-  const document = new DOMParser().parseFromString(DOMPurify.sanitize(html, {
+  const document = new DOMParser().parseFromString(DOMPurify.sanitize(stripAuthoredStyleBlocksBeforeParsing(html), {
     FORBID_TAGS: [
       "audio", "base", "button", "embed", "form", "iframe", "input", "link", "math", "meta", "object",
       "option", "script", "select", "source", "style", "svg", "textarea", "track", "video",
@@ -300,6 +311,7 @@ function getSafeCourseLinkUrl(value: string) {
 function ModuleHtmlContent({ html, preferences, title }: { html: string; preferences: ReaderPreferences; title: string }) {
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const frameCleanupRef = useRef<() => void>(() => undefined);
+  const styleNonce = useMemo(getDocumentStyleNonce, []);
   const srcDocument = useMemo(() => {
     const sanitizedHtml = sanitizeModuleHtml(html);
     const preferenceCss = `
@@ -315,13 +327,13 @@ function ModuleHtmlContent({ html, preferences, title }: { html: string; prefere
     <meta charset="utf-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' https: data:; media-src 'self' https:; style-src 'unsafe-inline'; font-src 'none'; form-action 'none'" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>html,body{margin:0;padding:0}body{overflow-wrap:anywhere}table{max-width:100%}</style>
-    <style>${moduleFrameThemeCss}</style>
-    <style>${preferenceCss}</style>
+    <style nonce="${styleNonce}">html,body{margin:0;padding:0}body{overflow-wrap:anywhere}table{max-width:100%}</style>
+    <style nonce="${styleNonce}">${moduleFrameThemeCss}</style>
+    <style nonce="${styleNonce}">${preferenceCss}</style>
   </head>
   <body><main class="module-content">${sanitizedHtml}</main></body>
 </html>`;
-  }, [html, preferences]);
+  }, [html, preferences, styleNonce]);
 
   const syncHeight = useCallback(() => {
     const frame = frameRef.current;

@@ -14,7 +14,11 @@ import AdminCoursesPage, {
 } from "../app/admin/courses/page";
 import { RichHtmlEditor, richEditorTemplates } from "../components/RichHtmlEditor";
 import { sanitizeCourseHtml } from "./course-input";
-import { sanitizeCourseClassAttribute, sanitizeCourseStyleAttribute } from "./course-html-style";
+import {
+  sanitizeCourseClassAttribute,
+  sanitizeCourseStyleAttribute,
+  stripAuthoredStyleBlocksBeforeParsing,
+} from "./course-html-style";
 import {
   courseDraftRecoveryKey,
   createCourseDraftRecovery,
@@ -260,6 +264,19 @@ describe("course editor accessibility contracts", () => {
     assert.equal(sanitizeCourseStyleAttribute("border: 9e8px solid red; border-left: 999999in solid blue; border-bottom: calc(1px + 999vh) solid black"), "");
     assert.equal(sanitizeCourseStyleAttribute("border: 2rem dashed rgba(12, 34, 56, .4)"), "border: 2rem dashed rgba(12, 34, 56, .4)");
     assert.equal(sanitizeCourseClassAttribute("course-callout course-callout-info main-header course-studio-mobile-save"), "course-callout course-callout-info");
+  });
+
+  test("removes authored style blocks before the browser parses lesson HTML", () => {
+    assert.equal(
+      stripAuthoredStyleBlocksBeforeParsing('<style media="screen">body{display:none}</style><h2>Leçon</h2>'),
+      "<h2>Leçon</h2>",
+    );
+    assert.equal(stripAuthoredStyleBlocksBeforeParsing("<STYLE>p{color:red}</STYLE><p>Texte</p>"), "<p>Texte</p>");
+    assert.equal(stripAuthoredStyleBlocksBeforeParsing("<p>Avant</p><style>body{display:none}"), "<p>Avant</p>");
+    assert.equal(
+      stripAuthoredStyleBlocksBeforeParsing('<p style="font-weight:700">Présentation autorisée</p>'),
+      '<p style="font-weight:700">Présentation autorisée</p>',
+    );
   });
 
   test("renders explicitly associated labels for the course fields", () => {

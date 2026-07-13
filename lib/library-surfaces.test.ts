@@ -267,13 +267,16 @@ test("module iframe discards authored style blocks before applying its controlle
   const modulePage = source("app/cours/[slug]/modules/[moduleId]/page.tsx");
   assert.match(modulePage, /const moduleFrameThemeCss = `/);
   assert.doesNotMatch(modulePage, /<style>\$\{sanitizedCss\}<\/style>/);
+  assert.match(modulePage, /stripAuthoredStyleBlocksBeforeParsing\(html\)/);
   assert.match(modulePage, /FORBID_TAGS:\s*\[/);
   assert.match(modulePage, /"style"/);
   assert.match(modulePage, /querySelectorAll<HTMLElement>\("\[style\]"\)[\s\S]*element\.removeAttribute\("style"\)/);
   assert.match(modulePage, /\.module-content,\s*\.module-content \*,\s*body > \* \{ color: #172033 !important;/);
   assert.match(modulePage, /\.module-content :is\(\.definition-box, \.quote-box, \.biblical-quote, \.note-box, \.warning-box, \.success-box, \.example-box\)/);
   assert.doesNotMatch(modulePage, /const normalizedHtml = html\.replace\(/);
-  assert.match(modulePage, /DOMPurify\.sanitize\(html, \{/);
+  assert.match(modulePage, /DOMPurify\.sanitize\(stripAuthoredStyleBlocksBeforeParsing\(html\), \{/);
+  assert.match(modulePage, /querySelector<HTMLElement>\("script\[nonce\], style\[nonce\]"\)\?\.nonce/);
+  assert.equal((modulePage.match(/<style nonce="\$\{styleNonce\}">/g) || []).length, 3);
   assert.match(modulePage, /querySelectorAll<HTMLElement>\("\.comparison-table:not\(table\)"\)/);
 });
 

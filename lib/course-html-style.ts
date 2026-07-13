@@ -30,6 +30,13 @@ const SAFE_COURSE_CLASSES = new Set([
   "warning-box",
 ]);
 
+// DOMPurify remains the sanitizer. This lexical pre-pass prevents authored
+// <style> blocks from being evaluated by the active document CSP while the
+// sanitizer parses content that it will discard anyway.
+export function stripAuthoredStyleBlocksBeforeParsing(html: string) {
+  return html.replace(/<style(?=[\s/>])[^>]*>[\s\S]*?(?:<\/style\s*>|$)/gi, "");
+}
+
 function lengthsAreBounded(property: string, value: string) {
   const limits: Record<string, number> = property.startsWith("border")
     ? { px: 32, rem: 2, em: 2, "%": 100 }
