@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, KeyRound, Loader2, Lock } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { safeInternalPath } from "@/lib/request-security";
+import { createBrowserClient } from "@/lib/supabase";
 
 type ResetStatus = "loading" | "ready" | "submitting" | "success" | "error";
 
@@ -10,11 +12,14 @@ export default function PasswordResetPage() {
   const [status, setStatus] = useState<ResetStatus>("loading");
   const [passwordError, setPasswordError] = useState("");
   const [notice, setNotice] = useState("");
+  const [automaticLoginFailed, setAutomaticLoginFailed] = useState(false);
   const codeRef = useRef("");
+  const nextRef = useRef("/espace-etudiant");
 
   useEffect(() => {
     const url = new URL(window.location.href);
     codeRef.current = new URLSearchParams(url.hash.slice(1)).get("code") || "";
+    nextRef.current = safeInternalPath(url.searchParams.get("next"), "/espace-etudiant");
     // Erase the one-time credential before the user interacts with the page.
     window.history.replaceState(null, "", `${url.pathname}${url.search}`);
     if (!codeRef.current || codeRef.current.length > 256) {
@@ -69,6 +74,20 @@ export default function PasswordResetPage() {
       return;
     }
 
+    const loginEmail = typeof body?.loginEmail === "string" ? body.loginEmail : "";
+    if (loginEmail) {
+      const supabase = createBrowserClient();
+      const login = supabase
+        ? await supabase.auth.signInWithPassword({ email: loginEmail, password })
+        : { data: null, error: { message: "Service de connexion indisponible." } };
+      if (!login.error && login.data?.session) {
+        codeRef.current = "";
+        window.location.replace(nextRef.current);
+        return;
+      }
+      setAutomaticLoginFailed(true);
+    }
+
     codeRef.current = "";
     event.currentTarget.reset();
     setStatus("success");
@@ -86,6 +105,9 @@ export default function PasswordResetPage() {
   }
 
   if (status === "success") {
+    const loginHref = nextRef.current === "/espace-etudiant"
+      ? "/auth/login"
+      : `/auth/login?next=${encodeURIComponent(nextRef.current)}`;
     return (
       <section className="auth-shell">
         <div className="card auth-card center">
@@ -93,9 +115,14 @@ export default function PasswordResetPage() {
           <h1 className="title">Mot de passe modifié</h1>
           <div className="auth-notice auth-notice-success" role="status" aria-live="polite">
             <CheckCircle2 size={20} aria-hidden="true" />
-            <div><strong>Compte sécurisé</strong><p>Toutes les anciennes sessions ont été fermées. Connectez-vous avec votre nouveau mot de passe.</p></div>
+            <div>
+              <strong>Compte sécurisé</strong>
+              <p>{automaticLoginFailed
+                ? "Le mot de passe a bien été modifié. Connectez-vous en saisissant ce nouveau mot de passe, sans utiliser une ancienne valeur enregistrée."
+                : "Le mot de passe a bien été modifié. Connectez-vous avec ce nouveau mot de passe."}</p>
+            </div>
           </div>
-          <Link className="btn btn-primary auth-submit" href="/auth/login">Se connecter</Link>
+          <Link className="btn btn-primary auth-submit" href={loginHref}>Se connecter</Link>
         </div>
       </section>
     );

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { findUserById } from "@/lib/local-auth";
 import { resetPasswordWithToken } from "@/lib/password-reset";
 import { checkRateLimitHierarchy } from "@/lib/rate-limit";
 import { readJsonBodyWithLimit, RequestBodyError } from "@/lib/request-body";
@@ -83,8 +84,11 @@ export async function POST(request: Request) {
     eventType: "auth.password.reset_completed",
     request
   });
+  // The password change has already committed. A transient follow-up read must
+  // not turn that success into a misleading 500 response.
+  const user = await findUserById(result.userId).catch(() => null);
   return NextResponse.json(
-    { ok: true, reauthenticationRequired: true },
+    { loginEmail: user?.email || null, ok: true, reauthenticationRequired: true },
     { headers: { "Cache-Control": "no-store" } }
   );
 }

@@ -106,8 +106,8 @@ export default function SignupPage() {
 
     setStatus("success");
     setNotice({
-      title: "Compte créé, confirmation à faire",
-      description: "Si cette adresse doit être confirmée, un lien vient d'être envoyé. Ouvrez-le pour choisir votre mot de passe et activer le compte.",
+      title: "Vérifiez votre boîte mail",
+      description: "Un lien sécurisé vient d’être envoyé. Il permet d’activer un nouveau compte ou de récupérer l’accès à un compte déjà existant.",
       field: "form"
     });
     formElement.reset();
@@ -166,8 +166,15 @@ export default function SignupPage() {
 
         <button className="btn btn-primary auth-submit" disabled={isSubmitting || isSuccess}>
           {isSubmitting && <Loader2 className="action-spin" size={18} aria-hidden="true" />}
-          {isSubmitting ? "Création du compte..." : isSuccess ? "Compte envoyé" : "Créer mon compte"}
+          {isSubmitting ? "Création du compte..." : isSuccess ? "E-mail envoyé" : "Créer mon compte"}
         </button>
+
+        {isSuccess && (
+          <div className="auth-recovery-actions">
+            <Link className="btn btn-outline auth-submit" href={loginHref}>J’ai déjà mon mot de passe</Link>
+            <p className="auth-forgot"><Link href="/auth/password-forgot">Je n’ai pas reçu l’e-mail</Link></p>
+          </div>
+        )}
 
         <p className="auth-switch">
           Déjà un compte ? <Link href={loginHref}><strong>Se connecter</strong></Link>

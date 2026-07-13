@@ -1,6 +1,6 @@
 import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { POST as signupRoutePost } from "@/app/api/auth/signup/route";
 import { POST as syncSessionRoutePost } from "@/app/api/auth/session/route";
@@ -132,19 +132,61 @@ describe("local PostgreSQL auth", () => {
     expect(second.user?.id).toBe(first.user?.id);
   });
 
-  it("does not disclose whether an email is already registered", async () => {
+  it("sends confirmed accounts a recovery link without disclosing account existence", async () => {
     const email = testEmail();
     const first = await createVerifiedUser({ email, password: "correct-password" });
     createdUserIds.push(first.user!.id);
 
-    const response = await signupRoutePost(new Request("https://irenee.test/api/auth/signup", {
-      body: JSON.stringify({ email, password: "another-password", metadata: { prenom: "Double", nom: "Email" } }),
-      headers: { "Content-Type": "application/json", origin: "https://irenee.test", "x-real-ip": "198.51.100.20" },
+    process.env.GOOGLE_APPS_SCRIPT_URL = "https://script.google.test/signup";
+    process.env.GOOGLE_APPS_SCRIPT_WEBHOOK_SECRET = "test-mail-secret";
+    const campaigns: Array<Record<string, string>> = [];
+    globalThis.fetch = async (_input, init) => {
+      const payload = JSON.parse(String(init?.body || "{}"));
+      campaigns.push(payload.campaign || {});
+      return Response.json({ ok: true });
+    };
+
+    const signupRequest = (targetEmail: string, ip: string) => new Request("https://irenee.test/api/auth/signup", {
+      body: JSON.stringify({
+        email: targetEmail,
+        metadata: { prenom: "Double", nom: "Email" },
+        next: "/formations?checkout=annual-pass"
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        origin: "https://irenee.test",
+        "sec-fetch-site": "same-origin",
+        "x-real-ip": ip
+      },
       method: "POST"
-    }));
-    const body = await response.json();
-    expect(response.status).toBe(202);
-    expect(body.confirmationRequired).toBe(true);
+    });
+
+    const existingResponse = await signupRoutePost(signupRequest(email, `198.51.${randomInt(1, 255)}.${randomInt(1, 255)}`));
+    const existingBody = await existingResponse.json();
+    expect(existingResponse.status).toBe(202);
+    expect(existingBody.confirmationRequired).toBe(true);
+
+    const recoveryCampaign = campaigns.find(campaign => /Réinitialiser/.test(campaign.subject || ""));
+    assert.ok(recoveryCampaign, "a confirmed account must receive a recovery email");
+    const recoveryLink = String(recoveryCampaign.body || "").match(/https:\/\/[^\s]+/)?.[0] || "";
+    const recoveryUrl = new URL(recoveryLink);
+    assert.equal(recoveryUrl.pathname, "/auth/password-reset");
+    assert.equal(recoveryUrl.searchParams.get("next"), "/formations?checkout=annual-pass");
+    assert.equal(recoveryUrl.searchParams.has("code"), false);
+    assert.ok(new URLSearchParams(recoveryUrl.hash.slice(1)).get("code"));
+
+    const freshEmail = testEmail();
+    const freshResponse = await signupRoutePost(signupRequest(freshEmail, `198.51.${randomInt(1, 255)}.${randomInt(1, 255)}`));
+    const freshBody = await freshResponse.json();
+    const freshUser = await query<{ id: string }>("select id from auth.users where lower(email)=lower($1)", [freshEmail]);
+    if (freshUser.rows[0]?.id) createdUserIds.push(freshUser.rows[0].id);
+
+    assert.equal(freshResponse.status, existingResponse.status);
+    assert.deepEqual(
+      { ...freshBody, user: { email: "<echoed>" } },
+      { ...existingBody, user: { email: "<echoed>" } }
+    );
+    assert.ok(campaigns.some(campaign => /Confirmez votre compte/.test(campaign.subject || "")));
   });
 
   it("rejects weak JWT configuration before issuing a session", async () => {

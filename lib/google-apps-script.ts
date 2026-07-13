@@ -74,11 +74,13 @@ export async function sendEmailVerification(input: {
 
 export async function sendPasswordResetEmail(input: {
   email: string;
+  nextPath?: string;
   nom?: string | null;
   prenom?: string | null;
   token: string;
 }) {
   const resetUrl = new URL("/auth/password-reset", "https://irenee-institut.org");
+  resetUrl.searchParams.set("next", safeInternalPath(input.nextPath, "/espace-etudiant"));
   // Fragments are not included in HTTP requests, reverse-proxy access logs or
   // referrer headers. The client removes this value from history immediately.
   resetUrl.hash = new URLSearchParams({ code: input.token }).toString();

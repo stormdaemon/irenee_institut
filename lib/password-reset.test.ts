@@ -180,9 +180,17 @@ test("password reset completion is same-origin, validates passwords and never cr
     passwordConfirmation: "nouvelle-phrase-de-passe-2026"
   }));
   assert.equal(success.status, 200);
-  assert.deepEqual(await success.json(), { ok: true, reauthenticationRequired: true });
+  assert.deepEqual(await success.json(), { loginEmail: email, ok: true, reauthenticationRequired: true });
   assert.equal(success.headers.get("Cache-Control"), "no-store");
   assert.equal(success.headers.get("set-cookie"), null);
+  const activeSessions = await query<{ count: string }>(
+    `select count(*)::text as count
+     from public.app_sessions
+     where user_id = (select id from auth.users where lower(email)=lower($1))
+       and revoked_at is null and expires_at > now()`,
+    [email]
+  );
+  assert.equal(activeSessions.rows[0]?.count, "0");
   assert.ok((await signInWithPassword(email, "nouvelle-phrase-de-passe-2026")).session);
 
   const replay = await completePasswordReset(sameOriginRequest("/api/auth/password/reset/complete", {

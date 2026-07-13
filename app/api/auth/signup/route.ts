@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { sendEmailVerification } from "@/lib/google-apps-script";
+import { sendEmailVerification, sendPasswordResetEmail } from "@/lib/google-apps-script";
 import { beginEmailSignUp } from "@/lib/local-auth";
+import { issuePasswordResetToken } from "@/lib/password-reset";
 import { checkRateLimitHierarchy } from "@/lib/rate-limit";
 import { readJsonBodyWithLimit, RequestBodyError } from "@/lib/request-body";
 import { assertSameOrigin, getTrustedClientIp, RequestSecurityError, safeInternalPath } from "@/lib/request-security";
@@ -71,6 +72,39 @@ export async function POST(request: Request) {
         subjectHash: hashAuditSubject(email)
       });
       await recordSecurityEvent({ actorUserId: result.user.id, eventType: "auth.signup.delivery_failed", request });
+    }
+  } else if (result.user) {
+    // A confirmed address cannot receive another verification token. Send an
+    // account-recovery link instead, while keeping the public response exactly
+    // the same so this branch cannot be used to enumerate registered emails.
+    try {
+      const recovery = await issuePasswordResetToken(email);
+      if (recovery.resetToken && recovery.user) {
+        const storedMetadata = recovery.user.user_metadata || {};
+        await sendPasswordResetEmail({
+          email: recovery.user.email,
+          nextPath,
+          nom: String(storedMetadata.nom || ""),
+          prenom: String(storedMetadata.prenom || ""),
+          token: recovery.resetToken
+        });
+        await recordSecurityEvent({
+          actorUserId: recovery.user.id,
+          eventType: "auth.password.reset_requested",
+          metadata: { source: "signup" },
+          request
+        });
+      }
+    } catch {
+      // Never log the delivery error: an upstream provider could echo the
+      // one-time recovery URL and its credential in the error text.
+      console.error("signup_recovery_email_delivery_failed", { subjectHash: hashAuditSubject(email) });
+      await recordSecurityEvent({
+        actorUserId: result.user.id,
+        eventType: "auth.password.reset_delivery_failed",
+        metadata: { source: "signup" },
+        request
+      });
     }
   }
 
