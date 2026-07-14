@@ -261,6 +261,90 @@ export async function signInWithPassword(email: string, password: string, contex
   }
 }
 
+export async function signUpWithPassword(
+  input: { email: string; password: string; metadata?: Record<string, unknown> },
+  context: SessionContext = {}
+) {
+  const email = normalizeEmail(input.email);
+  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { session: null, user: null, identities: [], error: new Error("Email invalide.") };
+  }
+  try {
+    validatePassword(input.password);
+  } catch (error) {
+    return { session: null, user: null, identities: [], error: error as Error };
+  }
+
+  // Pay the same password-hashing cost before the unique-email decision so an
+  // existing address is not exposed through a cheap timing difference.
+  const encryptedPassword = await bcrypt.hash(input.password, 12);
+  const metadata = normalizeMetadata(input.metadata);
+  const userId = randomUUID();
+  const identityId = randomUUID();
+
+  try {
+    await withTransaction(async client => {
+      await client.query(
+        `insert into auth.users (
+           instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+           raw_app_meta_data, raw_user_meta_data, created_at, updated_at, is_sso_user, is_anonymous
+         ) values (
+           '00000000-0000-0000-0000-000000000000', $1, 'authenticated', 'authenticated', $2, $3, now(),
+           '{"provider":"email","providers":["email"]}'::jsonb, $4::jsonb, now(), now(), false, false
+         )`,
+        [userId, email, encryptedPassword, JSON.stringify(metadata)]
+      );
+      await client.query(
+        `insert into auth.identities (
+           provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at, id
+         ) values ($1, $2, $3::jsonb, 'email', now(), now(), now(), $4)`,
+        [userId, userId, JSON.stringify({ sub: userId, email, email_verified: true, ...metadata }), identityId]
+      );
+      await client.query(
+        `insert into public.profiles (id,email,nom,prenom,role,updated_at)
+         values ($1,$2,$3,$4,'etudiant',now())`,
+        [userId, email, metadata.nom, metadata.prenom]
+      );
+    });
+  } catch (error) {
+    if ((error as { code?: string }).code === "23505") {
+      const existing = await findUserByEmail(email);
+      return {
+        session: null,
+        user: existing ? userFromRow(existing) : null,
+        identities: [],
+        error: null
+      };
+    }
+    return {
+      session: null,
+      user: null,
+      identities: [],
+      error: new Error("Le compte n'a pas pu être créé.")
+    };
+  }
+
+  const user: LocalUser = { id: userId, email, user_metadata: metadata };
+  try {
+    const session = await createSession(user, context);
+    return {
+      session,
+      user: session.user,
+      identities: [{ id: identityId, user_id: userId, provider: "email" }],
+      error: null
+    };
+  } catch {
+    // Do not strand an unusable account if hardened session creation fails.
+    await query("delete from auth.users where id = $1", [userId]).catch(() => undefined);
+    return {
+      session: null,
+      user: null,
+      identities: [],
+      error: new Error("Le compte n'a pas pu être finalisé.")
+    };
+  }
+}
+
 export async function changePassword(userId: string, currentPassword: string, nextPassword: string) {
   if (!currentPassword || currentPassword.length > 128) {
     return { error: new Error("Le mot de passe actuel est incorrect.") };

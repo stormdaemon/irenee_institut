@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, Loader2, Mail, UserPlus, UserRound } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, Lock, Mail, UserPlus, UserRound } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { translateAuthError, type AuthErrorCopy } from "@/lib/auth-errors";
 import { safeInternalPath } from "@/lib/request-security";
 import { annualPassCheckoutPath, cleanAnnualPassSignupPath } from "@/lib/routes";
 import { createBrowserClient } from "@/lib/supabase";
 
-type FieldErrors = Partial<Record<"prenom" | "nom" | "email", string>>;
+type FieldErrors = Partial<Record<"prenom" | "nom" | "email" | "password" | "passwordConfirm", string>>;
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -52,11 +52,15 @@ export default function SignupPage() {
     const prenom = getFieldValue(form, "prenom");
     const nom = getFieldValue(form, "nom");
     const email = getFieldValue(form, "email").toLowerCase();
+    const password = String(form.get("password") || "");
+    const passwordConfirm = String(form.get("passwordConfirm") || "");
     const nextFieldErrors: FieldErrors = {};
 
     if (!prenom) nextFieldErrors.prenom = "Indiquez votre prénom.";
     if (!nom) nextFieldErrors.nom = "Indiquez votre nom.";
     if (!emailPattern.test(email)) nextFieldErrors.email = "Indiquez une adresse email valide.";
+    if (password.length < 12) nextFieldErrors.password = "Le mot de passe doit contenir au moins 12 caractères.";
+    if (password !== passwordConfirm) nextFieldErrors.passwordConfirm = "Les deux mots de passe ne correspondent pas.";
 
     if (Object.keys(nextFieldErrors).length) {
       setFieldErrors(nextFieldErrors);
@@ -90,6 +94,8 @@ export default function SignupPage() {
 
     const { data, error } = await supabase.auth.signUp({
       email,
+      password,
+      passwordConfirmation: passwordConfirm,
       options: {
         data: { prenom, nom },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(getSafeNextPath())}`
@@ -101,16 +107,22 @@ export default function SignupPage() {
       setNotice(translated);
       setStatus("error");
       if (translated.field === "email") setFieldErrors({ email: translated.description });
+      if (translated.field === "password") setFieldErrors({ password: translated.description });
+      return;
+    }
+
+    if (!data.user?.id || !data.session) {
+      setNotice({
+        title: "Inscription incomplète",
+        description: "Le compte n'a pas pu être créé complètement. Réessayez dans quelques instants.",
+        field: "form"
+      });
+      setStatus("error");
       return;
     }
 
     setStatus("success");
-    setNotice({
-      title: "Vérifiez votre boîte mail",
-      description: "Un lien sécurisé vient d’être envoyé. Il permet d’activer un nouveau compte ou de récupérer l’accès à un compte déjà existant.",
-      field: "form"
-    });
-    formElement.reset();
+    window.location.replace(getSafeNextPath());
   }
 
   const isSubmitting = status === "submitting";
@@ -164,17 +176,28 @@ export default function SignupPage() {
           {fieldErrors.email && <small className="field-error">{fieldErrors.email}</small>}
         </label>
 
+        <label className="auth-field">
+          <span>Mot de passe</span>
+          <span className="auth-input-wrap">
+            <Lock size={18} aria-hidden="true" />
+            <input className="input" name="password" type="password" autoComplete="new-password" minLength={12} maxLength={128} required disabled={isSubmitting || isSuccess} aria-invalid={Boolean(fieldErrors.password)} />
+          </span>
+          {fieldErrors.password ? <small className="field-error">{fieldErrors.password}</small> : <small className="auth-help">12 caractères minimum.</small>}
+        </label>
+
+        <label className="auth-field">
+          <span>Confirmer le mot de passe</span>
+          <span className="auth-input-wrap">
+            <Lock size={18} aria-hidden="true" />
+            <input className="input" name="passwordConfirm" type="password" autoComplete="new-password" minLength={12} maxLength={128} required disabled={isSubmitting || isSuccess} aria-invalid={Boolean(fieldErrors.passwordConfirm)} />
+          </span>
+          {fieldErrors.passwordConfirm && <small className="field-error">{fieldErrors.passwordConfirm}</small>}
+        </label>
+
         <button className="btn btn-primary auth-submit" disabled={isSubmitting || isSuccess}>
           {isSubmitting && <Loader2 className="action-spin" size={18} aria-hidden="true" />}
-          {isSubmitting ? "Création du compte..." : isSuccess ? "E-mail envoyé" : "Créer mon compte"}
+          {isSubmitting ? "Création du compte..." : isSuccess ? "Compte créé" : "Créer mon compte"}
         </button>
-
-        {isSuccess && (
-          <div className="auth-recovery-actions">
-            <Link className="btn btn-outline auth-submit" href={loginHref}>J’ai déjà mon mot de passe</Link>
-            <p className="auth-forgot"><Link href="/auth/password-forgot">Je n’ai pas reçu l’e-mail</Link></p>
-          </div>
-        )}
 
         <p className="auth-switch">
           Déjà un compte ? <Link href={loginHref}><strong>Se connecter</strong></Link>

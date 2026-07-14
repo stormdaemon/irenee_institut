@@ -4,6 +4,7 @@ import { randomInt, randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { POST as signupRoutePost } from "@/app/api/auth/signup/route";
 import { POST as syncSessionRoutePost } from "@/app/api/auth/session/route";
+import { GET as authUserRouteGet } from "@/app/api/auth/user/route";
 import { POST as completeOnboardingRoutePost } from "@/app/api/onboarding/complete/route";
 import { GET as onboardingStatusRouteGet } from "@/app/api/onboarding/status/route";
 import { setSessionCookie } from "@/lib/auth-cookie";
@@ -132,25 +133,26 @@ describe("local PostgreSQL auth", () => {
     expect(second.user?.id).toBe(first.user?.id);
   });
 
-  it("sends confirmed accounts a recovery link without disclosing account existence", async () => {
+  it("creates the account with its chosen password, opens a session and sends the welcome email", async () => {
     const email = testEmail();
-    const first = await createVerifiedUser({ email, password: "correct-password" });
-    createdUserIds.push(first.user!.id);
-
+    const password = "correct-password";
     process.env.GOOGLE_APPS_SCRIPT_URL = "https://script.google.test/signup";
     process.env.GOOGLE_APPS_SCRIPT_WEBHOOK_SECRET = "test-mail-secret";
-    const campaigns: Array<Record<string, string>> = [];
+    process.env.AUTH_COOKIE_SECURE = "false";
+    const payloads: Array<Record<string, any>> = [];
     globalThis.fetch = async (_input, init) => {
       const payload = JSON.parse(String(init?.body || "{}"));
-      campaigns.push(payload.campaign || {});
+      payloads.push(payload);
       return Response.json({ ok: true });
     };
 
-    const signupRequest = (targetEmail: string, ip: string) => new Request("https://irenee.test/api/auth/signup", {
+    const signupRequest = (ip: string) => new Request("https://irenee.test/api/auth/signup", {
       body: JSON.stringify({
-        email: targetEmail,
+        email,
         metadata: { prenom: "Double", nom: "Email" },
-        next: "/formations?checkout=annual-pass"
+        next: "/formations?checkout=annual-pass",
+        password,
+        passwordConfirmation: password
       }),
       headers: {
         "Content-Type": "application/json",
@@ -161,32 +163,63 @@ describe("local PostgreSQL auth", () => {
       method: "POST"
     });
 
-    const existingResponse = await signupRoutePost(signupRequest(email, `198.51.${randomInt(1, 255)}.${randomInt(1, 255)}`));
-    const existingBody = await existingResponse.json();
-    expect(existingResponse.status).toBe(202);
-    expect(existingBody.confirmationRequired).toBe(true);
-
-    const recoveryCampaign = campaigns.find(campaign => /Réinitialiser/.test(campaign.subject || ""));
-    assert.ok(recoveryCampaign, "a confirmed account must receive a recovery email");
-    const recoveryLink = String(recoveryCampaign.body || "").match(/https:\/\/[^\s]+/)?.[0] || "";
-    const recoveryUrl = new URL(recoveryLink);
-    assert.equal(recoveryUrl.pathname, "/auth/password-reset");
-    assert.equal(recoveryUrl.searchParams.get("next"), "/formations?checkout=annual-pass");
-    assert.equal(recoveryUrl.searchParams.has("code"), false);
-    assert.ok(new URLSearchParams(recoveryUrl.hash.slice(1)).get("code"));
-
-    const freshEmail = testEmail();
-    const freshResponse = await signupRoutePost(signupRequest(freshEmail, `198.51.${randomInt(1, 255)}.${randomInt(1, 255)}`));
+    const freshResponse = await signupRoutePost(signupRequest(`198.51.${randomInt(1, 255)}.${randomInt(1, 255)}`));
     const freshBody = await freshResponse.json();
-    const freshUser = await query<{ id: string }>("select id from auth.users where lower(email)=lower($1)", [freshEmail]);
-    if (freshUser.rows[0]?.id) createdUserIds.push(freshUser.rows[0].id);
+    expect(freshResponse.status).toBe(201);
+    expect(freshBody.user.email).toBe(email);
+    expect(freshBody.session.token_type).toBe("cookie");
+    expect(freshBody.next).toBe("/formations?checkout=annual-pass");
+    expect(freshBody.automationWarning).toBe(false);
+    createdUserIds.push(freshBody.user.id);
 
-    assert.equal(freshResponse.status, existingResponse.status);
-    assert.deepEqual(
-      { ...freshBody, user: { email: "<echoed>" } },
-      { ...existingBody, user: { email: "<echoed>" } }
+    const cookie = freshResponse.headers.get("set-cookie") || "";
+    expect(cookie).toContain("irenee_session=");
+    expect(cookie).toContain("HttpOnly");
+    expect(cookie).toContain("SameSite=lax");
+
+    const authenticated = await authUserRouteGet(new Request("https://irenee.test/api/auth/user", {
+      headers: { Cookie: cookie.split(";")[0] }
+    }));
+    const authenticatedBody = await authenticated.json();
+    expect(authenticated.status).toBe(200);
+    expect(authenticatedBody.user.id).toBe(freshBody.user.id);
+    expect(authenticatedBody.user.email).toBe(email);
+
+    assert.deepEqual(payloads.map(payload => Object.keys(payload).filter(key => key !== "secret")), [
+      ["registration"],
+      ["welcomeRegistration"]
+    ]);
+    assert.deepEqual(payloads[0]?.registration, {
+      email,
+      nom: "Email",
+      prenom: "Double"
+    });
+    assert.deepEqual(payloads[1]?.welcomeRegistration, {
+      contactEmail: "contact@irenee-institut.org",
+      dashboardUrl: "https://irenee-institut.org/espace-etudiant",
+      email,
+      nom: "Email",
+      prenom: "Double",
+      programUrl: "https://irenee-institut.org/formations"
+    });
+    assert.equal(payloads.some(payload => /Réinitialiser/.test(String(payload.campaign?.subject || ""))), false);
+
+    const login = await signInWithPassword(email, password);
+    expect(login.error).toBeNull();
+    expect(login.user?.id).toBe(freshBody.user.id);
+
+    const outbox = await query<{ delivery_status: string }>(
+      "select delivery_status from public.registration_notification_outbox where user_id = $1",
+      [freshBody.user.id]
     );
-    assert.ok(campaigns.some(campaign => /Confirmez votre compte/.test(campaign.subject || "")));
+    expect(outbox.rows[0]?.delivery_status).toBe("sent");
+
+    const deliveryCount = payloads.length;
+    const existingResponse = await signupRoutePost(signupRequest(`203.0.113.${randomInt(1, 255)}`));
+    const existingBody = await existingResponse.json();
+    expect(existingResponse.status).toBe(409);
+    expect(existingBody.error).toContain("déjà utilisée");
+    expect(payloads.length).toBe(deliveryCount);
   });
 
   it("rejects weak JWT configuration before issuing a session", async () => {

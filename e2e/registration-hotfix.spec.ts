@@ -3,42 +3,50 @@ import { expect, test } from "@playwright/test";
 test.describe("registration access hotfix", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test("gives both new and existing accounts an accurate recovery path", async ({ page }) => {
+  test("restores the five-field registration flow and continues after account creation", async ({ page }) => {
+    const password = "une-phrase-de-passe-solide-2026";
+
     await page.route("**/api/auth/signup", async route => {
       expect(route.request().method()).toBe("POST");
       expect(route.request().postDataJSON()).toMatchObject({
-        email: "compte.existant@example.test",
+        email: "nouveau.compte@example.test",
         metadata: { nom: "Martin", prenom: "Claire" },
-        next: "/formations?checkout=annual-pass"
+        next: "/formations?checkout=annual-pass",
+        password,
+        passwordConfirmation: password
       });
+      const user = {
+        email: "nouveau.compte@example.test",
+        id: "browser-signup-user",
+        identities: [{ id: "browser-signup-identity", provider: "email" }]
+      };
       await route.fulfill({
         body: JSON.stringify({
-          confirmationRequired: true,
-          message: "Si une confirmation est nécessaire, un lien vient d'être envoyé.",
-          session: null,
-          user: { email: "compte.existant@example.test" }
+          automationWarning: false,
+          next: "/formations?checkout=annual-pass",
+          session: {
+            expires_at: Math.floor(Date.now() / 1000) + 3600,
+            token_type: "cookie",
+            user
+          },
+          user
         }),
         contentType: "application/json",
-        status: 202
+        status: 201
       });
     });
 
     await page.goto("/inscription");
+    await expect(page.getByLabel(/^Mot de passe/)).toBeVisible();
+    await expect(page.getByLabel("Confirmer le mot de passe", { exact: true })).toBeVisible();
     await page.getByLabel("Prénom").fill("Claire");
     await page.getByLabel("Nom", { exact: true }).fill("Martin");
-    await page.getByLabel("Email").fill("compte.existant@example.test");
+    await page.getByLabel("Email").fill("nouveau.compte@example.test");
+    await page.getByLabel(/^Mot de passe/).fill(password);
+    await page.getByLabel("Confirmer le mot de passe", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Créer mon compte" }).click();
 
-    await expect(page.getByText("Vérifiez votre boîte mail", { exact: true })).toBeVisible();
-    await expect(page.getByText("activer un nouveau compte ou de récupérer l’accès", { exact: false })).toBeVisible();
-    await expect(page.getByRole("link", { name: "J’ai déjà mon mot de passe" })).toHaveAttribute(
-      "href",
-      "/auth/login?next=%2Fformations%3Fcheckout%3Dannual-pass"
-    );
-    await expect(page.getByRole("link", { name: "Je n’ai pas reçu l’e-mail" })).toHaveAttribute(
-      "href",
-      "/auth/password-forgot"
-    );
+    await expect(page).toHaveURL(/\/formations\?checkout=annual-pass$/);
   });
 
   test("reuses the freshly reset password for the normal login and continues checkout", async ({ page }) => {

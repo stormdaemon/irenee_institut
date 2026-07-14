@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { sendEmailVerification, sendPasswordResetEmail } from "@/lib/google-apps-script";
-import { beginEmailSignUp } from "@/lib/local-auth";
-import { issuePasswordResetToken } from "@/lib/password-reset";
+import { setSessionCookie } from "@/lib/auth-cookie";
+import { runRegistrationAutomation } from "@/lib/google-apps-script";
+import { sessionContextFromRequest, signUpWithPassword } from "@/lib/local-auth";
 import { checkRateLimitHierarchy } from "@/lib/rate-limit";
 import { readJsonBodyWithLimit, RequestBodyError } from "@/lib/request-body";
 import { assertSameOrigin, getTrustedClientIp, RequestSecurityError, safeInternalPath } from "@/lib/request-security";
-import { hashAuditSubject, recordSecurityEvent } from "@/lib/security-audit";
+import { recordSecurityEvent } from "@/lib/security-audit";
 
 export const runtime = "nodejs";
 
@@ -30,11 +30,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
   }
   const email = String(body.email || "").trim().toLowerCase();
+  const password = String(body.password || "");
+  const passwordConfirmation = String(body.passwordConfirmation || "");
   const rawMetadata = typeof body.metadata === "object" && body.metadata ? body.metadata as Record<string, unknown> : {};
   const metadata = { nom: String(rawMetadata.nom || "").slice(0, 120), prenom: String(rawMetadata.prenom || "").slice(0, 120) };
   const nextPath = safeInternalPath(body.next, "/espace-etudiant");
 
   if (!emailPattern.test(email) || email.length > 254) return NextResponse.json({ error: "Email invalide." }, { status: 400 });
+  if (password !== passwordConfirmation) {
+    return NextResponse.json({ error: "Les deux mots de passe ne correspondent pas." }, { status: 400 });
+  }
 
   const ip = getTrustedClientIp(request);
   const limits = await checkRateLimitHierarchy(
@@ -48,74 +53,41 @@ export async function POST(request: Request) {
     });
   }
 
-  const result = await beginEmailSignUp({ email, metadata });
+  const result = await signUpWithPassword({ email, metadata, password }, sessionContextFromRequest(request));
   if (result.error) return NextResponse.json({ error: result.error.message }, { status: 400 });
-
-  if (result.verificationToken && result.user) {
-    try {
-      const storedMetadata = result.user.user_metadata || {};
-      await sendEmailVerification({
-        email: result.user.email,
-        nom: String(storedMetadata.nom || ""),
-        nextPath,
-        prenom: String(storedMetadata.prenom || ""),
-        token: result.verificationToken
-      });
-      await recordSecurityEvent({
-        actorUserId: result.user.id,
-        eventType: result.identities.length ? "auth.signup.created" : "auth.email.verification_resent",
-        request
-      });
-    } catch (error) {
-      console.error("verification_email_delivery_failed", {
-        error: error instanceof Error ? error.message : String(error),
-        subjectHash: hashAuditSubject(email)
-      });
-      await recordSecurityEvent({ actorUserId: result.user.id, eventType: "auth.signup.delivery_failed", request });
-    }
-  } else if (result.user) {
-    // A confirmed address cannot receive another verification token. Send an
-    // account-recovery link instead, while keeping the public response exactly
-    // the same so this branch cannot be used to enumerate registered emails.
-    try {
-      const recovery = await issuePasswordResetToken(email);
-      if (recovery.resetToken && recovery.user) {
-        const storedMetadata = recovery.user.user_metadata || {};
-        await sendPasswordResetEmail({
-          email: recovery.user.email,
-          nextPath,
-          nom: String(storedMetadata.nom || ""),
-          prenom: String(storedMetadata.prenom || ""),
-          token: recovery.resetToken
-        });
-        await recordSecurityEvent({
-          actorUserId: recovery.user.id,
-          eventType: "auth.password.reset_requested",
-          metadata: { source: "signup" },
-          request
-        });
-      }
-    } catch {
-      // Never log the delivery error: an upstream provider could echo the
-      // one-time recovery URL and its credential in the error text.
-      console.error("signup_recovery_email_delivery_failed", { subjectHash: hashAuditSubject(email) });
-      await recordSecurityEvent({
-        actorUserId: result.user.id,
-        eventType: "auth.password.reset_delivery_failed",
-        metadata: { source: "signup" },
-        request
-      });
-    }
+  if (!result.session || !result.user || result.identities.length === 0) {
+    return NextResponse.json({ error: "Cette adresse email est déjà utilisée." }, {
+      headers: { "Cache-Control": "no-store" },
+      status: 409
+    });
   }
 
-  // The same response is returned for existing and newly-created addresses to prevent enumeration.
-  return NextResponse.json({
-    confirmationRequired: true,
-    message: "Si une confirmation est nécessaire, un lien vient d'être envoyé.",
-    session: null,
-    user: { email }
+  const storedMetadata = result.user.user_metadata || {};
+  const automationWarnings = await runRegistrationAutomation({
+    email: result.user.email,
+    id: result.user.id,
+    nom: String(storedMetadata.nom || ""),
+    prenom: String(storedMetadata.prenom || "")
+  }).catch(error => [error instanceof Error ? error.message : String(error)]);
+  await recordSecurityEvent({ actorUserId: result.user.id, eventType: "auth.signup.created", request });
+  if (automationWarnings.length) {
+    await recordSecurityEvent({ actorUserId: result.user.id, eventType: "auth.signup.delivery_failed", request });
+  }
+
+  const response = NextResponse.json({
+    automationWarning: automationWarnings.length > 0,
+    next: nextPath,
+    session: {
+      expires_at: result.session.expires_at,
+      expires_in: result.session.expires_in,
+      token_type: "cookie",
+      user: result.user
+    },
+    user: { ...result.user, identities: result.identities }
   }, {
     headers: { "Cache-Control": "no-store" },
-    status: 202
+    status: 201
   });
+  setSessionCookie(response, result.session);
+  return response;
 }

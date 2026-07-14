@@ -1768,16 +1768,6 @@ label { display: block; font-weight: 700; font-size: .9rem; margin-bottom: 8px; 
   opacity: .68;
 }
 
-.auth-recovery-actions {
-  display: grid;
-  gap: 12px;
-}
-
-.auth-recovery-actions .auth-forgot {
-  margin: 0;
-  text-align: center;
-}
-
 .auth-switch,
 .auth-back {
   margin: 0;

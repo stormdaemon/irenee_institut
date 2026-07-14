@@ -151,7 +151,7 @@ export function createBrowserClient(): any {
         announceSession(null);
         return { error: null };
       },
-      async signUp(input: { email: string; password?: string; options?: { data?: Record<string, unknown>; emailRedirectTo?: string } }) {
+      async signUp(input: { email: string; password: string; passwordConfirmation?: string; options?: { data?: Record<string, unknown>; emailRedirectTo?: string } }) {
         let next = "/espace-etudiant";
         try {
           if (input.options?.emailRedirectTo) {
@@ -161,14 +161,17 @@ export function createBrowserClient(): any {
         } catch {
           // The server also validates the target and will use the safe default.
         }
-        const { data, error } = await authFetch<{ confirmationRequired: boolean; session: null; user: { email: string } }>("/api/auth/signup", {
+        const { data, error } = await authFetch<{ session: BrowserSession; user: BrowserUser }>("/api/auth/signup", {
           body: JSON.stringify({
             email: input.email,
             metadata: input.options?.data || {},
-            next
+            next,
+            password: input.password,
+            passwordConfirmation: input.passwordConfirmation ?? input.password
           }),
           method: "POST"
         });
+        if (!error && data.session) announceSession(data.session);
         return { data, error };
       }
     },
