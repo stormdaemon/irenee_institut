@@ -278,6 +278,24 @@ export async function signUpWithPassword(
   // Pay the same password-hashing cost before the unique-email decision so an
   // existing address is not exposed through a cheap timing difference.
   const encryptedPassword = await bcrypt.hash(input.password, 12);
+  try {
+    const existing = await findUserByEmail(email);
+    if (existing) {
+      return {
+        session: null,
+        user: userFromRow(existing),
+        identities: [],
+        error: null
+      };
+    }
+  } catch {
+    return {
+      session: null,
+      user: null,
+      identities: [],
+      error: new Error("Le compte n'a pas pu être créé.")
+    };
+  }
   const metadata = normalizeMetadata(input.metadata);
   const userId = randomUUID();
   const identityId = randomUUID();

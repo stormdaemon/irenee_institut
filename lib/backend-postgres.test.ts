@@ -214,6 +214,7 @@ describe("local PostgreSQL auth", () => {
     );
     expect(outbox.rows[0]?.delivery_status).toBe("sent");
 
+    await query("update auth.users set email = $2 where id = $1", [freshBody.user.id, email.toUpperCase()]);
     const deliveryCount = payloads.length;
     const existingResponse = await signupRoutePost(signupRequest(`203.0.113.${randomInt(1, 255)}`));
     const existingBody = await existingResponse.json();
@@ -224,6 +225,12 @@ describe("local PostgreSQL auth", () => {
 
   it("rejects weak JWT configuration before issuing a session", async () => {
     assert.throws(() => encodeJwtSecret("too-short"), /at least 32 characters/);
+  });
+
+  it("attaches French password validation errors to the password field", () => {
+    const translated = translateAuthError("Ce mot de passe est trop courant.");
+    expect(translated.field).toBe("password");
+    expect(translated.description).toContain("trop courant");
   });
 
   it("resynchronizes the HttpOnly server cookie from an existing valid browser token", async () => {

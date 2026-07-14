@@ -42,6 +42,14 @@ export function translateAuthError(message?: string | null, fallback = "Une erre
     };
   }
 
+  if (normalized.includes("mot de passe") || normalized.includes("octets")) {
+    return {
+      title: "Mot de passe invalide",
+      description: raw || "Choisissez une phrase de passe unique d’au moins 12 caractères.",
+      field: "password"
+    };
+  }
+
   if (normalized.includes("password") && (normalized.includes("weak") || normalized.includes("short") || normalized.includes("6 characters"))) {
     return {
       title: "Mot de passe trop faible",
