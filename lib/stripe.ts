@@ -102,7 +102,14 @@ export function isExpectedPaidStripeSession(
   summary: StripeCheckoutSessionSummary,
   order: PendingStripeOrder | null | undefined
 ) {
-  if (!order || summary.paymentStatus !== "paid") return false;
+  return summary.paymentStatus === "paid" && isExpectedStripeSession(summary, order);
+}
+
+export function isExpectedStripeSession(
+  summary: StripeCheckoutSessionSummary,
+  order: PendingStripeOrder | null | undefined
+) {
+  if (!order) return false;
   const expectedAmount = Number(order.amount_total);
   if (!Number.isSafeInteger(summary.amountTotal) || summary.amountTotal <= 0 || !Number.isSafeInteger(expectedAmount)) return false;
   return summary.sessionId === stringFrom(order.order_id)

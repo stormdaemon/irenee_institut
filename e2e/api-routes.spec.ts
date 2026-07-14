@@ -72,7 +72,9 @@ const apiRoutes: ApiRouteCase[] = [
   { source: "app/api/onboarding/status/route.ts", method: "GET", path: "/api/onboarding/status", expectedStatus: 401 },
   { source: "app/api/payments/[id]/route.ts", method: "PATCH", path: `/api/payments/${missingUuid}`, expectedStatus: 401 },
   { source: "app/api/payments/checkout/route.ts", method: "POST", path: "/api/payments/checkout", expectedStatus: 401 },
+  { source: "app/api/payments/library/checkout/route.ts", method: "POST", path: "/api/payments/library/checkout", expectedStatus: 401 },
   { source: "app/api/payments/paypal/test/route.ts", method: "GET", path: "/api/payments/paypal/test", expectedStatus: 401 },
+  { source: "app/api/payments/stripe/reconcile/route.ts", method: "POST", path: "/api/payments/stripe/reconcile", expectedStatus: 403, crossSite: true },
   { source: "app/api/payments/stripe/test/route.ts", method: "GET", path: "/api/payments/stripe/test", expectedStatus: 401 },
   { source: "app/api/profile/avatar/route.ts", method: "POST", path: "/api/profile/avatar", expectedStatus: 401 },
   { source: "app/api/progress/update/route.ts", method: "POST", path: "/api/progress/update", expectedStatus: 401 },
@@ -127,14 +129,14 @@ async function probe(request: APIRequestContext, route: ApiRouteCase) {
 test.describe("API route inventory and anonymous safety contracts", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test("the explicit matrix covers all 49 route files and all 61 exported handlers", () => {
+  test("the explicit matrix covers all 51 route files and all 63 exported handlers", () => {
     const expectedFiles = [...new Set(apiRoutes.map(route => route.source))].sort();
     const actualFiles = routeFilesUnder(resolve(process.cwd(), "app")).sort();
     const expectedHandlers = apiRoutes.map(route => `${route.source}#${route.method}`).sort();
     const actualHandlers = actualFiles.flatMap(exportedHandlers).sort();
 
-    expect(expectedFiles).toHaveLength(49);
-    expect(apiRoutes).toHaveLength(61);
+    expect(expectedFiles).toHaveLength(51);
+    expect(apiRoutes).toHaveLength(63);
     expect(actualFiles).toEqual(expectedFiles);
     expect(actualHandlers).toEqual(expectedHandlers);
   });

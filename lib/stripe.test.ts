@@ -5,6 +5,7 @@ import {
   buildStripeCheckoutSessionParams,
   extractStripeCheckoutSessionSummary,
   isExpectedPaidStripeSession,
+  isExpectedStripeSession,
   parseStripeAmountToCents,
   verifyStripeWebhookSignature,
   type StripeCheckoutSessionPayloadInput
@@ -159,4 +160,9 @@ test("paid Stripe sessions must match the server-owned pending order", () => {
   assert.equal(isExpectedPaidStripeSession({ ...summary, currency: "USD" }, order), false);
   assert.equal(isExpectedPaidStripeSession({ ...summary, userId: "other" }, order), false);
   assert.equal(isExpectedPaidStripeSession(summary, null), false);
+
+  const unpaidSummary = { ...summary, paymentStatus: "unpaid", status: "open" };
+  assert.equal(isExpectedStripeSession(unpaidSummary, order), true);
+  assert.equal(isExpectedPaidStripeSession(unpaidSummary, order), false);
+  assert.equal(isExpectedStripeSession({ ...unpaidSummary, productType: "library_membership" }, order), false);
 });

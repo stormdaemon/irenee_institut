@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 
   let body: Record<string, unknown>;
   try {
-    body = await readJsonBodyWithLimit<Record<string, unknown>>(request, 16_384);
+    body = await readJsonBodyWithLimit<Record<string, unknown>>(request, 1_024);
     if (!body || Array.isArray(body) || typeof body !== "object") {
       throw invalidCheckoutRequest();
     }
@@ -25,19 +25,19 @@ export async function POST(request: Request) {
     const failure = error instanceof RequestBodyError
       ? invalidCheckoutRequest(error.message, error.status)
       : error;
-    return checkoutFailureResponse(failure, "annual_pass", requestId);
+    return checkoutFailureResponse(failure, "library_membership", requestId);
   }
 
   try {
     const result = await createCheckoutForUser({
       body,
-      productType: "annual_pass",
+      productType: "library_membership",
       requestId,
       supabase: auth.supabase,
       user: auth.user
     });
     return checkoutSuccessResponse(result);
   } catch (error) {
-    return checkoutFailureResponse(error, "annual_pass", requestId);
+    return checkoutFailureResponse(error, "library_membership", requestId);
   }
 }

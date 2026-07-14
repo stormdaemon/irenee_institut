@@ -4,14 +4,23 @@ import { BookOpen, CreditCard, Loader2, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { createStripeCheckoutSessionAction, getStripeCheckoutConfigAction } from "@/app/actions/payments";
 import { cleanAnnualPassSignupPath } from "@/lib/routes";
+import { isAllowedStripeCheckoutUrl } from "@/lib/stripe-checkout-url";
 import { createBrowserClient } from "@/lib/supabase";
 
 type BuyCourseButtonProps = {
   defaultAmountCents?: number;
   label?: string;
   className?: string;
+};
+
+type CheckoutApiResponse = {
+  alreadyActive?: boolean;
+  checkoutUrl?: string;
+  code?: string;
+  error?: string;
+  ok?: boolean;
+  redirectUrl?: string;
 };
 
 export function BuyCourseButton({
@@ -48,15 +57,15 @@ export function BuyCourseButton({
       return;
     }
 
-    const checkoutConfig = await getStripeCheckoutConfigAction();
-    if (!checkoutConfig.ok) {
-      setError(checkoutConfig.error || "Le paiement Stripe n'a pas pu etre prepare.");
-      setStatus("error");
-      return;
-    }
-
     setOpen(true);
     setStatus("ready");
+    if (checkoutParam === "annual-pass") {
+      const nextParams = new URLSearchParams(window.location.search);
+      nextParams.delete("checkout");
+      const nextQuery = nextParams.toString();
+      const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash}`;
+      window.history.replaceState(null, "", nextUrl);
+    }
   }
 
   useEffect(() => {
@@ -64,11 +73,6 @@ export function BuyCourseButton({
     if (checkoutParam !== "annual-pass") return;
 
     autoStartedRef.current = true;
-    const nextParams = new URLSearchParams(window.location.search);
-    nextParams.delete("checkout");
-    const nextQuery = nextParams.toString();
-    const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash}`;
-    window.history.replaceState(null, "", nextUrl);
     startCheckout();
   }, [checkoutParam]);
 
@@ -96,18 +100,34 @@ export function BuyCourseButton({
 
     setStatus("loading");
     setError("");
-    const result = await createStripeCheckoutSessionAction({
-      amount,
-      bookRequested,
-      bookTitle
-    });
+    let response: Response;
+    let result: CheckoutApiResponse;
+    try {
+      response = await fetch("/api/payments/checkout", {
+        body: JSON.stringify({ amount, bookRequested, bookTitle }),
+        cache: "no-store",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        method: "POST"
+      });
+      result = await response.json() as CheckoutApiResponse;
+    } catch {
+      setError("Le service de paiement ne répond pas. Réessayez dans quelques instants.");
+      setStatus("error");
+      return;
+    }
+
+    if (response.status === 401 || result.code === "AUTH_REQUIRED") {
+      window.location.href = cleanAnnualPassSignupPath;
+      return;
+    }
 
     if (result.alreadyActive && result.redirectUrl) {
       window.location.href = result.redirectUrl;
       return;
     }
 
-    if (!result.ok || !result.checkoutUrl) {
+    if (!response.ok || !result.ok || !isAllowedStripeCheckoutUrl(result.checkoutUrl)) {
       setError(result.error || "Stripe n'a pas pu preparer le paiement.");
       setStatus("error");
       return;

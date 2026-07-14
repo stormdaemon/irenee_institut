@@ -3,11 +3,17 @@
 import { BookOpen, CreditCard, Loader2, X } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
-import {
-  createLibraryMembershipCheckoutSessionAction,
-  getLibraryStripeConfigAction
-} from "@/app/actions/library";
+import { isAllowedStripeCheckoutUrl } from "@/lib/stripe-checkout-url";
 import { createBrowserClient } from "@/lib/supabase";
+
+type CheckoutApiResponse = {
+  alreadyActive?: boolean;
+  checkoutUrl?: string;
+  code?: string;
+  error?: string;
+  ok?: boolean;
+  redirectUrl?: string;
+};
 
 export function LibraryMembershipButton() {
   const stableId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
@@ -29,13 +35,6 @@ export function LibraryMembershipButton() {
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
       window.location.href = `/auth/login?next=${encodeURIComponent("/bibliotheque-apologetique")}`;
-      return;
-    }
-
-    const config = await getLibraryStripeConfigAction();
-    if (!config.ok) {
-      setError(config.error || "Le paiement Stripe n'a pas pu etre prepare.");
-      setStatus("error");
       return;
     }
 
@@ -62,12 +61,31 @@ export function LibraryMembershipButton() {
   async function continueToStripe() {
     setStatus("loading");
     setError("");
-    const result = await createLibraryMembershipCheckoutSessionAction();
+    let response: Response;
+    let result: CheckoutApiResponse;
+    try {
+      response = await fetch("/api/payments/library/checkout", {
+        body: "{}",
+        cache: "no-store",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        method: "POST"
+      });
+      result = await response.json() as CheckoutApiResponse;
+    } catch {
+      setError("Le service de paiement ne répond pas. Réessayez dans quelques instants.");
+      setStatus("error");
+      return;
+    }
+    if (response.status === 401 || result.code === "AUTH_REQUIRED") {
+      window.location.href = `/auth/login?next=${encodeURIComponent("/bibliotheque-apologetique")}`;
+      return;
+    }
     if (result.alreadyActive && result.redirectUrl) {
       window.location.href = result.redirectUrl;
       return;
     }
-    if (!result.ok || !result.checkoutUrl) {
+    if (!response.ok || !result.ok || !isAllowedStripeCheckoutUrl(result.checkoutUrl)) {
       setError(result.error || "Stripe n'a pas pu preparer le paiement.");
       setStatus("error");
       return;

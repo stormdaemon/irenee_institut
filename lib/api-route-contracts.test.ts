@@ -41,7 +41,9 @@ import * as onboardingComplete from "@/app/api/onboarding/complete/route";
 import * as onboardingStatus from "@/app/api/onboarding/status/route";
 import * as paymentById from "@/app/api/payments/[id]/route";
 import * as paymentCheckout from "@/app/api/payments/checkout/route";
+import * as paymentLibraryCheckout from "@/app/api/payments/library/checkout/route";
 import * as paymentPayPalTest from "@/app/api/payments/paypal/test/route";
+import * as paymentStripeReconcile from "@/app/api/payments/stripe/reconcile/route";
 import * as paymentStripeTest from "@/app/api/payments/stripe/test/route";
 import * as profileAvatar from "@/app/api/profile/avatar/route";
 import * as progressUpdate from "@/app/api/progress/update/route";
@@ -124,7 +126,9 @@ const cases: ContractCase[] = [
   contract("app/api/onboarding/status/route.ts", "GET", onboardingStatus.GET, "/api/onboarding/status", 401),
   contract("app/api/payments/[id]/route.ts", "PATCH", paymentById.PATCH, "/api/payments/not-a-uuid", 401, { id: "not-a-uuid" }),
   contract("app/api/payments/checkout/route.ts", "POST", paymentCheckout.POST, "/api/payments/checkout", 401),
+  contract("app/api/payments/library/checkout/route.ts", "POST", paymentLibraryCheckout.POST, "/api/payments/library/checkout", 401),
   contract("app/api/payments/paypal/test/route.ts", "GET", paymentPayPalTest.GET, "/api/payments/paypal/test", 401),
+  contract("app/api/payments/stripe/reconcile/route.ts", "POST", paymentStripeReconcile.POST, "/api/payments/stripe/reconcile", 403),
   contract("app/api/payments/stripe/test/route.ts", "GET", paymentStripeTest.GET, "/api/payments/stripe/test", 401),
   contract("app/api/profile/avatar/route.ts", "POST", profileAvatar.POST, "/api/profile/avatar", 401),
   contract("app/api/progress/update/route.ts", "POST", progressUpdate.POST, "/api/progress/update", 401),
@@ -163,8 +167,8 @@ test("every HTTP route handler has a side-effect-free anonymous contract", async
 
   const discovered = discoveredHandlerKeys();
   const manifest = cases.map(item => `${item.routeFile}#${item.method}`).sort();
-  assert.equal(routeFiles(join(process.cwd(), "app")).length, 49, "the route-file inventory changed");
-  assert.equal(discovered.length, 61, "the route-handler inventory changed");
+  assert.equal(routeFiles(join(process.cwd(), "app")).length, 51, "the route-file inventory changed");
+  assert.equal(discovered.length, 63, "the route-handler inventory changed");
   assert.equal(new Set(manifest).size, manifest.length, "the route contract manifest contains a duplicate");
   assert.deepEqual(manifest, discovered, "every exported route handler must have an explicit contract case");
 
