@@ -77,3 +77,24 @@ Attendu : leur résultat bascule sur apostolosinstitut.fr/« Apostolos » et la
 position 1 sur « Saint Irénée » se libère. Si dans 4-6 semaines l'ancien domaine
 occupe toujours la position 1 sans contenu propre, un signalement Google
 « résultat obsolète » (outil Remove Outdated Content) devient pertinent.
+
+## Complément du 15 juillet (soir) — capter la demande créée par leur communication
+
+Déployé (release `f139bbd`) :
+
+- Dossier expert `/blog/fiabilite-des-evangiles-dossier` (mot-clé pilier de leur programme, marqué « à publier » dans la matrice depuis mai).
+- FAQ de désambiguïsation factuelle sur `/contact` (Irénée ≠ Apostolos, antériorité octobre 2025).
+- Page pilier `/choisir-formation-apologetique` : guide de choix objectif (format, rythme, budget, contenu). C'est la page qui capte l'audience « de débordement » : les personnes exposées à leur communication qui comparent ensuite sur Google, et celles qui ne peuvent pas suivre un cursus présentiel à Paris.
+
+Option publicitaire légale (à faire depuis votre compte Google Ads, budget requis) :
+acheter le mot-clé « apostolos institut » en SEA est licite (jurisprudence CJUE
+Google France / Interflora) À CONDITION que l'annonce ne crée aucune confusion :
+elle doit s'identifier clairement (« Institut Saint Irénée — formation
+d'apologétique 100 % en ligne »), ne pas utiliser leur marque dans le texte de
+l'annonce, ne rien affirmer sur eux. Faire relire la formulation avant mise en
+ligne. C'est la seule forme d'« interception » qui ne met pas le site en danger.
+
+Rappels de limites (protègent le site et l'association) :
+- pas d'optimisation SEO du site sur la marque « apostolos » (spam Google + concurrence déloyale) ;
+- aucune accusation publique d'« arnaque » sans preuve qualifiée : diffamation. Si preuves réelles : SignalConso / DGCCRF, et Pharos si escroquerie en ligne ;
+- le dossier « copie du projet » se traite par la voie décrite dans l'audit du 31 mai (constat, mise en demeure), pas par le contenu du site.
