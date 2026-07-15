@@ -10,7 +10,7 @@ const SITE_URL = process.env.IRENEE_SITE_URL || "https://irenee-institut.org";
 const QUEUE_URL = `${SITE_URL}/api/automation/annual-pass-weekly`;
 const APPS_SCRIPT_URL = (process.env.GOOGLE_APPS_SCRIPT_URL || "").trim();
 const SECRET = (process.env.GOOGLE_APPS_SCRIPT_WEBHOOK_SECRET || process.env.GOOGLE_APPS_SCRIPT_MAIL_SECRET || "").trim();
-const PAUSE_BETWEEN_SENDS_MS = 1500;
+const PAUSE_BETWEEN_SENDS_MS = 2500;
 
 if (!APPS_SCRIPT_URL || !SECRET) {
   console.error("weekly_invitations_failed", { stage: "configuration_missing" });
@@ -44,7 +44,7 @@ async function sendThroughAppsScript(job) {
     }),
     headers: { "Content-Type": "application/json" },
     method: "POST",
-    signal: AbortSignal.timeout(30_000)
+    signal: AbortSignal.timeout(60_000)
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.ok !== true) {
