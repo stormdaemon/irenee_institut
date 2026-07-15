@@ -18,6 +18,7 @@ import * as authVerificationResend from "@/app/api/auth/verification/resend/rout
 import * as authVerify from "@/app/api/auth/verify/route";
 import * as annualPassEmails from "@/app/api/automation/annual-pass-emails/route";
 import * as annualPassReminders from "@/app/api/automation/annual-pass-reminders/route";
+import * as annualPassWeekly from "@/app/api/automation/annual-pass-weekly/route";
 import * as automationLearningDocuments from "@/app/api/automation/learning-documents/route";
 import * as avatarById from "@/app/api/avatars/[id]/route";
 import * as bookRequestById from "@/app/api/book-requests/[id]/route";
@@ -26,7 +27,9 @@ import * as courseById from "@/app/api/courses/[id]/route";
 import * as courses from "@/app/api/courses/route";
 import * as documentById from "@/app/api/documents/[id]/route";
 import * as documentVerify from "@/app/api/documents/verify/route";
+import * as appsScriptPartage from "@/app/api/download/apps-script-partage/route";
 import * as googleAppsScriptDownload from "@/app/api/download/google-apps-script/route";
+import * as emailsDesinscription from "@/app/api/emails/desinscription/route";
 import * as finalExam from "@/app/api/final-exam/route";
 import * as homeworkById from "@/app/api/homework/[id]/route";
 import * as homework from "@/app/api/homework/route";
@@ -99,6 +102,8 @@ const cases: ContractCase[] = [
   contract("app/api/automation/annual-pass-emails/route.ts", "POST", annualPassEmails.POST, "/api/automation/annual-pass-emails", 401),
   contract("app/api/automation/annual-pass-reminders/route.ts", "GET", annualPassReminders.GET, "/api/automation/annual-pass-reminders", 401),
   contract("app/api/automation/annual-pass-reminders/route.ts", "POST", annualPassReminders.POST, "/api/automation/annual-pass-reminders", 401),
+  contract("app/api/automation/annual-pass-weekly/route.ts", "GET", annualPassWeekly.GET, "/api/automation/annual-pass-weekly", 401),
+  contract("app/api/automation/annual-pass-weekly/route.ts", "POST", annualPassWeekly.POST, "/api/automation/annual-pass-weekly", 401),
   contract("app/api/automation/learning-documents/route.ts", "GET", automationLearningDocuments.GET, "/api/automation/learning-documents", 401),
   contract("app/api/automation/learning-documents/route.ts", "POST", automationLearningDocuments.POST, "/api/automation/learning-documents", 401),
   contract("app/api/avatars/[id]/route.ts", "GET", avatarById.GET, "/api/avatars/not-a-uuid", 404, { id: "not-a-uuid" }),
@@ -109,7 +114,9 @@ const cases: ContractCase[] = [
   contract("app/api/courses/route.ts", "POST", courses.POST, "/api/courses", 401),
   contract("app/api/documents/[id]/route.ts", "GET", documentById.GET, "/api/documents/not-a-uuid", 401, { id: "not-a-uuid" }),
   contract("app/api/documents/verify/route.ts", "POST", documentVerify.POST, "/api/documents/verify", 403),
+  contract("app/api/download/apps-script-partage/route.ts", "GET", appsScriptPartage.GET, "/api/download/apps-script-partage", 401),
   contract("app/api/download/google-apps-script/route.ts", "POST", googleAppsScriptDownload.POST, "/api/download/google-apps-script", 401),
+  contract("app/api/emails/desinscription/route.ts", "GET", emailsDesinscription.GET, "/api/emails/desinscription", 400),
   contract("app/api/final-exam/route.ts", "GET", finalExam.GET, "/api/final-exam", 401),
   contract("app/api/final-exam/route.ts", "POST", finalExam.POST, "/api/final-exam", 401),
   contract("app/api/homework/[id]/route.ts", "PATCH", homeworkById.PATCH, "/api/homework/not-a-uuid", 401, { id: "not-a-uuid" }),
@@ -167,8 +174,8 @@ test("every HTTP route handler has a side-effect-free anonymous contract", async
 
   const discovered = discoveredHandlerKeys();
   const manifest = cases.map(item => `${item.routeFile}#${item.method}`).sort();
-  assert.equal(routeFiles(join(process.cwd(), "app")).length, 51, "the route-file inventory changed");
-  assert.equal(discovered.length, 63, "the route-handler inventory changed");
+  assert.equal(routeFiles(join(process.cwd(), "app")).length, 54, "the route-file inventory changed");
+  assert.equal(discovered.length, 67, "the route-handler inventory changed");
   assert.equal(new Set(manifest).size, manifest.length, "the route contract manifest contains a duplicate");
   assert.deepEqual(manifest, discovered, "every exported route handler must have an explicit contract case");
 
