@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { blogArticles } from "@/lib/blog";
 
 const baseUrl = "https://irenee-institut.org";
-const publicContentUpdatedAt = new Date("2026-06-01T23:56:27+02:00");
+const publicContentUpdatedAt = new Date("2026-07-08T18:15:00+02:00");
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes = [
