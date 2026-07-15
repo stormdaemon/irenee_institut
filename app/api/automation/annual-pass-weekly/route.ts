@@ -211,7 +211,10 @@ export async function GET(request: Request) {
        from public.profiles p
        where p.role = 'etudiant'
          and nullif(btrim(p.email), '') is not null
-         and lower(p.email) not like '%@example.org'
+         and split_part(lower(p.email), '@', 2) not in ('example.org', 'example.com', 'example.net', 'example.test')
+         and split_part(lower(p.email), '@', 2) not like '%.test'
+         and split_part(lower(p.email), '@', 2) not like '%.invalid'
+         and split_part(lower(p.email), '@', 2) not like '%.localhost'
          and not exists (
            select 1 from public.marketing_email_optouts o where o.profile_id = p.id
          )
@@ -244,6 +247,10 @@ export async function GET(request: Request) {
        and d.attempt_count < 3
        and p.role = 'etudiant'
        and nullif(btrim(p.email), '') is not null
+       and split_part(lower(p.email), '@', 2) not in ('example.org', 'example.com', 'example.net', 'example.test')
+       and split_part(lower(p.email), '@', 2) not like '%.test'
+       and split_part(lower(p.email), '@', 2) not like '%.invalid'
+       and split_part(lower(p.email), '@', 2) not like '%.localhost'
        and not exists (
          select 1 from public.marketing_email_optouts o where o.profile_id = p.id
        )
