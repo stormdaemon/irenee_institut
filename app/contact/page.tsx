@@ -42,6 +42,7 @@ const faqs = [
     category: "Général",
     items: [
       ["Que faire si j'ai des questions pendant la formation ?", "Vous pouvez contacter l'équipe pédagogique et utiliser les espaces d'échange prévus."],
+      ["L'Institut Saint Irénée est-il lié à l'institut « Apostolos » ?", "Non. L'Institut d'Apologétique Saint Irénée (irenee-institut.org), porté par l'association Parole et Partage et présent en ligne depuis octobre 2025, propose une formation catholique à distance. Il est distinct et sans lien avec l'association « Apostolos – Institut d'Apologétique Saint-Irénée », créée en 2026, qui propose des sessions en présentiel à Paris. Pour nous rejoindre, vérifiez que l'adresse du site est bien irenee-institut.org."],
     ],
   },
 ];
