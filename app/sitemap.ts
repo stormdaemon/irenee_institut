@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/institut-apologetique",
     "/ecole-apologetique-en-ligne",
     "/programme-apologetique",
+    "/choisir-formation-apologetique",
     "/ressources-apologetique",
     "/bibliotheque-apologetique",
     "/presse/liberation-institut-saint-irenee-2026",

@@ -28,6 +28,7 @@ function isPublicMarketingPath(pathname: string | null) {
     pathname === "/institut-apologetique" ||
     pathname === "/ecole-apologetique-en-ligne" ||
     pathname === "/programme-apologetique" ||
+    pathname === "/choisir-formation-apologetique" ||
     pathname === "/ressources-apologetique" ||
     pathname === "/bibliotheque-apologetique" ||
     pathname === "/formations" ||

@@ -27,6 +27,7 @@ export function Footer() {
             <h3>Formation</h3>
             <p><Link href="/formations">Nos formations</Link></p>
             <p><Link href="/programme-apologetique">Programme d'apologétique</Link></p>
+            <p><Link href="/choisir-formation-apologetique">Choisir sa formation</Link></p>
             <p><Link href="/ecole-apologetique-en-ligne">École en ligne</Link></p>
             <p><Link href="/blog">Blog apologétique</Link></p>
             <p><Link href="/ressources-apologetique">Ressources</Link></p>
