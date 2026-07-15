@@ -29,6 +29,7 @@ import * as documentById from "@/app/api/documents/[id]/route";
 import * as documentVerify from "@/app/api/documents/verify/route";
 import * as appsScriptPartage from "@/app/api/download/apps-script-partage/route";
 import * as googleAppsScriptDownload from "@/app/api/download/google-apps-script/route";
+import * as rapportDownload from "@/app/api/download/rapport/route";
 import * as emailsDesinscription from "@/app/api/emails/desinscription/route";
 import * as finalExam from "@/app/api/final-exam/route";
 import * as homeworkById from "@/app/api/homework/[id]/route";
@@ -116,6 +117,7 @@ const cases: ContractCase[] = [
   contract("app/api/documents/verify/route.ts", "POST", documentVerify.POST, "/api/documents/verify", 403),
   contract("app/api/download/apps-script-partage/route.ts", "GET", appsScriptPartage.GET, "/api/download/apps-script-partage", 401),
   contract("app/api/download/google-apps-script/route.ts", "POST", googleAppsScriptDownload.POST, "/api/download/google-apps-script", 401),
+  contract("app/api/download/rapport/route.ts", "GET", rapportDownload.GET, "/api/download/rapport", 401),
   contract("app/api/emails/desinscription/route.ts", "GET", emailsDesinscription.GET, "/api/emails/desinscription", 400),
   contract("app/api/final-exam/route.ts", "GET", finalExam.GET, "/api/final-exam", 401),
   contract("app/api/final-exam/route.ts", "POST", finalExam.POST, "/api/final-exam", 401),
@@ -174,8 +176,8 @@ test("every HTTP route handler has a side-effect-free anonymous contract", async
 
   const discovered = discoveredHandlerKeys();
   const manifest = cases.map(item => `${item.routeFile}#${item.method}`).sort();
-  assert.equal(routeFiles(join(process.cwd(), "app")).length, 54, "the route-file inventory changed");
-  assert.equal(discovered.length, 67, "the route-handler inventory changed");
+  assert.equal(routeFiles(join(process.cwd(), "app")).length, 55, "the route-file inventory changed");
+  assert.equal(discovered.length, 68, "the route-handler inventory changed");
   assert.equal(new Set(manifest).size, manifest.length, "the route contract manifest contains a duplicate");
   assert.deepEqual(manifest, discovered, "every exported route handler must have an explicit contract case");
 
