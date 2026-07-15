@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily dispatch of Institut Irénée weekly annual pass invitations
+
+[Timer]
+OnCalendar=*-*-* 10:00:00
+Persistent=true
+RandomizedDelaySec=20m
+Unit=irenee-weekly-invitations.service
+
+[Install]
+WantedBy=timers.target

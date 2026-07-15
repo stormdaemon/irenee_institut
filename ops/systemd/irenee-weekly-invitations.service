@@ -1,0 +1,27 @@
+[Unit]
+Description=Institut Irénée weekly annual pass invitations dispatch
+After=network-online.target irenee-production.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=irenee
+Group=irenee
+WorkingDirectory=/srv/irenee-current
+EnvironmentFile=/etc/irenee/production.env
+Environment=NODE_ENV=production
+ExecStart=/usr/local/bin/node26 /srv/irenee-current/scripts/send-weekly-invitations.mjs
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=strict
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
