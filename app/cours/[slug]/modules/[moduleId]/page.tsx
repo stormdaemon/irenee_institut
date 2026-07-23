@@ -42,9 +42,15 @@ type StudentCourse = Course & {
   completedModules?: number;
 };
 
+type NextCourse = {
+  slug: string;
+  titre: string;
+};
+
 type ModulePayload = {
   accessMode?: "learning" | "preview";
   courses: StudentCourse[];
+  nextCourse: NextCourse | null;
   profile: Profile;
   progress: ModuleProgress[];
 };
@@ -664,6 +670,9 @@ export default function ModulePage() {
         setPayload({
           accessMode: data.accessMode === "preview" ? "preview" : "learning",
           courses: courseWithModule ? [courseWithModule] : [],
+          nextCourse: data.nextCourse && typeof data.nextCourse.slug === "string"
+            ? { slug: String(data.nextCourse.slug), titre: String(data.nextCourse.titre || "Cours suivant") }
+            : null,
           profile: data.profile,
           progress: data.progress || [],
         });
@@ -718,9 +727,11 @@ export default function ModulePage() {
   const progress = useMemo(() => payload?.progress.find(item => item.module_id === moduleId), [payload, moduleId]);
   const resources = module ? getResources(module) : [];
   const isComplete = Boolean(progress?.complete);
-  const isQuiz = module?.type === "quiz" || module?.type_contenu === "quiz";
   const isStaffPreview = payload?.accessMode === "preview";
-  const quizQuestions = isQuiz && Array.isArray(module?.quiz) ? module.quiz : [];
+  const quizQuestions = Array.isArray(module?.quiz) ? module.quiz : [];
+  // A module gates completion on its quiz as soon as it carries questions,
+  // whatever its primary content type (a reading can end with an evaluation).
+  const isQuiz = quizQuestions.length > 0;
   const allQuizQuestionsAnswered = quizQuestions.length > 0 && quizQuestions.every((question, index) => {
     const id = String(question.id || `question-${index + 1}`);
     return Number.isInteger(quizAnswers[id]);
@@ -1002,6 +1013,8 @@ export default function ModulePage() {
   }
 
   const navigation = getModuleNavigation(course.modules, module.id);
+  const nextCourse = payload?.nextCourse || null;
+  const courseHref = (courseSlug: string) => `/cours/${encodeURIComponent(courseSlug)}`;
   const safeVideoUrl = getSafeCourseMediaUrl(module.url_video);
   const safeCaptionsUrl = getSafeCourseMediaUrl(module.url_sous_titres);
   const expectsVideo = module.type === "video" || module.type_contenu === "video" || Boolean(module.url_video);
@@ -1227,6 +1240,10 @@ export default function ModulePage() {
                   <Link className="btn btn-primary" href={`/cours/${encodeURIComponent(course.slug)}/modules/${encodeURIComponent(navigation.nextModule.id)}`}>
                     Prévisualiser le module suivant <ArrowRight size={17} aria-hidden="true" />
                   </Link>
+                ) : nextCourse ? (
+                  <Link className="btn btn-primary" href={courseHref(nextCourse.slug)}>
+                    Prévisualiser le cours suivant <ArrowRight size={17} aria-hidden="true" />
+                  </Link>
                 ) : (
                   <Link className="btn btn-outline" href={`/cours/${encodeURIComponent(course.slug)}`}>Retour au cours</Link>
                 )}
@@ -1252,6 +1269,13 @@ export default function ModulePage() {
                     <Link className="btn btn-primary" href={`/cours/${encodeURIComponent(course.slug)}/modules/${encodeURIComponent(navigation.nextModule.id)}`}>
                       Continuer le parcours <ArrowRight size={17} aria-hidden="true" />
                     </Link>
+                  ) : nextCourse ? (
+                    <div className="module-complete-next-actions">
+                      <Link className="btn btn-primary" href={courseHref(nextCourse.slug)}>
+                        Cours suivant : {nextCourse.titre} <ArrowRight size={17} aria-hidden="true" />
+                      </Link>
+                      <Link className="btn btn-outline" href={`/cours/${encodeURIComponent(course.slug)}`}>Revoir ce cours</Link>
+                    </div>
                   ) : (
                     <Link className="btn btn-primary" href={`/cours/${encodeURIComponent(course.slug)}`}>Voir mon parcours terminé</Link>
                   )}

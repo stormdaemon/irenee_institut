@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { hasPublishedCourseAccess, isActiveCourseEnrollment } from "@/lib/learning-security";
+import { resolveNextPublishedCourse } from "@/lib/course-navigation";
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const privateNoStoreHeaders = { "Cache-Control": "private, no-store" };
@@ -97,8 +98,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     return privateJson({ ok: false, error: "La progression est momentanément indisponible." }, 500);
   }
 
+  const publishedCoursesResult = await auth.supabase
+    .from("courses")
+    .select("slug,titre,semestre,numero")
+    .eq("statut", "publie");
+  const nextCourse = resolveNextPublishedCourse(
+    publishedCoursesResult.error ? null : publishedCoursesResult.data,
+    courseResult.data.slug
+  );
+
   return privateJson({
     accessMode,
+    nextCourse,
     course: {
       ...courseResult.data,
       competences: Array.isArray(courseResult.data.competences) ? courseResult.data.competences : [],

@@ -213,7 +213,8 @@ export async function POST(request: Request) {
   }
 
   let quizScore: number | null = null;
-  if (moduleResult.data.type_contenu === "quiz") {
+  const moduleHasQuiz = Array.isArray(moduleResult.data.quiz) && moduleResult.data.quiz.length > 0;
+  if (moduleHasQuiz) {
     let quizResult: ReturnType<typeof evaluateModuleQuizAnswers>;
     try {
       quizResult = evaluateModuleQuizAnswers(requestBody.answers, moduleResult.data.quiz);

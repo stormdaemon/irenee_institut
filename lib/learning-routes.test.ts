@@ -147,7 +147,10 @@ test("learning routes enforce published entitlements, immutable completion and e
       [userId, moduleId]
     );
 
+    // The published module now carries a graded quiz, so completion requires
+    // passing it: any module holding questions is evaluated, whatever its type.
     const completed = await updateProgress(authenticatedRequest("/api/progress/update", token, {
+      answers: { "q-secret": 1 },
       complete: true,
       course_id: courseId,
       module_id: moduleId,

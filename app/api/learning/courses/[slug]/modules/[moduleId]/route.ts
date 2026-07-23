@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { projectPublicQuiz } from "@/lib/learning-projection";
+import { resolveNextPublishedCourse } from "@/lib/course-navigation";
 import { hasPublishedCourseAccess, isActiveCourseEnrollment } from "@/lib/learning-security";
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -157,8 +158,18 @@ export async function GET(
     url_sous_titres: moduleResult.data.url_sous_titres || ""
   };
 
+  const publishedCoursesResult = await auth.supabase
+    .from("courses")
+    .select("slug,titre,semestre,numero")
+    .eq("statut", "publie");
+  const nextCourse = resolveNextPublishedCourse(
+    publishedCoursesResult.error ? null : publishedCoursesResult.data,
+    courseResult.data.slug
+  );
+
   return privateJson({
     accessMode,
+    nextCourse,
     course: {
       ...courseResult.data,
       competences: Array.isArray(courseResult.data.competences) ? courseResult.data.competences : [],

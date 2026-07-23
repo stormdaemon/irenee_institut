@@ -13580,3 +13580,12 @@ body .admin-shell .course-studio-page .module-video-caption-error {
   font-weight: 700;
   line-height: 1.45;
 }
+
+/* Actions de fin de parcours : reprise + accès au cours suivant. */
+.course-hero-actions,
+.module-complete-next-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}

@@ -27,9 +27,15 @@ type StudentCourse = Course & {
   progress?: number;
 };
 
+type NextCourse = {
+  slug: string;
+  titre: string;
+};
+
 type CoursePayload = {
   accessMode?: "learning" | "preview";
   courses: StudentCourse[];
+  nextCourse: NextCourse | null;
   profile: Profile;
   progress: ModuleProgress[];
 };
@@ -83,6 +89,9 @@ export default function CoursePage() {
         setPayload({
           accessMode: data.accessMode === "preview" ? "preview" : "learning",
           courses: data.course ? [data.course] : [],
+          nextCourse: data.nextCourse && typeof data.nextCourse.slug === "string"
+            ? { slug: String(data.nextCourse.slug), titre: String(data.nextCourse.titre || "Cours suivant") }
+            : null,
           profile: data.profile,
           progress: data.progress || [],
         });
@@ -166,6 +175,7 @@ export default function CoursePage() {
 
   const resume = journey.resumeModule;
   const finished = journey.completedCount === course.modules.length && course.modules.length > 0;
+  const nextCourse = payload.nextCourse;
   const firstName = payload.profile.prenom || payload.profile.email;
   const competences = course.competences || [];
   const prerequisites = course.prerequis || [];
@@ -188,11 +198,19 @@ export default function CoursePage() {
               <span className="badge">{level}</span>
             </div>
             {resume ? (
-              <Link className="btn btn-primary course-resume-button" href={moduleHref(course.slug, resume.id)}>
-                {isStaffPreview ? <Eye size={18} aria-hidden="true" /> : finished ? <RotateCcw size={18} aria-hidden="true" /> : <Play size={18} fill="currentColor" aria-hidden="true" />}
-                {isStaffPreview ? "Prévisualiser le premier module" : journey.resumeLabel}
-                <ArrowRight size={18} aria-hidden="true" />
-              </Link>
+              <div className="course-hero-actions">
+                <Link className="btn btn-primary course-resume-button" href={moduleHref(course.slug, resume.id)}>
+                  {isStaffPreview ? <Eye size={18} aria-hidden="true" /> : finished ? <RotateCcw size={18} aria-hidden="true" /> : <Play size={18} fill="currentColor" aria-hidden="true" />}
+                  {isStaffPreview ? "Prévisualiser le premier module" : journey.resumeLabel}
+                  <ArrowRight size={18} aria-hidden="true" />
+                </Link>
+                {finished && !isStaffPreview && nextCourse && (
+                  <Link className="btn btn-primary course-next-course-button" href={`/cours/${encodeURIComponent(nextCourse.slug)}`}>
+                    Cours suivant : {nextCourse.titre}
+                    <ArrowRight size={18} aria-hidden="true" />
+                  </Link>
+                )}
+              </div>
             ) : (
               <p className="course-empty-program">Le programme de ce cours sera bientôt disponible.</p>
             )}
