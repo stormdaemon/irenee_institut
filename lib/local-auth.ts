@@ -94,7 +94,8 @@ function normalizeMetadata(metadata?: Record<string, unknown>) {
   const clean = (value: unknown) => String(value || "").replace(/\s+/g, " ").trim().slice(0, 120);
   return {
     nom: clean(metadata?.nom || metadata?.last_name),
-    prenom: clean(metadata?.prenom || metadata?.first_name)
+    prenom: clean(metadata?.prenom || metadata?.first_name),
+    telephone: String(metadata?.telephone || metadata?.phone || "").replace(/\s+/g, " ").trim().slice(0, 30)
   };
 }
 
@@ -319,9 +320,9 @@ export async function signUpWithPassword(
         [userId, userId, JSON.stringify({ sub: userId, email, email_verified: true, ...metadata }), identityId]
       );
       await client.query(
-        `insert into public.profiles (id,email,nom,prenom,role,updated_at)
-         values ($1,$2,$3,$4,'etudiant',now())`,
-        [userId, email, metadata.nom, metadata.prenom]
+        `insert into public.profiles (id,email,nom,prenom,telephone,role,updated_at)
+         values ($1,$2,$3,$4,$5,'etudiant',now())`,
+        [userId, email, metadata.nom, metadata.prenom, metadata.telephone]
       );
     });
   } catch (error) {
@@ -513,9 +514,9 @@ export async function beginEmailSignUp(input: { email: string; metadata?: Record
         [userId, userId, JSON.stringify({ sub: userId, email, email_verified: false, ...metadata }), identityId]
       );
       await client.query(
-        `insert into public.profiles (id,email,nom,prenom,role,updated_at)
-         values ($1,$2,$3,$4,'etudiant',now())`,
-        [userId, email, metadata.nom, metadata.prenom]
+        `insert into public.profiles (id,email,nom,prenom,telephone,role,updated_at)
+         values ($1,$2,$3,$4,$5,'etudiant',now())`,
+        [userId, email, metadata.nom, metadata.prenom, metadata.telephone]
       );
       await client.query(
         `insert into public.email_verification_tokens (user_id,token_hash,expires_at)

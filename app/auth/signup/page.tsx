@@ -1,16 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, Loader2, Lock, Mail, UserPlus, UserRound } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, Lock, Mail, Phone, UserPlus, UserRound } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { translateAuthError, type AuthErrorCopy } from "@/lib/auth-errors";
 import { safeInternalPath } from "@/lib/request-security";
 import { annualPassCheckoutPath, cleanAnnualPassSignupPath } from "@/lib/routes";
 import { createBrowserClient } from "@/lib/supabase";
 
-type FieldErrors = Partial<Record<"prenom" | "nom" | "email" | "password" | "passwordConfirm", string>>;
+type FieldErrors = Partial<Record<"prenom" | "nom" | "telephone" | "email" | "password" | "passwordConfirm", string>>;
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phonePattern = /^\+?[0-9 ()\-.]{6,30}$/;
 
 function getFieldValue(form: FormData, key: string) {
   return String(form.get(key) || "").trim();
@@ -51,6 +52,7 @@ export default function SignupPage() {
     const form = new FormData(formElement);
     const prenom = getFieldValue(form, "prenom");
     const nom = getFieldValue(form, "nom");
+    const telephone = getFieldValue(form, "telephone");
     const email = getFieldValue(form, "email").toLowerCase();
     const password = String(form.get("password") || "");
     const passwordConfirm = String(form.get("passwordConfirm") || "");
@@ -58,6 +60,8 @@ export default function SignupPage() {
 
     if (!prenom) nextFieldErrors.prenom = "Indiquez votre prénom.";
     if (!nom) nextFieldErrors.nom = "Indiquez votre nom.";
+    if (!telephone) nextFieldErrors.telephone = "Indiquez votre numéro de téléphone.";
+    else if (!phonePattern.test(telephone)) nextFieldErrors.telephone = "Indiquez un numéro de téléphone valide.";
     if (!emailPattern.test(email)) nextFieldErrors.email = "Indiquez une adresse email valide.";
     if (password.length < 12) nextFieldErrors.password = "Le mot de passe doit contenir au moins 12 caractères.";
     if (password !== passwordConfirm) nextFieldErrors.passwordConfirm = "Les deux mots de passe ne correspondent pas.";
@@ -97,7 +101,7 @@ export default function SignupPage() {
       password,
       passwordConfirmation: passwordConfirm,
       options: {
-        data: { prenom, nom },
+        data: { prenom, nom, telephone },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(getSafeNextPath())}`
       }
     });
@@ -174,6 +178,15 @@ export default function SignupPage() {
             <input className="input" name="email" type="email" autoComplete="email" disabled={isSubmitting || isSuccess} aria-invalid={Boolean(fieldErrors.email)} />
           </span>
           {fieldErrors.email && <small className="field-error">{fieldErrors.email}</small>}
+        </label>
+
+        <label className="auth-field">
+          <span>Téléphone</span>
+          <span className="auth-input-wrap">
+            <Phone size={18} aria-hidden="true" />
+            <input className="input" name="telephone" type="tel" autoComplete="tel" inputMode="tel" maxLength={30} disabled={isSubmitting || isSuccess} aria-invalid={Boolean(fieldErrors.telephone)} />
+          </span>
+          {fieldErrors.telephone && <small className="field-error">{fieldErrors.telephone}</small>}
         </label>
 
         <label className="auth-field">

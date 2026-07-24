@@ -2,7 +2,7 @@
 
 import type { Course, Profile, Role } from "@/lib/types";
 import type { AdminAccessAudit } from "@/lib/admin-access";
-import { Calendar, Mail, Plus, Search, Trash2, X } from "lucide-react";
+import { Calendar, Mail, Phone, Plus, Search, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ActionNotice } from "@/components/ActionNotice";
 import { authenticatedFetch } from "@/lib/authenticated-fetch";
@@ -13,6 +13,8 @@ export default function AdminUsersPage() {
   const [accessAudit, setAccessAudit] = useState<AdminAccessAudit | null>(null);
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<"all" | Role>("all");
+  const [passFilter, setPassFilter] = useState<"all" | "with" | "without">("all");
+  const [sort, setSort] = useState<"recent" | "ancien" | "nom">("recent");
   const [selected, setSelected] = useState<Profile | null>(null);
   const [assigned, setAssigned] = useState<string[]>([]);
   const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
@@ -27,11 +29,28 @@ export default function AdminUsersPage() {
 
   const accessByUser = useMemo(() => new Map((accessAudit?.students || []).map(student => [student.id, student])), [accessAudit]);
 
+  // Le pass annuel peut concerner n'importe quel compte : on le lit sur les pass
+  // eux-mêmes plutôt que sur la liste des étudiants.
+  const activePassUserIds = useMemo(
+    () => new Set((accessAudit?.annualPasses || []).filter(pass => pass.isActive).map(pass => pass.user_id)),
+    [accessAudit],
+  );
+
   const filtered = useMemo(() => users.filter(user => {
-    const matchText = !query || `${user.prenom} ${user.nom} ${user.email}`.toLowerCase().includes(query.toLowerCase());
+    const matchText = !query
+      || `${user.prenom} ${user.nom} ${user.email} ${user.telephone || ""}`.toLowerCase().includes(query.toLowerCase());
     const matchRole = role === "all" || user.role === role;
-    return matchText && matchRole;
-  }), [users, query, role]);
+    const hasPass = activePassUserIds.has(user.id);
+    const matchPass = passFilter === "all" || (passFilter === "with" ? hasPass : !hasPass);
+    return matchText && matchRole && matchPass;
+  }).sort((left, right) => {
+    if (sort === "nom") return `${left.nom} ${left.prenom}`.localeCompare(`${right.nom} ${right.prenom}`, "fr");
+    const leftDate = new Date(left.created_at || 0).getTime();
+    const rightDate = new Date(right.created_at || 0).getTime();
+    return sort === "ancien" ? leftDate - rightDate : rightDate - leftDate;
+  }), [users, query, role, passFilter, sort, activePassUserIds]);
+
+  const passCount = useMemo(() => filtered.filter(user => activePassUserIds.has(user.id)).length, [filtered, activePassUserIds]);
 
   async function refreshAccessAudit() {
     const data = await authenticatedFetch("/api/admin/access").then(response => response.json()).catch(() => null);
@@ -105,29 +124,47 @@ export default function AdminUsersPage() {
           <a className="btn btn-outline" href="/admin/access">Accès étudiants</a>
         </div>
         <ActionNotice status={status} success={successMessage || "Modification enregistrée."} error={error} />
-        <div className="grid-2" style={{ margin: "30px 0" }}>
+        <div className="grid-4" style={{ margin: "30px 0" }}>
           <div style={{ position: "relative" }}>
             <Search style={{ position: "absolute", left: 14, top: 14, color: "#9aa5b5" }} size={18} />
-            <input className="input" style={{ paddingLeft: 44 }} placeholder="Rechercher par nom, prénom ou email..." value={query} onChange={event => setQuery(event.target.value)} />
+            <input className="input" style={{ paddingLeft: 44 }} placeholder="Rechercher par nom, email ou téléphone..." value={query} onChange={event => setQuery(event.target.value)} />
           </div>
-          <select className="input" value={role} onChange={event => setRole(event.target.value as "all" | Role)}>
+          <select className="input" aria-label="Filtrer par rôle" value={role} onChange={event => setRole(event.target.value as "all" | Role)}>
             <option value="all">Tous les rôles</option>
             <option value="etudiant">Étudiants</option>
             <option value="formateur">Formateurs</option>
             <option value="directeur">Directeurs</option>
           </select>
+          <select className="input" aria-label="Filtrer par pass annuel" value={passFilter} onChange={event => setPassFilter(event.target.value as "all" | "with" | "without")}>
+            <option value="all">Pass annuel : tous</option>
+            <option value="with">Inscrits au pass</option>
+            <option value="without">Non inscrits</option>
+          </select>
+          <select className="input" aria-label="Trier les utilisateurs" value={sort} onChange={event => setSort(event.target.value as "recent" | "ancien" | "nom")}>
+            <option value="recent">Inscription récente</option>
+            <option value="ancien">Inscription ancienne</option>
+            <option value="nom">Nom (A → Z)</option>
+          </select>
         </div>
-        <p className="muted">{filtered.length} utilisateur{filtered.length > 1 ? "s" : ""} trouvé{filtered.length > 1 ? "s" : ""}</p>
+        <p className="muted">
+          {filtered.length} utilisateur{filtered.length > 1 ? "s" : ""} trouvé{filtered.length > 1 ? "s" : ""} · {passCount} avec pass annuel actif
+        </p>
         <div className="card table-wrap">
           <table className="data-table">
             <thead>
-              <tr><th>Utilisateur</th><th>Email</th><th>Rôle</th><th>Inscription</th><th>Actions</th></tr>
+              <tr><th>Utilisateur</th><th>Email</th><th>Téléphone</th><th>Pass annuel</th><th>Rôle</th><th>Inscription</th><th>Actions</th></tr>
             </thead>
             <tbody>
               {filtered.map(user => (
                 <tr key={user.id}>
                   <td><strong>{user.prenom} {user.nom}</strong></td>
                   <td><Mail size={15} /> {user.email}</td>
+                  <td>{user.telephone ? <><Phone size={15} /> {user.telephone}</> : <span className="muted">—</span>}</td>
+                  <td>
+                    {activePassUserIds.has(user.id)
+                      ? <span className="badge badge-success">Inscrit</span>
+                      : <span className="muted">Non inscrit</span>}
+                  </td>
                   <td>
                     <select className="input" value={user.role} onChange={event => updateRole(user.id, event.target.value as Role)}>
                       <option value="etudiant">Étudiant</option>

@@ -149,7 +149,7 @@ describe("local PostgreSQL auth", () => {
     const signupRequest = (ip: string) => new Request("https://irenee.test/api/auth/signup", {
       body: JSON.stringify({
         email,
-        metadata: { prenom: "Double", nom: "Email" },
+        metadata: { prenom: "Double", nom: "Email", telephone: "06 12 34 56 78" },
         next: "/formations?checkout=annual-pass",
         password,
         passwordConfirmation: password
@@ -172,6 +172,29 @@ describe("local PostgreSQL auth", () => {
     expect(freshBody.automationWarning).toBe(false);
     createdUserIds.push(freshBody.user.id);
 
+    const createdProfile = await query<{ telephone: string | null }>(
+      "select telephone from public.profiles where id = $1",
+      [freshBody.user.id]
+    );
+    expect(createdProfile.rows[0]?.telephone).toBe("06 12 34 56 78");
+
+    const withoutPhone = await signupRoutePost(new Request("https://irenee.test/api/auth/signup", {
+      body: JSON.stringify({
+        email: `sans-telephone-${randomUUID()}@irenee.test`,
+        metadata: { prenom: "Sans", nom: "Téléphone" },
+        password,
+        passwordConfirmation: password
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        origin: "https://irenee.test",
+        "sec-fetch-site": "same-origin",
+        "x-real-ip": `198.51.${randomInt(1, 255)}.${randomInt(1, 255)}`
+      },
+      method: "POST"
+    }));
+    expect(withoutPhone.status).toBe(400);
+
     const cookie = freshResponse.headers.get("set-cookie") || "";
     expect(cookie).toContain("irenee_session=");
     expect(cookie).toContain("HttpOnly");
@@ -186,14 +209,18 @@ describe("local PostgreSQL auth", () => {
     expect(authenticatedBody.user.email).toBe(email);
 
     assert.deepEqual(payloads.map(payload => Object.keys(payload).filter(key => key !== "secret")), [
-      ["registration"],
+      ["campaign"],
       ["welcomeRegistration"]
     ]);
-    assert.deepEqual(payloads[0]?.registration, {
-      email,
-      nom: "Email",
-      prenom: "Double"
-    });
+    // La notification d'inscription passe par le canal générique : le corps de
+    // l'email est construit ici, donc chaque champ collecté doit y figurer.
+    const notification = payloads[0]?.campaign;
+    assert.equal(notification?.to, "sam3ams@gmail.com,tlafont49@gmail.com,oeuvrecatholiquefrance@gmail.com");
+    assert.equal(notification?.subject, "Nouvelle inscription — Double Email");
+    for (const expected of ["Double", "Email", email, "06 12 34 56 78"]) {
+      assert.ok(String(notification?.body || "").includes(expected), `texte sans ${expected}`);
+      assert.ok(String(notification?.htmlBody || "").includes(expected), `html sans ${expected}`);
+    }
     assert.deepEqual(payloads[1]?.welcomeRegistration, {
       contactEmail: "contact@irenee-institut.org",
       dashboardUrl: "https://irenee-institut.org/espace-etudiant",
@@ -569,13 +596,20 @@ describe("Google Apps Script registration automation", () => {
       email: signup.user!.email,
       id: signup.user!.id,
       nom: "Mation",
-      prenom: "Auto"
+      prenom: "Auto",
+      telephone: "07 65 43 21 09"
     });
     expect(warnings).toHaveLength(0);
     expect(calls).toHaveLength(2);
-    expect(calls.some(call => Boolean((call as { registration?: unknown }).registration))).toBe(true);
     expect(calls.some(call => Boolean((call as { welcomeRegistration?: unknown }).welcomeRegistration))).toBe(true);
-    expect(calls.some(call => Boolean((call as { campaign?: unknown }).campaign))).toBe(false);
+
+    // La notification admin est composée côté application pour transporter tous
+    // les champs collectés, sans dépendre d'une mise à jour du script Google.
+    const notification = (calls[0] as { campaign?: { body?: string; subject?: string; to?: string } }).campaign;
+    expect(notification?.subject).toBe("Nouvelle inscription — Auto Mation");
+    expect(notification?.to || "").toContain("oeuvrecatholiquefrance@gmail.com");
+    expect(notification?.body || "").toContain("07 65 43 21 09");
+    expect(notification?.body || "").toContain(signup.user!.email);
 
     const outbox = await query<{ delivery_status: string }>(
       `select delivery_status from public.registration_notification_outbox where user_id = $1`,

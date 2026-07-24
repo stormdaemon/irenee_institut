@@ -10,6 +10,7 @@ import { recordSecurityEvent } from "@/lib/security-audit";
 export const runtime = "nodejs";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phonePattern = /^\+?[0-9 ()\-.]{6,30}$/;
 
 export async function POST(request: Request) {
   try {
@@ -33,10 +34,16 @@ export async function POST(request: Request) {
   const password = String(body.password || "");
   const passwordConfirmation = String(body.passwordConfirmation || "");
   const rawMetadata = typeof body.metadata === "object" && body.metadata ? body.metadata as Record<string, unknown> : {};
-  const metadata = { nom: String(rawMetadata.nom || "").slice(0, 120), prenom: String(rawMetadata.prenom || "").slice(0, 120) };
+  const telephone = String(rawMetadata.telephone || "").replace(/\s+/g, " ").trim().slice(0, 30);
+  const metadata = {
+    nom: String(rawMetadata.nom || "").slice(0, 120),
+    prenom: String(rawMetadata.prenom || "").slice(0, 120),
+    telephone
+  };
   const nextPath = safeInternalPath(body.next, "/espace-etudiant");
 
   if (!emailPattern.test(email) || email.length > 254) return NextResponse.json({ error: "Email invalide." }, { status: 400 });
+  if (!phonePattern.test(telephone)) return NextResponse.json({ error: "Numéro de téléphone invalide." }, { status: 400 });
   if (password !== passwordConfirmation) {
     return NextResponse.json({ error: "Les deux mots de passe ne correspondent pas." }, { status: 400 });
   }
@@ -67,7 +74,8 @@ export async function POST(request: Request) {
     email: result.user.email,
     id: result.user.id,
     nom: String(storedMetadata.nom || ""),
-    prenom: String(storedMetadata.prenom || "")
+    prenom: String(storedMetadata.prenom || ""),
+    telephone: String(storedMetadata.telephone || "")
   }).catch(error => [error instanceof Error ? error.message : String(error)]);
   await recordSecurityEvent({ actorUserId: result.user.id, eventType: "auth.signup.created", request });
   if (automationWarnings.length) {

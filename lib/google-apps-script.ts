@@ -8,9 +8,17 @@ type RegistrationProfile = {
   id: string;
   nom?: string | null;
   prenom?: string | null;
+  telephone?: string | null;
 };
 
 const mandatoryCampaignKey = "mandatory-registration-onboarding";
+
+// Admins qui reçoivent la notification de nouvelle inscription. Repli sur la
+// liste historique du worker Apps Script si la variable d'environnement est absente.
+const registrationNotificationRecipients = (
+  process.env.REGISTRATION_NOTIFICATION_RECIPIENTS
+  || "sam3ams@gmail.com,tlafont49@gmail.com,oeuvrecatholiquefrance@gmail.com"
+).split(",").map(recipient => recipient.trim()).filter(Boolean);
 
 function appsScriptConfig() {
   return {
@@ -238,6 +246,36 @@ function welcomeCampaignFor(profile: RegistrationProfile) {
   };
 }
 
+function registrationNotificationCampaign(profile: RegistrationProfile) {
+  const fullName = `${profile.prenom || ""} ${profile.nom || ""}`.trim() || "Non renseigné";
+  const rawDate = profile.created_at || new Date().toISOString();
+  const parsedDate = new Date(rawDate);
+  const dateLabel = Number.isFinite(parsedDate.getTime())
+    ? parsedDate.toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" })
+    : String(rawDate);
+  const rows: [string, string][] = [
+    ["Prénom", (profile.prenom || "").trim() || "Non renseigné"],
+    ["Nom", (profile.nom || "").trim() || "Non renseigné"],
+    ["Email", profile.email],
+    ["Téléphone", (profile.telephone || "").trim() || "Non renseigné"],
+    ["Date d'inscription", dateLabel]
+  ];
+
+  return {
+    body: [
+      "Une nouvelle inscription vient d'être effectuée sur irenee-institut.org.",
+      "",
+      ...rows.map(([label, value]) => `${label} : ${value}`)
+    ].join("\n"),
+    htmlBody: `<p style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#172033;"><strong>Nouvelle inscription sur Institut Saint Irénée</strong></p>`
+      + `<table cellpadding="8" cellspacing="0" style="border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#172033;">`
+      + rows.map(([label, value]) => `<tr><td style="border:1px solid #dcd6c4;background:#f6f2e8;font-weight:bold;white-space:nowrap;">${escapeHtml(label)}</td><td style="border:1px solid #dcd6c4;">${escapeHtml(value)}</td></tr>`).join("")
+      + `</table>`,
+    subject: `Nouvelle inscription — ${fullName}`,
+    to: registrationNotificationRecipients.join(",")
+  };
+}
+
 async function postWelcomeRegistration(profile: RegistrationProfile) {
   try {
     await postAppsScript({ welcomeRegistration: welcomeRegistrationFor(profile) });
@@ -252,14 +290,7 @@ export async function runRegistrationAutomation(profile: RegistrationProfile) {
   const warnings: string[] = [];
 
   try {
-    await postAppsScript({
-      registration: {
-        created_at: profile.created_at,
-        email: profile.email,
-        nom: profile.nom || "",
-        prenom: profile.prenom || ""
-      }
-    });
+    await postAppsScript({ campaign: registrationNotificationCampaign(profile) });
     await query(
       `update public.registration_notification_outbox
        set delivery_status = 'sent', sent_at = now(), last_error = null, attempt_count = attempt_count + 1, updated_at = now()
