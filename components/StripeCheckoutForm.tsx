@@ -22,13 +22,17 @@ type StripeGlobal = (publishableKey: string) => {
   initCheckoutElementsSdk?: StripeCheckoutInitializer;
 };
 
+// `initCheckout` n'existe qu'à partir de la version Basil de Stripe.js :
+// l'URL générique /v3/ reste figée sur une version antérieure.
+const STRIPE_JS_BASIL_URL = "https://js.stripe.com/basil/stripe.js";
+
 declare global {
   interface Window {
     Stripe?: StripeGlobal;
   }
 }
 
-const STRIPE_JS_URL = "https://js.stripe.com/v3/";
+const STRIPE_JS_URL = STRIPE_JS_BASIL_URL;
 
 // Stripe.js doit provenir de chez Stripe : c'est ce qui garantit que les
 // numéros de carte ne transitent jamais par nos serveurs.
@@ -104,8 +108,8 @@ export function StripeCheckoutForm({
             : null;
         if (!initCheckout) throw new Error("indisponible");
         const checkout = await initCheckout({
-          clientSecret,
-          elementsOptions: { appearance }
+          elementsOptions: { appearance },
+          fetchClientSecret: () => Promise.resolve(clientSecret)
         });
         if (cancelled) return;
         checkoutRef.current = checkout;

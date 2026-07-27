@@ -5,8 +5,9 @@ export const STRIPE_CHECKOUT_ORIGIN = "https://checkout.stripe.com";
 export function isStripeCheckoutClientSecret(value: unknown, sessionId?: unknown): value is string {
   if (typeof value !== "string") return false;
   const candidate = value.trim();
-  if (candidate.length < 20 || candidate.length > 512) return false;
-  if (!/^cs_(?:live|test)_[A-Za-z0-9]+_secret_[A-Za-z0-9_-]+$/.test(candidate)) return false;
+  if (candidate.length < 20 || candidate.length > 1024) return false;
+  // La partie secrète est transmise percent-encodée par Stripe.
+  if (!/^cs_(?:live|test)_[A-Za-z0-9]+_secret_[A-Za-z0-9%._~+=/-]+$/.test(candidate)) return false;
   if (sessionId === undefined) return true;
   return typeof sessionId === "string" && sessionId.trim() !== "" && candidate.startsWith(`${sessionId.trim()}_secret_`);
 }

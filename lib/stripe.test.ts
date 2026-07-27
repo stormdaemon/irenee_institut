@@ -94,7 +94,8 @@ test("buildStripeCheckoutSessionParams keeps the payment on the site in custom m
 
 test("isStripeCheckoutClientSecret only accepts a secret bound to its own session", () => {
   const sessionId = "cs_live_a1B2c3D4";
-  const secret = `${sessionId}_secret_fidwbEdN`;
+  // Format réellement renvoyé par Stripe : la partie secrète est percent-encodée.
+  const secret = `${sessionId}_secret_fidnandhYHdWcXxpYCc%2FJ2FgY2RwaXEnKSdwbEhq`;
 
   assert.equal(isStripeCheckoutClientSecret(secret, sessionId), true);
   assert.equal(isStripeCheckoutClientSecret(secret), true);
@@ -105,7 +106,7 @@ test("isStripeCheckoutClientSecret only accepts a secret bound to its own sessio
     "pk_live_a1B2c3",
     "cs_live_a1B2c3D4",
     "https://checkout.stripe.com/c/pay/cs_live_a1B2c3D4",
-    `${sessionId}_secret_${"x".repeat(600)}`,
+    `${sessionId}_secret_${"x".repeat(1200)}`,
     null,
     undefined,
     42
