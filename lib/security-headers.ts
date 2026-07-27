@@ -4,7 +4,10 @@ export function buildContentSecurityPolicy(nonce?: string, development = false, 
     ...(nonce ? [`'nonce-${nonce}'`, "'strict-dynamic'"] : []),
     ...(development ? ["'unsafe-eval'"] : []),
     "https://www.paypal.com",
-    "https://www.paypalobjects.com"
+    "https://www.paypalobjects.com",
+    // Saisie carte affichée sur le site : Stripe.js et sa sonde antifraude.
+    "https://js.stripe.com",
+    "https://m.stripe.network"
   ];
   const styleSources = ["'self'", ...(nonce ? [`'nonce-${nonce}'`] : [])];
 
@@ -14,7 +17,7 @@ export function buildContentSecurityPolicy(nonce?: string, development = false, 
     "object-src 'none'",
     "frame-ancestors 'none'",
     "form-action 'self' https://checkout.stripe.com https://www.paypal.com https://*.paypal.com",
-    "img-src 'self' data: blob: https://res.cloudinary.com https://lebaptemecatholique.fr https://bilan-previsionnel.fr",
+    "img-src 'self' data: blob: https://res.cloudinary.com https://lebaptemecatholique.fr https://bilan-previsionnel.fr https://*.stripe.com",
     "font-src 'self' data:",
     "media-src 'self' https://play.radioking.io https://res.cloudinary.com",
     `script-src ${scriptSources.join(" ")}`,
@@ -25,8 +28,8 @@ export function buildContentSecurityPolicy(nonce?: string, development = false, 
     // Confine that compatibility exception to attributes; inline <style>
     // elements must carry the per-response nonce above.
     "style-src-attr 'unsafe-inline'",
-    "connect-src 'self' https://www.paypal.com https://*.paypal.com",
-    "frame-src https://checkout.stripe.com https://www.paypal.com https://*.paypal.com https://www.google.com https://maps.google.com https://*.daily.co",
+    "connect-src 'self' https://www.paypal.com https://*.paypal.com https://api.stripe.com https://m.stripe.network",
+    "frame-src https://checkout.stripe.com https://js.stripe.com https://hooks.stripe.com https://m.stripe.network https://www.paypal.com https://*.paypal.com https://www.google.com https://maps.google.com https://*.daily.co",
     "worker-src 'self' blob:",
     "manifest-src 'self'",
     ...(upgradeInsecureRequests ? ["upgrade-insecure-requests"] : [])

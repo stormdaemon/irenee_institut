@@ -13589,3 +13589,46 @@ body .admin-shell .course-studio-page .module-video-caption-error {
   gap: 12px;
   align-items: center;
 }
+
+/* Paiement par carte affiché sur le site : la mise en page reste celle de
+   l'Institut, Stripe ne fournit que les champs de saisie sécurisés. */
+.stripe-checkout-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.stripe-checkout-fields {
+  min-height: 44px;
+  padding: 14px;
+  border: 1px solid #d9cba9;
+  border-radius: 10px;
+  background: #fffdf8;
+}
+.stripe-checkout-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: .92rem;
+}
+.stripe-checkout-submit {
+  width: 100%;
+  justify-content: center;
+}
+.stripe-checkout-trust {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: #5c6473;
+  font-size: .82rem;
+  line-height: 1.45;
+}
+.stripe-checkout-powered {
+  margin: 0;
+  color: #8a919d;
+  font-size: .74rem;
+  letter-spacing: .08em;
+  text-align: center;
+  text-transform: uppercase;
+}

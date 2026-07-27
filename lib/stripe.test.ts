@@ -10,6 +10,7 @@ import {
   verifyStripeWebhookSignature,
   type StripeCheckoutSessionPayloadInput
 } from "./stripe";
+import { isStripeCheckoutClientSecret } from "./stripe-checkout-url";
 
 const course = {
   id: "annual-pass-saint-irenee",
@@ -74,6 +75,43 @@ test("buildStripeCheckoutSessionParams creates a hosted EUR checkout with metada
   assert.equal(params.get("metadata[book_requested]"), "true");
   assert.equal(params.get("metadata[book_title]"), "Mere de Dieu");
   assert.equal(params.get("payment_intent_data[metadata][product_type]"), "annual_pass");
+});
+
+test("buildStripeCheckoutSessionParams keeps the payment on the site in custom mode", () => {
+  const params = buildStripeCheckoutSessionParams(checkoutInput({ uiMode: "custom" }));
+
+  assert.equal(params.get("ui_mode"), "custom");
+  assert.equal(params.get("return_url"), "https://irenee-institut.org/paiement/merci?stripe_session_id={CHECKOUT_SESSION_ID}");
+  // Stripe refuse ces deux paramètres hors mode hébergé.
+  assert.equal(params.get("success_url"), null);
+  assert.equal(params.get("cancel_url"), null);
+  // Les métadonnées de rapprochement restent identiques au mode hébergé.
+  assert.equal(params.get("client_reference_id"), "user-456");
+  assert.equal(params.get("metadata[user_id]"), "user-456");
+  assert.equal(params.get("metadata[product_type]"), "annual_pass");
+  assert.equal(params.get("line_items[0][price_data][unit_amount]"), "9900");
+});
+
+test("isStripeCheckoutClientSecret only accepts a secret bound to its own session", () => {
+  const sessionId = "cs_live_a1B2c3D4";
+  const secret = `${sessionId}_secret_fidwbEdN`;
+
+  assert.equal(isStripeCheckoutClientSecret(secret, sessionId), true);
+  assert.equal(isStripeCheckoutClientSecret(secret), true);
+  // Un secret appartenant à une autre session ne doit jamais être servi.
+  assert.equal(isStripeCheckoutClientSecret(secret, "cs_live_other"), false);
+  for (const blocked of [
+    "",
+    "pk_live_a1B2c3",
+    "cs_live_a1B2c3D4",
+    "https://checkout.stripe.com/c/pay/cs_live_a1B2c3D4",
+    `${sessionId}_secret_${"x".repeat(600)}`,
+    null,
+    undefined,
+    42
+  ]) {
+    assert.equal(isStripeCheckoutClientSecret(blocked, sessionId), false, String(blocked));
+  }
 });
 
 test("verifyStripeWebhookSignature validates Stripe signed payloads", () => {

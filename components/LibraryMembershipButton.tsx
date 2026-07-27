@@ -3,15 +3,16 @@
 import { BookOpen, CreditCard, Loader2, X } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
-import { isAllowedStripeCheckoutUrl } from "@/lib/stripe-checkout-url";
+import { StripeCheckoutForm } from "@/components/StripeCheckoutForm";
 import { createBrowserClient } from "@/lib/supabase";
 
 type CheckoutApiResponse = {
   alreadyActive?: boolean;
-  checkoutUrl?: string;
+  clientSecret?: string;
   code?: string;
   error?: string;
   ok?: boolean;
+  publishableKey?: string;
   redirectUrl?: string;
 };
 
@@ -21,6 +22,7 @@ export function LibraryMembershipButton() {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState<"idle" | "checking" | "ready" | "loading" | "error">("idle");
+  const [payment, setPayment] = useState<{ clientSecret: string; publishableKey: string } | null>(null);
 
   async function startCheckout() {
     setStatus("checking");
@@ -56,6 +58,7 @@ export function LibraryMembershipButton() {
     setOpen(false);
     setError("");
     setStatus("idle");
+    setPayment(null);
   }
 
   async function continueToStripe() {
@@ -85,12 +88,13 @@ export function LibraryMembershipButton() {
       window.location.href = result.redirectUrl;
       return;
     }
-    if (!response.ok || !result.ok || !isAllowedStripeCheckoutUrl(result.checkoutUrl)) {
-      setError(result.error || "Stripe n'a pas pu preparer le paiement.");
+    if (!response.ok || !result.ok || !result.clientSecret || !result.publishableKey) {
+      setError(result.error || "Le paiement n'a pas pu être préparé.");
       setStatus("error");
       return;
     }
-    window.location.href = result.checkoutUrl;
+    setPayment({ clientSecret: result.clientSecret, publishableKey: result.publishableKey });
+    setStatus("ready");
   }
 
   const disabled = status === "checking" || status === "loading";
@@ -117,11 +121,21 @@ export function LibraryMembershipButton() {
               Une fois le paiement confirme, vous pourrez demander le livre de votre choix depuis votre espace etudiant.
             </p>
             <div className="paypal-membership-price"><strong>15 EUR</strong><span>Adhesion annuelle</span></div>
-            <button className="btn btn-primary" type="button" onClick={continueToStripe} disabled={status === "loading"}>
-              {status === "loading" ? <Loader2 className="action-spin" size={18} /> : <CreditCard size={18} />}
-              Continuer vers Stripe
-            </button>
-            {status === "loading" && <p className="muted">Redirection vers le paiement securise...</p>}
+            {payment ? (
+              <StripeCheckoutForm
+                clientSecret={payment.clientSecret}
+                publishableKey={payment.publishableKey}
+                submitLabel="Payer 15 €"
+              />
+            ) : (
+              <>
+                <button className="btn btn-primary" type="button" onClick={continueToStripe} disabled={status === "loading"}>
+                  {status === "loading" ? <Loader2 className="action-spin" size={18} /> : <CreditCard size={18} />}
+                  Continuer vers le paiement
+                </button>
+                {status === "loading" && <p className="muted">Preparation du paiement securise...</p>}
+              </>
+            )}
             {error && <small className="field-error" role="alert">{error}</small>}
           </div>
         </div>

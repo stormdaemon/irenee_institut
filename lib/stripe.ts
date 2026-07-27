@@ -3,6 +3,11 @@ import type { Course, Profile } from "@/lib/types";
 import type { SystemSettings } from "@/lib/settings";
 
 export const STRIPE_API_VERSION = "2022-11-15";
+// Le paiement affiché sur le site utilise `ui_mode: custom`, refusé par les
+// versions antérieures. Cette version ne s'applique qu'à la création de la
+// session : les webhooks continuent d'arriver dans la version du compte, donc
+// le règlement et les remboursements existants restent inchangés.
+export const STRIPE_CUSTOM_UI_API_VERSION = "2025-03-31.basil";
 export const STRIPE_CURRENCY = "EUR";
 export const STRIPE_DEFAULT_AMOUNT_CENTS = 9900;
 export const STRIPE_MIN_AMOUNT_CENTS = 100;
@@ -12,6 +17,10 @@ export const STRIPE_WEBHOOK_URL = "https://irenee-institut.org/stripe_webhook";
 export const STRIPE_LITE_WEBHOOK_URL = "https://irenee-institut.org/stripe_webhook_lite";
 
 export type StripeProductType = "annual_pass" | "library_membership" | "legacy_course";
+
+// "hosted" redirige vers Stripe ; "custom" garde l'internaute sur le site et
+// laisse l'habillage du formulaire à l'application.
+export type StripeCheckoutUiMode = "hosted" | "custom";
 
 export type StripeConfig = {
   apiVersion: string;
@@ -33,6 +42,7 @@ export type StripeCheckoutSessionPayloadInput = {
   productType: StripeProductType;
   profile: Pick<Profile, "id" | "email" | "prenom" | "nom">;
   returnPath?: string;
+  uiMode?: StripeCheckoutUiMode;
 };
 
 type FetchLike = typeof fetch;
@@ -174,8 +184,15 @@ export function buildStripeCheckoutSessionParams(input: StripeCheckoutSessionPay
 
   params.set("mode", "payment");
   params.set("locale", "fr");
-  params.set("success_url", safePath(input.origin, successPath));
-  params.set("cancel_url", safePath(input.origin, cancelPath));
+  if (input.uiMode === "custom") {
+    // Le formulaire vit sur le site ; Stripe ne sert que de tunnel de paiement
+    // et ne reprend la main que pour l'authentification bancaire éventuelle.
+    params.set("ui_mode", "custom");
+    params.set("return_url", safePath(input.origin, successPath));
+  } else {
+    params.set("success_url", safePath(input.origin, successPath));
+    params.set("cancel_url", safePath(input.origin, cancelPath));
+  }
   params.set("client_reference_id", input.profile.id);
   params.set("payment_method_types[0]", "card");
   params.set("line_items[0][quantity]", "1");
@@ -209,19 +226,24 @@ export async function createStripeCheckoutSession({
     throw new Error("La cle secrete Stripe n'est pas configuree.");
   }
 
+  const isCustomUi = input.uiMode === "custom";
   const response = await fetcher("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.secretKey}`,
       "Content-Type": "application/x-www-form-urlencoded",
       "Idempotency-Key": requestId,
-      "Stripe-Version": config.apiVersion || STRIPE_API_VERSION
+      "Stripe-Version": isCustomUi
+        ? STRIPE_CUSTOM_UI_API_VERSION
+        : config.apiVersion || STRIPE_API_VERSION
     },
     body: buildStripeCheckoutSessionParams(input)
   });
   const data = await response.json().catch(() => null);
 
-  if (!response.ok || !data?.id || !data?.url) {
+  // Une session affichée sur le site expose un `client_secret` au lieu d'une URL.
+  const missingHandle = isCustomUi ? !data?.client_secret : !data?.url;
+  if (!response.ok || !data?.id || missingHandle) {
     const message = data?.error?.message || data?.message || "La session Stripe n'a pas pu etre creee.";
     throw new Error(message);
   }

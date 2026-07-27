@@ -15,7 +15,7 @@ import {
   parseStripeAmountToCents,
   STRIPE_CURRENCY
 } from "@/lib/stripe";
-import { isAllowedStripeCheckoutUrl } from "@/lib/stripe-checkout-url";
+import { isStripeCheckoutClientSecret } from "@/lib/stripe-checkout-url";
 import type { Profile } from "@/lib/types";
 
 export type CheckoutProductType = "annual_pass" | "library_membership";
@@ -52,8 +52,9 @@ type CheckoutInput = {
 
 type CheckoutSuccess = {
   ok: true;
-  checkoutUrl: string;
+  clientSecret: string;
   provider: "stripe";
+  publishableKey: string;
   sessionId: string;
 };
 
@@ -233,7 +234,9 @@ async function hasActiveEntitlement(
 async function stripeConfig(supabase: LocalServerClient) {
   try {
     const config = getStripeConfig(await getSystemSettings(supabase));
-    if (!config.secretKey) {
+    // Le formulaire affiché sur le site a besoin de la clé publiable ; sans
+    // elle, mieux vaut refuser que présenter un paiement inutilisable.
+    if (!config.secretKey || !config.publishableKey) {
       throw new CheckoutServiceError("STRIPE_CONFIG", 503, "stripe_config");
     }
     return config;
@@ -288,7 +291,8 @@ export async function createCheckoutForUser({
         profile,
         returnPath: isLibrary
           ? "/paiement/merci?product=library-membership&stripe_session_id={CHECKOUT_SESSION_ID}"
-          : undefined
+          : undefined,
+        uiMode: "custom"
       },
       requestId
     }) as Record<string, unknown>;
@@ -296,7 +300,8 @@ export async function createCheckoutForUser({
     throw new CheckoutServiceError("STRIPE_API", 502, "stripe_api");
   }
 
-  if (!isAllowedStripeCheckoutUrl(session.url)) {
+  const sessionId = String(session.id || "");
+  if (!isStripeCheckoutClientSecret(session.client_secret, sessionId)) {
     throw new CheckoutServiceError("STRIPE_API", 502, "stripe_api");
   }
 
@@ -307,7 +312,7 @@ export async function createCheckoutForUser({
     book_title: input.bookTitle || null,
     course_id: null,
     currency: STRIPE_CURRENCY,
-    order_id: String(session.id),
+    order_id: sessionId,
     product_type: productType,
     provider: "stripe",
     status: String(session.status || "open").toLowerCase(),
@@ -320,9 +325,10 @@ export async function createCheckoutForUser({
   }
 
   return {
-    checkoutUrl: session.url,
+    clientSecret: String(session.client_secret),
     ok: true,
     provider: "stripe",
-    sessionId: String(session.id)
+    publishableKey: config.publishableKey,
+    sessionId
   };
 }

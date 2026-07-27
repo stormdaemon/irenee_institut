@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cleanAnnualPassSignupPath } from "@/lib/routes";
-import { isAllowedStripeCheckoutUrl } from "@/lib/stripe-checkout-url";
+import { StripeCheckoutForm } from "@/components/StripeCheckoutForm";
 import { createBrowserClient } from "@/lib/supabase";
 
 type BuyCourseButtonProps = {
@@ -16,10 +16,11 @@ type BuyCourseButtonProps = {
 
 type CheckoutApiResponse = {
   alreadyActive?: boolean;
-  checkoutUrl?: string;
+  clientSecret?: string;
   code?: string;
   error?: string;
   ok?: boolean;
+  publishableKey?: string;
   redirectUrl?: string;
 };
 
@@ -38,6 +39,7 @@ export function BuyCourseButton({
   const [amount, setAmount] = useState(() => (defaultAmountCents / 100).toFixed(0));
   const [bookRequested, setBookRequested] = useState(false);
   const [bookTitle, setBookTitle] = useState("");
+  const [payment, setPayment] = useState<{ clientSecret: string; publishableKey: string } | null>(null);
   const autoStartedRef = useRef(false);
 
   async function startCheckout() {
@@ -90,6 +92,7 @@ export function BuyCourseButton({
     setOpen(false);
     setStatus("idle");
     setError("");
+    setPayment(null);
   }
 
   async function continueToStripe() {
@@ -127,13 +130,14 @@ export function BuyCourseButton({
       return;
     }
 
-    if (!response.ok || !result.ok || !isAllowedStripeCheckoutUrl(result.checkoutUrl)) {
-      setError(result.error || "Stripe n'a pas pu preparer le paiement.");
+    if (!response.ok || !result.ok || !result.clientSecret || !result.publishableKey) {
+      setError(result.error || "Le paiement n'a pas pu être préparé.");
       setStatus("error");
       return;
     }
 
-    window.location.href = result.checkoutUrl;
+    setPayment({ clientSecret: result.clientSecret, publishableKey: result.publishableKey });
+    setStatus("ready");
   }
 
   const disabled = status === "checking" || status === "loading";
@@ -157,6 +161,20 @@ export function BuyCourseButton({
                 <X size={18} />
               </button>
             </div>
+            {payment ? (
+              <>
+                <p className="paypal-checkout-intro">
+                  Montant : <strong>{amount} €</strong>{bookRequested ? " · livre demandé" : ""}. Réglez votre pass annuel
+                  directement ici ; votre accès est activé dès la confirmation du paiement.
+                </p>
+                <StripeCheckoutForm
+                  clientSecret={payment.clientSecret}
+                  publishableKey={payment.publishableKey}
+                  submitLabel={`Payer ${amount} €`}
+                />
+              </>
+            ) : (
+            <>
             <p className="paypal-checkout-intro">
               Le prix conseille est de 99 euros, mais vous choisissez librement le montant verse pour votre annee scolaire.
               Le pass annuel donne acces a l'ensemble du cursus des que Stripe confirme le paiement.
@@ -202,9 +220,11 @@ export function BuyCourseButton({
             )}
             <button className="btn btn-primary" type="button" onClick={continueToStripe} disabled={status === "loading"}>
               {status === "loading" ? <Loader2 className="action-spin" size={18} /> : <CreditCard size={18} />}
-              Continuer vers Stripe
+              Continuer vers le paiement
             </button>
-            {status === "loading" && <p className="muted">Redirection vers le paiement securise...</p>}
+            {status === "loading" && <p className="muted">Preparation du paiement securise...</p>}
+            </>
+            )}
             {error && <small className="field-error" role="alert">{error}</small>}
           </div>
         </div>
