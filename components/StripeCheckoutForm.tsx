@@ -178,7 +178,7 @@ export function StripeCheckoutForm({
         <Lock size={13} aria-hidden="true" />
         <span>Paiement sécurisé — vos données bancaires ne transitent pas par l’Institut.</span>
       </p>
-      <p className="stripe-checkout-powered">Powered by Stripe</p>
+      <p className="stripe-checkout-powered">Powered by Paypal</p>
     </div>
   );
 }
