@@ -159,14 +159,6 @@ export default async function FormateursPage() {
             </article>
             <article className="card about-director-card">
               <div className="about-director-photo">
-                <Image src="/images/theo-lafont.jpg" alt="Théo Lafont" fill sizes="150px" style={{ objectFit: "cover", objectPosition: "50% 18%" }} />
-              </div>
-              <span className="badge">Directeur du développement</span>
-              <h3>Théo Lafont</h3>
-              <p className="muted">Assure le suivi opérationnel des inscriptions et le développement complet de la plateforme de l'institut.</p>
-            </article>
-            <article className="card about-director-card">
-              <div className="about-director-photo">
                 <Image src="/images/frere-jean-emmanuel-de-ena.png" alt="Frère Jean Emmanuel" fill sizes="150px" style={{ objectFit: "cover", objectPosition: "50% 50%" }} />
               </div>
               <span className="badge">Directeur des études</span>
