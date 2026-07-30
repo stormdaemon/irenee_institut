@@ -30,7 +30,7 @@ const formationQuestions = [
   {
     question: "Que se passe-t-il juste après le paiement ?",
     answer:
-      "Après confirmation du paiement en ligne, le pass est activé automatiquement sur votre compte. Vous êtes redirigé vers votre espace étudiant, où les cours du cursus apparaissent avec votre progression, les séances en direct et les documents pédagogiques."
+      "Après confirmation du paiement en ligne, le pass est activé automatiquement sur votre compte. Vous êtes redirigé vers votre espace étudiant, où les cours du cursus apparaissent avec votre progression, les séances en visio et les documents pédagogiques."
   },
   {
     question: "Pourquoi le prix est-il indiqué comme participation libre ?",
@@ -71,7 +71,7 @@ const passHighlights = [
   "Cours déjà publiés et nouveaux contenus de l'année",
   "Progression visible dans l'espace étudiant",
   "Parchemins de connaissance et certificat nominatif",
-  "Séances en direct et ressources pédagogiques"
+  "Séances en visio et ressources pédagogiques"
 ];
 
 const reassuranceItems = [

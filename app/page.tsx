@@ -65,7 +65,7 @@ const features = [
     href: "/bibliotheque-apologetique"
   },
   {
-    title: "Formation en direct chaque semaine",
+    title: "Formation en visio hebdomadaire",
     text: "Un soir par semaine, les étudiants retrouvent une séance en visio depuis le site pour travailler, questionner et progresser ensemble.",
     image: backgroundImageSet("/images/irenee-feature-3.avif", "/images/irenee-feature-3.webp"),
     imagePosition: "50% 50%",

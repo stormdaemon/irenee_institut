@@ -50,7 +50,7 @@ test("homepage exposes the EIDM, library, live training and patristic session fe
   const homepage = source("app/page.tsx");
   assert.match(homepage, /L'EIDM devient l'Institut Saint Irénée/);
   assert.match(homepage, /Bibliothèque d'école apologétique/);
-  assert.match(homepage, /Formation en direct chaque semaine/);
+  assert.match(homepage, /Formation en visio hebdomadaire/);
   assert.match(homepage, /Sessions patristiques en abbaye/);
   assert.match(homepage, /Rentrée académique septembre 2026/);
   assert.match(homepage, /https:\/\/youtu\.be\/AsclUFsCoAM\?is=Vxx2XTJ5DOkgPGh9/);
