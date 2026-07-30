@@ -53,7 +53,7 @@ export default function AboutPage() {
           </p>
           <p className="subtitle">
             Notre projet pédagogique associe des cours en ligne, une bibliothèque d'école apologétique et des
-            sessions en présentiel dans un cadre propice au travail. La rentrée académique 2026 ouvre une nouvelle
+            sessions en présentiel dans un cadre propice au travail. La rentrée académique de septembre 2026 ouvre une nouvelle
             étape pour faire grandir cette communauté d'étudiants.
           </p>
         </div>

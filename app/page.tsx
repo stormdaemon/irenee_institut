@@ -105,7 +105,7 @@ export default async function HomePage() {
             <div className="hero-elearning-logo" aria-label="E-learning">
               <Image src="/images/logo-elearning.png" alt="Logo e-learning" width={220} height={108} priority />
             </div>
-            <span className="hero-eyebrow">Rentrée académique 2026 · inscriptions ouvertes</span>
+            <span className="hero-eyebrow">Rentrée académique septembre 2026 · inscriptions ouvertes</span>
             <h1 className="font-display hero-title">
               <span className="hero-title-desktop">Institut d'Apologétique<br /><span>Saint Irénée</span></span>
               <span className="hero-title-mobile">Institut<br />d'Apologétique<br /><span>Saint Irénée</span></span>

@@ -52,7 +52,7 @@ test("homepage exposes the EIDM, library, live training and patristic session fe
   assert.match(homepage, /Bibliothèque d'école apologétique/);
   assert.match(homepage, /Formation en direct chaque semaine/);
   assert.match(homepage, /Sessions patristiques en abbaye/);
-  assert.match(homepage, /Rentrée académique 2026/);
+  assert.match(homepage, /Rentrée académique septembre 2026/);
   assert.match(homepage, /https:\/\/youtu\.be\/AsclUFsCoAM\?is=Vxx2XTJ5DOkgPGh9/);
   assert.doesNotMatch(homepage, /hero-cross/);
 });
