@@ -154,7 +154,7 @@ export default function PasswordResetPage() {
         <p className="subtitle">Une phrase longue, unique et mémorisable protège mieux votre compte.</p>
       </div>
 
-      <form onSubmit={submit} className="card auth-card" noValidate>
+      <form method="post" onSubmit={submit} className="card auth-card" noValidate>
         <label className="auth-field" htmlFor="new-password">
           <span>Nouveau mot de passe</span>
           <span className="auth-input-wrap">

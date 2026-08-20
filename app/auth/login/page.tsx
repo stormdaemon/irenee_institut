@@ -173,7 +173,7 @@ export default function LoginPage() {
         <p className="subtitle">Accédez à votre espace personnel.</p>
       </div>
 
-      <form ref={formRef} onSubmit={submit} className="card auth-card" noValidate>
+      <form method="post" ref={formRef} onSubmit={submit} className="card auth-card" noValidate>
         {notice && (
           <div ref={noticeRef} className="auth-notice auth-notice-error" role="alert" aria-live="polite">
             <AlertTriangle size={20} aria-hidden="true" />

@@ -170,7 +170,7 @@ export default function AdminSettingsPage() {
       <div className="container" style={{ maxWidth: 980 }}>
         <a href="/admin">Retour au tableau de bord</a>
         <h1 className="title" style={{ marginTop: 28 }}>Parametres</h1>
-        <form className="card" style={{ padding: 30, marginTop: 30 }} onSubmit={submit}>
+        <form method="post" className="card" style={{ padding: 30, marginTop: 30 }} onSubmit={submit}>
           <h2 className="font-display" style={{ color: "var(--navy)" }}>Informations de paiement</h2>
           <p><label>RIB affiche aux etudiants</label><input className="input" name="rib" value={settings.rib} onChange={event => update("rib", event.target.value)} placeholder="FR76..." /></p>
           <p><label>IBAN</label><input className="input" name="iban" value={settings.iban} onChange={event => update("iban", event.target.value)} placeholder="FR76..." /></p>

@@ -92,7 +92,7 @@ export default function ContactPage() {
       </section>
       <section className="section contact-section" style={{ background: "white" }}>
         <div className="container grid-2">
-          <form className="soft-card contact-form-card" style={{ padding: 30 }} onSubmit={sendMessage}>
+          <form method="post" className="soft-card contact-form-card" style={{ padding: 30 }} onSubmit={sendMessage}>
             <h2 className="font-display" style={{ color: "var(--navy)" }}>Envoyez-nous un message</h2>
             <div className="grid-2">
               <div><label htmlFor="contact-prenom">Prénom *</label><input className="input" id="contact-prenom" name="prenom" autoComplete="given-name" maxLength={80} required /></div>

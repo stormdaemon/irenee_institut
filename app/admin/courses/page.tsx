@@ -1152,7 +1152,7 @@ export default function AdminCoursesPage() {
 
         <div className="course-studio-workbench">
           <div className="course-studio-stage">
-            <form ref={editorFormRef} className="course-editor card course-studio-editor" onSubmit={submit} noValidate aria-busy={saving}>
+            <form method="post" ref={editorFormRef} className="course-editor card course-studio-editor" onSubmit={submit} noValidate aria-busy={saving}>
             {pendingRecovery && (
               <section className="editor-panel course-recovery-banner" role="alert" aria-labelledby="course-recovery-heading">
                 <div className="module-editor-head">

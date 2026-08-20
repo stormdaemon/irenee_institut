@@ -87,7 +87,7 @@ export function LibraryPanel({
         </div>
         <BookOpen size={34} color="var(--gold-2)" />
       </div>
-      <form className="library-request-form" onSubmit={submit}>
+      <form method="post" className="library-request-form" onSubmit={submit}>
         <label>
           <span>Livre souhaité</span>
           <input

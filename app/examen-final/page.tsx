@@ -117,7 +117,7 @@ export default function FinalExamPage() {
         <Link href="/espace-etudiant">← Retour à mon espace</Link>
         <h1 className="title" style={{ marginTop: 24 }}>Examen final d'apologétique</h1>
         <p className="subtitle">Répondez aux {payload.questions.length} questions. Le certificat nominatif est délivré à partir de {payload.passScore}%.</p>
-        <form onSubmit={submit}>
+        <form method="post" onSubmit={submit}>
           {payload.questions.map((question, index) => (
             <article className="card" style={{ padding: 24, marginTop: 18 }} key={question.id}>
               <h2 style={{ fontSize: "1.1rem" }}>{index + 1}. {question.question}</h2>

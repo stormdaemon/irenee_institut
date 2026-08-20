@@ -36,7 +36,7 @@ export function DocumentVerificationForm() {
   }
 
   return (
-    <form className="card auth-card" onSubmit={verify}>
+    <form method="post" className="card auth-card" onSubmit={verify}>
       <label className="auth-field">
         <span>Référence du document</span>
         <input className="input" name="reference" placeholder="ISI-…" autoCapitalize="characters" maxLength={24} required />

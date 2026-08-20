@@ -140,7 +140,7 @@ export default function SignupPage() {
         <p className="subtitle">Accédez aux formations et à votre espace étudiant.</p>
       </div>
 
-      <form onSubmit={submit} className="card auth-card" noValidate>
+      <form method="post" onSubmit={submit} className="card auth-card" noValidate>
         {notice && (
           <div ref={noticeRef} className={`auth-notice ${isSuccess ? "auth-notice-success" : "auth-notice-error"}`} role={isSuccess ? "status" : "alert"} aria-live="polite">
             {isSuccess ? <CheckCircle2 size={20} aria-hidden="true" /> : <AlertTriangle size={20} aria-hidden="true" />}

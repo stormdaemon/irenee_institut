@@ -70,7 +70,7 @@ export default function NewHomeworkPage() {
         )}
         {status === "error" && <div className="action-notice action-error" role="alert">{error}</div>}
         {status !== "success" && (
-          <form className={`card ${busy ? "form-disabled" : ""}`} style={{ padding: 30, marginTop: 30 }} onSubmit={submit}>
+          <form method="post" className={`card ${busy ? "form-disabled" : ""}`} style={{ padding: 30, marginTop: 30 }} onSubmit={submit}>
             <p>
               <label>Cours concerné *</label>
               <select className="input" name="course_id" value={courseId} onChange={event => setCourseId(event.target.value)} required disabled={busy}>

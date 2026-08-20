@@ -19,6 +19,38 @@ test("HTML CSP confines inline CSS to attributes instead of style elements", () 
   assert.doesNotMatch(csp, /style-src 'self' 'unsafe-inline'/);
 });
 
+test("JavaScript-handled forms retain a POST fallback", () => {
+  const formSurfaces = [
+    "app/examen-final/page.tsx",
+    "app/parametres/page.tsx",
+    "app/admin/live/page.tsx",
+    "app/admin/homework/new/page.tsx",
+    "app/admin/settings/page.tsx",
+    "app/admin/courses/page.tsx",
+    "app/auth/callback/page.tsx",
+    "app/auth/login/page.tsx",
+    "app/auth/signup/page.tsx",
+    "app/auth/password-forgot/page.tsx",
+    "app/auth/password-reset/page.tsx",
+    "app/contact/page.tsx",
+    "components/DocumentVerificationForm.tsx",
+    "components/LibraryPanel.tsx",
+  ];
+
+  for (const path of formSurfaces) {
+    const handledForms = source(path).match(/<form\b[^>]*\bonSubmit=[^>]*>/g) ?? [];
+
+    assert.ok(handledForms.length > 0, `${path} must contain a handled form`);
+    for (const form of handledForms) {
+      assert.match(
+        form,
+        /\bmethod="post"/,
+        `${path} must not fall back to a GET submission`,
+      );
+    }
+  }
+});
+
 test("proxy removes sensitive login query data and short-circuits anonymous admin redirects", () => {
   const proxy = source("proxy.ts");
 

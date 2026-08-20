@@ -166,7 +166,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <form className="card" style={{ padding: 34, marginTop: 34 }} onSubmit={saveProfile}>
+            <form method="post" className="card" style={{ padding: 34, marginTop: 34 }} onSubmit={saveProfile}>
               <h2 className="font-display" style={{ color: "var(--navy)" }}><User /> Informations personnelles</h2>
               <div className="grid-2">
                 <p><label>Civilité</label><select className="input" name="civilite" defaultValue={profile.civilite || "M."}><option>M.</option><option>Mme</option></select></p>
@@ -185,7 +185,7 @@ export default function SettingsPage() {
               <p style={{ textAlign: "right" }}><button className="btn btn-primary"><Save size={18} /> Enregistrer les modifications</button></p>
             </form>
 
-            <form className="card" style={{ padding: 34, marginTop: 34 }} onSubmit={savePassword}>
+            <form method="post" className="card" style={{ padding: 34, marginTop: 34 }} onSubmit={savePassword}>
               <h2 className="font-display" style={{ color: "var(--navy)" }}><Lock /> Sécurité</h2>
               <ActionNotice
                 status={passwordStatus}

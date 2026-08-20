@@ -115,7 +115,7 @@ export default function AuthCallbackPage() {
             <h1 className="title">Vérification du lien</h1>
           </div>
         ) : status === "ready" || status === "submitting" ? (
-          <form onSubmit={completeRegistration} noValidate>
+          <form method="post" onSubmit={completeRegistration} noValidate>
             <div className="center">
               <ShieldCheck size={36} aria-hidden="true" />
               <h1 className="title">Sécuriser mon compte</h1>

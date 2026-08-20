@@ -106,7 +106,7 @@ export default function AdminLivePage() {
         <h1 className="title" style={{ marginTop: 28 }}><Radio size={26} /> Séances en direct</h1>
         <p className="subtitle">Créez les séances visio hebdomadaires. La salle Daily est générée automatiquement et accessible aux étudiants depuis leur espace, sans compte tiers.</p>
 
-        <form className="card" style={{ padding: 30, marginTop: 24 }} onSubmit={submit}>
+        <form method="post" className="card" style={{ padding: 30, marginTop: 24 }} onSubmit={submit}>
           <h2 className="font-display" style={{ color: "var(--navy)", marginTop: 0 }}>Nouvelle séance</h2>
           <p>
             <label>Titre</label>

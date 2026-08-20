@@ -57,7 +57,7 @@ export default function PasswordForgotPage() {
         <p className="subtitle">Recevez un lien à usage unique pour choisir un nouveau mot de passe.</p>
       </div>
 
-      <form onSubmit={submit} className="card auth-card" noValidate>
+      <form method="post" onSubmit={submit} className="card auth-card" noValidate>
         {status === "success" && (
           <div className="auth-notice auth-notice-success" role="status" aria-live="polite">
             <CheckCircle2 size={20} aria-hidden="true" />
