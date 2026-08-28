@@ -197,7 +197,7 @@ export default async function FormateursPage() {
                 {trainer.nom === "Maspero" && (
                   <p><a className="feature-link" href="https://www.pusc.it/teo/docenti/maspero" target="_blank" rel="noreferrer">Voir le profil académique officiel <ExternalLink size={14} /></a></p>
                 )}
-                <h3>Réalisations</h3>
+                <h3>Modules</h3>
                 <ul>{(trainer.realisations || []).map(item => <li key={item}>{item}</li>)}</ul>
               </article>
             ))}
@@ -222,7 +222,7 @@ export default async function FormateursPage() {
                 {member.source && (
                   <p><a className="feature-link" href={member.source.href} target="_blank" rel="noreferrer">{member.source.label} <ExternalLink size={14} /></a></p>
                 )}
-                <h3>Réalisations</h3>
+                <h3>Modules</h3>
                 <ul>{member.achievements.map(item => <li key={item}>{item}</li>)}</ul>
               </article>
             ))}
