@@ -102,6 +102,66 @@ export const VISIO_SESSIONS: VisioSession[] = [
     imagePosition: "50% 50%",
     kind: "reading",
     liveSessionId: "3121b388-eb13-4d1c-9878-393d72a5ee99"
+  },
+  {
+    isoDate: "2026-10-07",
+    time: "20h30",
+    title: "Les voies de l'existence de Dieu chez Thomas d'Aquin et Aristote",
+    description:
+      "Étude des voies thomistes de la preuve de l'existence de Dieu et de leur enracinement dans la philosophie d'Aristote, de la cause première au moteur immobile.",
+    image: "/images/visio-thomas-aquin-aristote.jpg",
+    imageAlt: "Statue de saint Thomas d'Aquin tenant un livre ouvert",
+    imagePosition: "50% 50%",
+    kind: "reading",
+    liveSessionId: "4a8c54df-f459-43a3-9727-93397cc8c4ea"
+  },
+  {
+    isoDate: "2026-10-14",
+    time: "20h30",
+    title: "Big Bang, évolution et créationnisme : relire Adam et Ève",
+    description:
+      "Big Bang, évolutionnisme et créationnisme : ce que nous dit l'histoire d'Adam et Ève, les difficultés soulevées par le Big Bang et l'évolution, peut-on être créationniste, et la création de l'homme à l'image et à la ressemblance de Dieu.",
+    image: "/images/visio-adam-eve-creation.jpg",
+    imageAlt: "Fresque de la création d'Adam et Ève",
+    imagePosition: "50% 50%",
+    kind: "reading",
+    liveSessionId: "6aa5159c-15ba-46ca-836f-9dc0473b0692"
+  },
+  {
+    isoDate: "2026-10-21",
+    time: "20h30",
+    title: "La preuve ontologique chez saint Anselme",
+    description:
+      "Étude de la preuve ontologique de l'existence de Dieu formulée par saint Anselme dans le Proslogion, et des débats philosophiques qu'elle a suscités jusqu'à aujourd'hui.",
+    image: "/images/visio-anselme-proslogion.jpg",
+    imageAlt: "Manuscrit ancien du Proslogion de saint Anselme",
+    imagePosition: "50% 50%",
+    kind: "reading",
+    liveSessionId: "f5df5a8d-4188-4808-ab89-887969870c9a"
+  },
+  {
+    isoDate: "2026-10-28",
+    time: "20h30",
+    title: "Le Dieu de Pascal",
+    description:
+      "Le \"Dieu d'Abraham, d'Isaac et de Jacob\", non celui des philosophes et des savants : la pensée de Blaise Pascal sur la connaissance de Dieu par le cœur et par la raison.",
+    image: "/images/visio-dieu-de-pascal.jpg",
+    imageAlt: "Portrait de Blaise Pascal",
+    imagePosition: "50% 50%",
+    kind: "reading",
+    liveSessionId: "3773e7b2-a420-4b98-8929-4a5d3696e79d"
+  },
+  {
+    isoDate: "2026-11-04",
+    time: "20h30",
+    title: "Vocabulaire théologique : ousia, hypostase, prosôpon...",
+    description:
+      "Étude des notions fondamentales du vocabulaire théologique : ousia, nature, essence, hypostase, prosôpon, homoousios et substance.",
+    image: "/images/visio-vocabulaire-theologique.jpg",
+    imageAlt: "Icône antique illustrant le vocabulaire christologique conciliaire",
+    imagePosition: "50% 50%",
+    kind: "reading",
+    liveSessionId: "608e23aa-47c0-413c-bab1-82fbb853229a"
   }
 ];
 
