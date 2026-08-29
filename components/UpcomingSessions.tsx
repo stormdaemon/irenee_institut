@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Phone, Radio, Share2, User, Video } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   VISIO_SESSIONS,
   buildVisioWhatsAppShareUrl,
@@ -11,53 +11,6 @@ import {
   formatVisioWhen,
   type VisioSession
 } from "@/lib/live-sessions";
-import { createBrowserClient } from "@/lib/supabase";
-import type { Profile } from "@/lib/types";
-
-type SupabaseBrowserClient = NonNullable<ReturnType<typeof createBrowserClient>>;
-
-function useConnectedStudent() {
-  const [isConnectedStudent, setIsConnectedStudent] = useState(false);
-
-  useEffect(() => {
-    const client = createBrowserClient();
-    if (!client) return;
-
-    let mounted = true;
-
-    async function loadProfile(supabase: SupabaseBrowserClient) {
-      const { data, error } = await supabase.auth
-        .getUser()
-        .catch(() => ({ data: { user: null }, error: new Error("Session invalide") }));
-
-      if (!mounted) return;
-      if (error || !data.user) {
-        setIsConnectedStudent(false);
-        return;
-      }
-
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", data.user.id)
-        .maybeSingle();
-
-      if (!mounted) return;
-      const profile = profileData as Pick<Profile, "role"> | null;
-      setIsConnectedStudent((profile?.role || "etudiant") === "etudiant");
-    }
-
-    loadProfile(client);
-    const { data: listener } = client.auth.onAuthStateChange(() => loadProfile(client));
-
-    return () => {
-      mounted = false;
-      listener.subscription.unsubscribe();
-    };
-  }, []);
-
-  return isConnectedStudent;
-}
 
 // Vignette tolérante : tant que l'illustration patristique n'est pas déposée
 // dans public/images, on affiche un repli sobre (dégradé + emblème) au lieu d'une
@@ -86,6 +39,14 @@ function SessionThumb({ session }: { session: VisioSession }) {
   );
 }
 
+function JoinSessionButton() {
+  return (
+    <Link className="btn btn-gold visio-participate" href="/espace-etudiant">
+      <Video size={17} /> Participer
+    </Link>
+  );
+}
+
 function ShareSessionButton({ session }: { session: VisioSession }) {
   return (
     <a
@@ -102,7 +63,6 @@ function ShareSessionButton({ session }: { session: VisioSession }) {
 
 export function UpcomingSessions() {
   const firstSession = VISIO_SESSIONS[0];
-  const isConnectedStudent = useConnectedStudent();
 
   return (
     <section className="section visio-section" id="agenda">
@@ -139,11 +99,7 @@ export function UpcomingSessions() {
               <p>{firstSession.description}</p>
               <strong>{formatVisioWhen(firstSession)}</strong>
               <div className="visio-spotlight-actions">
-                {isConnectedStudent && (
-                  <Link className="btn btn-gold visio-participate" href="/espace-etudiant">
-                    <Video size={17} /> Je participe
-                  </Link>
-                )}
+                <JoinSessionButton />
                 <ShareSessionButton session={firstSession} />
               </div>
             </div>
@@ -164,11 +120,7 @@ export function UpcomingSessions() {
                     <h3>{session.title}</h3>
                     <p>{session.description}</p>
                     <div className="visio-session-actions">
-                      {isConnectedStudent && (
-                        <Link className="btn btn-gold visio-participate" href="/espace-etudiant">
-                          <Video size={17} /> Je participe
-                        </Link>
-                      )}
+                      <JoinSessionButton />
                       <ShareSessionButton session={session} />
                     </div>
                   </div>
