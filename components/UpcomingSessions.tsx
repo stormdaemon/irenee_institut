@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BookOpen, Phone, Radio, User, Video } from "lucide-react";
+import { ArrowRight, BookOpen, Phone, Radio, Share2, User, Video } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   VISIO_SESSIONS,
+  buildVisioWhatsAppShareUrl,
   formatVisioDate,
   formatVisioWhen,
   type VisioSession
@@ -85,12 +86,26 @@ function SessionThumb({ session }: { session: VisioSession }) {
   );
 }
 
+function ShareSessionButton({ session }: { session: VisioSession }) {
+  return (
+    <a
+      className="btn btn-outline visio-share"
+      href={buildVisioWhatsAppShareUrl(session)}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={`Partager la séance "${session.title}" sur WhatsApp`}
+    >
+      <Share2 size={15} /> Partager
+    </a>
+  );
+}
+
 export function UpcomingSessions() {
   const firstSession = VISIO_SESSIONS[0];
   const isConnectedStudent = useConnectedStudent();
 
   return (
-    <section className="section visio-section">
+    <section className="section visio-section" id="agenda">
       <div className="container">
         <div className="visio-head">
           <span className="hero-eyebrow">
@@ -123,11 +138,14 @@ export function UpcomingSessions() {
               <h3>{firstSession.title}</h3>
               <p>{firstSession.description}</p>
               <strong>{formatVisioWhen(firstSession)}</strong>
-              {isConnectedStudent && (
-                <Link className="btn btn-gold visio-participate" href="/espace-etudiant">
-                  <Video size={17} /> Je participe
-                </Link>
-              )}
+              <div className="visio-spotlight-actions">
+                {isConnectedStudent && (
+                  <Link className="btn btn-gold visio-participate" href="/espace-etudiant">
+                    <Video size={17} /> Je participe
+                  </Link>
+                )}
+                <ShareSessionButton session={firstSession} />
+              </div>
             </div>
           </article>
 
@@ -145,11 +163,14 @@ export function UpcomingSessions() {
                     <span className="visio-when">{formatVisioWhen(session)}</span>
                     <h3>{session.title}</h3>
                     <p>{session.description}</p>
-                    {isConnectedStudent && (
-                      <Link className="btn btn-gold visio-participate" href="/espace-etudiant">
-                        <Video size={17} /> Je participe
-                      </Link>
-                    )}
+                    <div className="visio-session-actions">
+                      {isConnectedStudent && (
+                        <Link className="btn btn-gold visio-participate" href="/espace-etudiant">
+                          <Video size={17} /> Je participe
+                        </Link>
+                      )}
+                      <ShareSessionButton session={session} />
+                    </div>
                   </div>
                 </li>
               );

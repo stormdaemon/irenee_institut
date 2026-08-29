@@ -127,3 +127,13 @@ export function formatVisioWhen(session: VisioSession): string {
   const capitalized = weekday.charAt(0).toUpperCase() + weekday.slice(1);
   return `${capitalized} ${day} ${month} · ${session.time}`;
 }
+
+// Lien "wa.me" pré-rempli pour partager une séance dans un groupe WhatsApp.
+export function buildVisioWhatsAppShareUrl(session: VisioSession): string {
+  const message = [
+    `📅 ${session.title}`,
+    `${formatVisioWhen(session)} — Institut Saint-Irénée (visio)`,
+    "https://irenee-institut.org/#agenda"
+  ].join("\n");
+  return `https://wa.me/?text=${encodeURIComponent(message)}`;
+}

@@ -3284,6 +3284,35 @@ label {
   line-height: 1.5;
 }
 
+.visio-spotlight-actions,
+.visio-session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.visio-share {
+  width: fit-content;
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: .9rem;
+  background: transparent;
+  color: #fff7e7;
+  border-color: rgba(220, 180, 107, .62);
+}
+
+.visio-share:hover {
+  background: rgba(220, 180, 107, .12);
+}
+
+.visio-session-actions .visio-share {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: .85rem;
+}
+
 .visio-actions {
   display: flex;
   flex-wrap: wrap;
