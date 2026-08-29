@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
-import { ArrowRight, ExternalLink, Newspaper, PlayCircle } from "lucide-react";
+import { ArrowRight, ExternalLink, PlayCircle } from "lucide-react";
 import { getCourses } from "@/lib/server-data";
 import { siteDescription, siteUrl } from "@/lib/seo";
 import { UpcomingSessions } from "@/components/UpcomingSessions";
@@ -195,37 +195,6 @@ export default async function HomePage() {
       </section>
 
       <UpcomingSessions />
-
-      <section className="section home-press-section">
-        <div className="container">
-          <article className="press-home-card">
-            <div className="press-home-image">
-              <Image
-                src="/images/presse-liberation-institut-saint-irenee.png"
-                alt="Revue de presse de l'Institut Saint Irénée"
-                fill
-                sizes="(max-width: 900px) 100vw, 42vw"
-              />
-            </div>
-            <div className="press-home-content">
-              <span className="hero-eyebrow"><Newspaper size={16} /> Dans la presse nationale</span>
-              <h2 className="font-display">Libération parle de l'Institut Saint Irénée</h2>
-              <p>
-                Un article publié le 17 juin 2026 met l'Institut Saint Irénée au cœur du débat sur
-                l'apologétique catholique, la formation chrétienne et la place du catholicisme dans l'espace public.
-              </p>
-              <div className="press-home-actions">
-                <Link className="btn btn-gold" href="/presse/liberation-institut-saint-irenee-2026" prefetch={false}>
-                  Lire notre résumé <ArrowRight size={17} />
-                </Link>
-                <a className="btn btn-outline" href="https://www.liberation.fr/societe/religions/avec-linstitut-saint-irenee-le-catholicisme-identitaire-se-met-en-ordre-de-bataille-20260617_64O26CD53FD5DOSYZZBIKXWRUA/" target="_blank" rel="noreferrer">
-                  Article original <ExternalLink size={17} />
-                </a>
-              </div>
-            </div>
-          </article>
-        </div>
-      </section>
 
       <section className="section">
         <div className="container center">
