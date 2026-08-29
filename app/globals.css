@@ -3270,6 +3270,14 @@ label {
   text-transform: uppercase;
 }
 
+.visio-presenter {
+  display: block;
+  margin: 2px 0 8px;
+  color: #d8c8aa;
+  font-size: .85rem;
+  font-style: italic;
+}
+
 .visio-session-body h3 {
   margin: 0 0 6px;
   color: #fff3dd;

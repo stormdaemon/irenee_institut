@@ -40,6 +40,8 @@ export type VisioSession = {
   // Identifiant de la séance réelle (table live_sessions) dont la salle Daily
   // n'ouvre que le jour même : voir getLiveJoinDecision dans lib/live.ts.
   liveSessionId: string;
+  // Formateur qui anime la séance, affiché sur la carte si renseigné.
+  presenter?: string;
 };
 
 export const VISIO_SESSIONS: VisioSession[] = [
@@ -113,7 +115,8 @@ export const VISIO_SESSIONS: VisioSession[] = [
     imageAlt: "Statue de saint Thomas d'Aquin tenant un livre ouvert",
     imagePosition: "50% 50%",
     kind: "reading",
-    liveSessionId: "4a8c54df-f459-43a3-9727-93397cc8c4ea"
+    liveSessionId: "4a8c54df-f459-43a3-9727-93397cc8c4ea",
+    presenter: "Vivien Hoch"
   },
   {
     isoDate: "2026-10-14",
@@ -125,7 +128,8 @@ export const VISIO_SESSIONS: VisioSession[] = [
     imageAlt: "Fresque de la création d'Adam et Ève",
     imagePosition: "50% 50%",
     kind: "reading",
-    liveSessionId: "6aa5159c-15ba-46ca-836f-9dc0473b0692"
+    liveSessionId: "6aa5159c-15ba-46ca-836f-9dc0473b0692",
+    presenter: "Vivien Hoch"
   },
   {
     isoDate: "2026-10-21",
@@ -137,7 +141,8 @@ export const VISIO_SESSIONS: VisioSession[] = [
     imageAlt: "Manuscrit ancien du Proslogion de saint Anselme",
     imagePosition: "50% 50%",
     kind: "reading",
-    liveSessionId: "f5df5a8d-4188-4808-ab89-887969870c9a"
+    liveSessionId: "f5df5a8d-4188-4808-ab89-887969870c9a",
+    presenter: "Vivien Hoch"
   },
   {
     isoDate: "2026-10-28",
@@ -149,7 +154,8 @@ export const VISIO_SESSIONS: VisioSession[] = [
     imageAlt: "Portrait de Blaise Pascal",
     imagePosition: "50% 50%",
     kind: "reading",
-    liveSessionId: "3773e7b2-a420-4b98-8929-4a5d3696e79d"
+    liveSessionId: "3773e7b2-a420-4b98-8929-4a5d3696e79d",
+    presenter: "Vivien Hoch"
   },
   {
     isoDate: "2026-11-04",
@@ -161,7 +167,8 @@ export const VISIO_SESSIONS: VisioSession[] = [
     imageAlt: "Icône antique illustrant le vocabulaire christologique conciliaire",
     imagePosition: "50% 50%",
     kind: "reading",
-    liveSessionId: "608e23aa-47c0-413c-bab1-82fbb853229a"
+    liveSessionId: "608e23aa-47c0-413c-bab1-82fbb853229a",
+    presenter: "Vivien Hoch"
   }
 ];
 

@@ -96,6 +96,7 @@ export function UpcomingSessions() {
             <div className="visio-spotlight-copy">
               <span className="badge">Première soirée</span>
               <h3>{firstSession.title}</h3>
+              {firstSession.presenter && <span className="visio-presenter">Animée par {firstSession.presenter}</span>}
               <p>{firstSession.description}</p>
               <strong>{formatVisioWhen(firstSession)}</strong>
               <div className="visio-spotlight-actions">
@@ -118,6 +119,7 @@ export function UpcomingSessions() {
                   <div className="visio-session-body">
                     <span className="visio-when">{formatVisioWhen(session)}</span>
                     <h3>{session.title}</h3>
+                    {session.presenter && <span className="visio-presenter">Animée par {session.presenter}</span>}
                     <p>{session.description}</p>
                     <div className="visio-session-actions">
                       <JoinSessionButton session={session} />
