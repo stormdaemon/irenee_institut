@@ -53,7 +53,7 @@ export async function GET(request: Request) {
 
   const sessions = ((data || []) as LiveSession[])
     .filter(session => {
-      const decision = getLiveJoinDecision(session, ctx.staff, nowMs);
+      const decision = getLiveJoinDecision(session, nowMs);
       return decision.allowed || decision.reason === "too_early";
     })
     .filter(session => canAccessSession(ctx, session))

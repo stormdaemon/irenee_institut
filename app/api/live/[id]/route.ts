@@ -69,11 +69,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return json({ ok: false, error: "Vous n'avez pas accès à cette séance." }, 403);
   }
 
-  const join = getLiveJoinDecision(session, ctx.staff);
+  const join = getLiveJoinDecision(session);
   if (!join.allowed) {
     if (join.reason === "too_early") {
       return json(
-        { ok: false, error: "La salle ouvrira peu avant le début de la séance." },
+        { ok: false, error: "La salle n'ouvre que le jour de la séance." },
         425,
         { "Retry-After": String(join.retryAfterSeconds) }
       );

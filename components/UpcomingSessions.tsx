@@ -39,9 +39,9 @@ function SessionThumb({ session }: { session: VisioSession }) {
   );
 }
 
-function JoinSessionButton() {
+function JoinSessionButton({ session }: { session: VisioSession }) {
   return (
-    <Link className="btn btn-gold visio-participate" href="/espace-etudiant">
+    <Link className="btn btn-gold visio-participate" href={`/direct/${session.liveSessionId}`}>
       <Video size={17} /> Participer
     </Link>
   );
@@ -99,7 +99,7 @@ export function UpcomingSessions() {
               <p>{firstSession.description}</p>
               <strong>{formatVisioWhen(firstSession)}</strong>
               <div className="visio-spotlight-actions">
-                <JoinSessionButton />
+                <JoinSessionButton session={firstSession} />
                 <ShareSessionButton session={firstSession} />
               </div>
             </div>
@@ -120,7 +120,7 @@ export function UpcomingSessions() {
                     <h3>{session.title}</h3>
                     <p>{session.description}</p>
                     <div className="visio-session-actions">
-                      <JoinSessionButton />
+                      <JoinSessionButton session={session} />
                       <ShareSessionButton session={session} />
                     </div>
                   </div>

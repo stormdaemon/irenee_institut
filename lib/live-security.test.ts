@@ -82,18 +82,18 @@ test("Daily rooms are private, token-only and bounded in time", async () => {
   });
 });
 
-test("room availability includes staff preparation and a short end grace period", () => {
+test("room availability opens at local midnight (Paris) on the session day and closes after a short end grace period", () => {
   assert.deepEqual(
     getDailyRoomTimeBounds("2026-09-02T18:30:00.000Z", "2026-09-02T20:00:00.000Z"),
     {
-      nbf: Date.parse("2026-09-02T17:30:00.000Z") / 1000,
+      nbf: Date.parse("2026-09-01T22:00:00.000Z") / 1000,
       exp: Date.parse("2026-09-02T20:15:00.000Z") / 1000
     }
   );
   assert.deepEqual(
     getDailyRoomTimeBounds("2026-09-02T18:30:00.000Z", null),
     {
-      nbf: Date.parse("2026-09-02T17:30:00.000Z") / 1000,
+      nbf: Date.parse("2026-09-01T22:00:00.000Z") / 1000,
       exp: Date.parse("2026-09-02T22:45:00.000Z") / 1000
     }
   );
@@ -285,30 +285,30 @@ test("Daily join URLs only accept the expected HTTPS Daily room", () => {
   );
 });
 
-test("students cannot mint tokens before the 15-minute join window", () => {
-  const decision = getLiveJoinDecision(session(), false, Date.parse("2026-09-02T18:14:59.000Z"));
+test("nobody can mint tokens before local midnight (Paris) on the day of the session", () => {
+  const decision = getLiveJoinDecision(session(), Date.parse("2026-09-01T21:59:59.000Z"));
   assert.equal(decision.allowed, false);
   if (decision.allowed) return;
   assert.equal(decision.reason, "too_early");
   assert.equal(decision.retryAfterSeconds, 1);
 });
 
-test("staff may prepare one hour early and tokens expire within five minutes", () => {
-  const now = Date.parse("2026-09-02T17:45:00.000Z");
-  const decision = getLiveJoinDecision(session(), true, now);
+test("the room opens at local midnight on the session day and tokens expire within five minutes", () => {
+  const now = Date.parse("2026-09-01T22:00:00.000Z");
+  const decision = getLiveJoinDecision(session(), now);
   assert.equal(decision.allowed, true);
   if (!decision.allowed) return;
   assert.equal(decision.expiresAt, Math.floor(now / 1000) + 300);
 });
 
 test("token expiry is capped by the session end and access closes afterwards", () => {
-  const justBefore = getLiveJoinDecision(session(), false, Date.parse("2026-09-02T19:59:30.000Z"));
+  const justBefore = getLiveJoinDecision(session(), Date.parse("2026-09-02T19:59:30.000Z"));
   assert.equal(justBefore.allowed, true);
   if (justBefore.allowed) {
     assert.equal(justBefore.expiresAt, Date.parse("2026-09-02T20:00:00.000Z") / 1000);
   }
 
-  const after = getLiveJoinDecision(session(), false, Date.parse("2026-09-02T20:00:00.000Z"));
+  const after = getLiveJoinDecision(session(), Date.parse("2026-09-02T20:00:00.000Z"));
   assert.equal(after.allowed, false);
   if (!after.allowed) assert.equal(after.reason, "ended");
 });

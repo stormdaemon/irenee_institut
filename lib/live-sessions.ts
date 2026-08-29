@@ -37,6 +37,9 @@ export type VisioSession = {
   imageAlt: string;
   imagePosition: string;
   kind: VisioSessionKind;
+  // Identifiant de la séance réelle (table live_sessions) dont la salle Daily
+  // n'ouvre que le jour même : voir getLiveJoinDecision dans lib/live.ts.
+  liveSessionId: string;
 };
 
 export const VISIO_SESSIONS: VisioSession[] = [
@@ -49,7 +52,8 @@ export const VISIO_SESSIONS: VisioSession[] = [
     image: SAMUEL_PHOTO_URL,
     imageAlt: "Samuel Armanios, directeur de l'Institut Saint-Irénée",
     imagePosition: "52% 16%",
-    kind: "person"
+    kind: "person",
+    liveSessionId: "992a69ad-702c-4453-b137-fccf8775445c"
   },
   {
     isoDate: "2026-09-09",
@@ -60,7 +64,8 @@ export const VISIO_SESSIONS: VisioSession[] = [
     image: "/images/theo-lafont.jpg",
     imageAlt: "Théo Lafont, directeur du développement de l'Institut Saint-Irénée",
     imagePosition: "50% 18%",
-    kind: "person"
+    kind: "person",
+    liveSessionId: "396922a5-0080-4e89-87cf-33b3b8d10641"
   },
   {
     isoDate: "2026-09-16",
@@ -71,7 +76,8 @@ export const VISIO_SESSIONS: VisioSession[] = [
     image: "/images/visio-didache.jpg",
     imageAlt: "Manuscrit ancien de la Didachè éclairé à la lumière d'une bougie",
     imagePosition: "50% 50%",
-    kind: "reading"
+    kind: "reading",
+    liveSessionId: "36587d83-1ba5-4f86-b956-8ebb16616b02"
   },
   {
     isoDate: "2026-09-23",
@@ -82,7 +88,8 @@ export const VISIO_SESSIONS: VisioSession[] = [
     image: "/images/visio-lettre-a-diognete.jpg",
     imageAlt: "Parchemin de la Lettre à Diognète posé sur une table d'étude monastique",
     imagePosition: "50% 50%",
-    kind: "reading"
+    kind: "reading",
+    liveSessionId: "1dc8ec1d-550b-416e-bd78-cc35fca9be8c"
   },
   {
     isoDate: "2026-09-30",
@@ -93,7 +100,8 @@ export const VISIO_SESSIONS: VisioSession[] = [
     image: "/images/visio-clement-de-rome.jpg",
     imageAlt: "Lettre de saint Clément de Rome calligraphiée sur un parchemin antique",
     imagePosition: "50% 50%",
-    kind: "reading"
+    kind: "reading",
+    liveSessionId: "3121b388-eb13-4d1c-9878-393d72a5ee99"
   }
 ];
 

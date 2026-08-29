@@ -11,10 +11,45 @@ const DAILY_ROOM_NAME_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 const DAILY_USER_ID_PATTERN = /^[A-Za-z0-9_-]{1,36}$/;
 const DAILY_TOKEN_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 const JOIN_TOKEN_TTL_SECONDS = 5 * 60;
-const STUDENT_EARLY_JOIN_MS = 15 * 60 * 1000;
-const STAFF_EARLY_JOIN_MS = 60 * 60 * 1000;
 const DEFAULT_SESSION_DURATION_MS = 4 * 60 * 60 * 1000;
 const ROOM_END_GRACE_MS = 15 * 60 * 1000;
+const LIVE_TIME_ZONE = "Europe/Paris";
+
+// Offset (ms) of `timeZone` relative to UTC at the instant `ms`, computed
+// without a date library by round-tripping the wall-clock fields through UTC.
+function getTimeZoneOffsetMs(ms: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  }).formatToParts(new Date(ms));
+  const field: Record<string, string> = {};
+  for (const part of parts) field[part.type] = part.value;
+  const asUtc = Date.UTC(
+    Number(field.year),
+    Number(field.month) - 1,
+    Number(field.day),
+    Number(field.hour),
+    Number(field.minute),
+    Number(field.second)
+  );
+  return asUtc - ms;
+}
+
+// Minuit (heure de Paris) du jour calendaire contenant `ms`, en ms UTC.
+function startOfLocalDayMs(ms: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" })
+    .formatToParts(new Date(ms));
+  const field: Record<string, string> = {};
+  for (const part of parts) field[part.type] = part.value;
+  const midnightGuess = Date.UTC(Number(field.year), Number(field.month) - 1, Number(field.day));
+  return midnightGuess - getTimeZoneOffsetMs(midnightGuess, timeZone);
+}
 
 export type LiveSessionStatus = "scheduled" | "live" | "ended" | "cancelled";
 
@@ -184,7 +219,7 @@ export function getDailyRoomTimeBounds(startsAtIso: string, endsAtIso: string | 
     throw new DailyApiError("L'horaire de séance Daily est invalide.");
   }
   return {
-    nbf: Math.floor((startsAt - STAFF_EARLY_JOIN_MS) / 1000),
+    nbf: Math.floor(startOfLocalDayMs(startsAt, LIVE_TIME_ZONE) / 1000),
     exp: Math.floor((endsAt + ROOM_END_GRACE_MS) / 1000)
   };
 }
@@ -348,7 +383,6 @@ export function isAllowedLiveStatusTransition(current: LiveSessionStatus, next: 
 
 export function getLiveJoinDecision(
   session: Pick<LiveSession, "starts_at" | "ends_at" | "status">,
-  staff: boolean,
   nowMs = Date.now()
 ): LiveJoinDecision {
   if (session.status === "cancelled" || session.status === "ended") return { allowed: false, reason: "ended" };
@@ -358,7 +392,8 @@ export function getLiveJoinDecision(
   const endsAt = session.ends_at ? Date.parse(session.ends_at) : fallbackEnd;
   if (!Number.isFinite(endsAt) || endsAt <= startsAt) return { allowed: false, reason: "invalid" };
 
-  const opensAt = startsAt - (staff ? STAFF_EARLY_JOIN_MS : STUDENT_EARLY_JOIN_MS);
+  // La salle n'ouvre que le jour calendaire (heure de Paris) de la séance.
+  const opensAt = startOfLocalDayMs(startsAt, LIVE_TIME_ZONE);
   if (nowMs < opensAt) {
     return {
       allowed: false,
