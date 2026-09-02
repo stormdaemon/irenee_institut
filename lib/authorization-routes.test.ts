@@ -93,17 +93,22 @@ test("course, Daily and document routes enforce resource ownership", async () =>
     assert.ok(trainerSessions.some((session: { id: string }) => session.id === ownSessionId));
     assert.equal(trainerSessions.some((session: { id: string }) => session.id === otherSessionId), false);
 
+    // Contrairement à /api/admin/live (scopé au créateur), tout formateur est
+    // staff pour /api/live et /api/live/[id] : il voit et peut rejoindre les
+    // séances des autres formateurs, pas seulement les siennes.
     const trainerPublicLiveResponse = await getLive(authenticatedRequest("/api/live", trainerA.token));
     assert.equal(trainerPublicLiveResponse.status, 200);
     const trainerPublicSessions = (await trainerPublicLiveResponse.json()).sessions;
     assert.ok(trainerPublicSessions.some((session: { id: string }) => session.id === ownSessionId));
-    assert.equal(trainerPublicSessions.some((session: { id: string }) => session.id === otherSessionId), false);
+    assert.ok(trainerPublicSessions.some((session: { id: string }) => session.id === otherSessionId));
 
-    const forbiddenJoin = await joinLive(
+    const otherSessionJoin = await joinLive(
       authenticatedRequest(`/api/live/${otherSessionId}`, trainerA.token, {}, "POST"),
       { params: Promise.resolve({ id: otherSessionId }) }
     );
-    assert.equal(forbiddenJoin.status, 404);
+    // L'accès est autorisé (pas de 403/404) ; seule l'absence de salle Daily
+    // dans ce fixture de test bloque la suite, avec une erreur distincte.
+    assert.equal(otherSessionJoin.status, 409);
 
     const forbiddenCreate = await createAdminLive(authenticatedRequest("/api/admin/live", trainerA.token, {
       course_id: otherCourseId,

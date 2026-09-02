@@ -33,15 +33,13 @@ export async function GET(request: Request) {
   }
   const nowMs = Date.now();
 
-  let sessionsQuery = auth.supabase
+  // Un formateur est traité comme staff par canAccessSession : il voit toutes
+  // les séances actives, pas seulement celles qu'il a lui-même créées.
+  const { data, error } = await auth.supabase
     .from("live_sessions")
     .select("id,titre,description,starts_at,ends_at,course_id,created_by,daily_room_name,daily_room_url,status")
     .in("status", ["scheduled", "live"])
     .order("starts_at", { ascending: true });
-  if (role === "formateur") {
-    sessionsQuery = sessionsQuery.eq("created_by", auth.user.id);
-  }
-  const { data, error } = await sessionsQuery;
 
   if (error) {
     console.error("live_list_lookup_failed", { userId: auth.user.id });

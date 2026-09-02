@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import {
   buildDailyMeetingUrl,
-  canManageLiveSession,
   canAccessSession,
   createDailyMeetingToken,
   ensureDailyRoomPrivate,
@@ -57,9 +56,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const session = data as LiveSession;
   const role = typeof profile?.role === "string" ? profile.role : "etudiant";
-  if (role === "formateur" && !canManageLiveSession(role, auth.user.id, session)) {
-    return json({ ok: false, error: "Séance introuvable." }, 404);
-  }
+  // Rejoindre une séance ne requiert pas d'en être propriétaire : tout
+  // formateur est traité comme staff par canAccessSession (cf. getStudentLiveContext).
+  // Seule la gestion (édition/annulation) via /api/admin/live/[id] reste scopée au créateur.
   const ctx = await getStudentLiveContext(auth.supabase, auth.user.id, role);
   if (!ctx.verified) {
     console.error("live_join_access_lookup_failed", { sessionId: id, userId: auth.user.id });
