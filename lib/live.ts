@@ -483,5 +483,8 @@ export async function getStudentLiveContext(supabase: ServerClient, userId: stri
 export function canAccessSession(ctx: LiveAccessContext, session: Pick<LiveSession, "course_id">) {
   if (!ctx.verified) return false;
   if (ctx.staff || ctx.annualPass) return true;
-  return Boolean(session.course_id && ctx.courseIds.has(session.course_id));
+  // Sessions non rattachées à un cours (rentrée, lectures patristiques...)
+  // sont ouvertes à tout étudiant activement inscrit, pass annuel ou non.
+  if (!session.course_id) return ctx.courseIds.size > 0;
+  return ctx.courseIds.has(session.course_id);
 }

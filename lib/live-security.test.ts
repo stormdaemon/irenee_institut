@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   buildDailyMeetingUrl,
+  canAccessSession,
   closeDailyRoom,
   createDailyMeetingToken,
   createDailyRoom,
@@ -204,6 +205,28 @@ test("expired annual-pass enrollments never retain live-session access", () => {
   assert.deepEqual(
     [...getAccessibleLiveCourseIds(enrollments, false, now)],
     ["legacy-course"]
+  );
+});
+
+test("any actively-enrolled student can join a course-less session, annual pass or not", () => {
+  const generalSession = { course_id: null };
+  const tiedSession = { course_id: "other-course" };
+
+  assert.equal(
+    canAccessSession({ verified: true, staff: false, annualPass: false, courseIds: new Set(["some-course"]) }, generalSession),
+    true
+  );
+  assert.equal(
+    canAccessSession({ verified: true, staff: false, annualPass: false, courseIds: new Set() }, generalSession),
+    false
+  );
+  assert.equal(
+    canAccessSession({ verified: true, staff: false, annualPass: false, courseIds: new Set(["some-course"]) }, tiedSession),
+    false
+  );
+  assert.equal(
+    canAccessSession({ verified: false, staff: false, annualPass: false, courseIds: new Set(["some-course"]) }, generalSession),
+    false
   );
 });
 
