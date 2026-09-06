@@ -7,6 +7,8 @@ import { GET as getCourses } from "@/app/api/courses/route";
 import { GET as getDocument } from "@/app/api/documents/[id]/route";
 import { GET as getLive } from "@/app/api/live/route";
 import { POST as joinLive } from "@/app/api/live/[id]/route";
+import { GET as downloadScript } from "@/app/api/download/apps-script-partage/route";
+import { GET as downloadReport } from "@/app/api/download/rapport/route";
 import { query } from "@/lib/db";
 import { beginEmailSignUp, verifyEmailToken } from "@/lib/local-auth";
 
@@ -53,6 +55,14 @@ test("course, Daily and document routes enforce resource ownership", async () =>
   const suffix = randomUUID();
 
   try {
+    for (const [path, download] of [
+      ["/api/download/apps-script-partage", downloadScript],
+      ["/api/download/rapport", downloadReport]
+    ] as const) {
+      assert.equal((await download(new Request(`https://irenee.test${path}?code=legacy-code`))).status, 401);
+      assert.equal((await download(authenticatedRequest(path, student.token))).status, 403);
+      assert.equal((await download(authenticatedRequest(path, trainerA.token))).status, 403);
+    }
     await query(
       `insert into public.courses (id,titre,slug,description,statut,auteur_id)
        values ($1,'Cours A',$3,'','brouillon',$5),($2,'Cours B',$4,'','brouillon',$6)`,

@@ -7,6 +7,9 @@ node_modules
 !.env.example
 .codex-screenshots/
 .playwright-artifacts/
+.playwright-audit/
+.audit-*/
+.release-commit
 e2e/.auth/
 old_build/
 seo-evidence/captures/

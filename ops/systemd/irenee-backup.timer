@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Institut Irenee backup
+
+[Timer]
+OnCalendar=*-*-* 03:17:00 UTC
+Persistent=true
+RandomizedDelaySec=10m
+Unit=irenee-backup.service
+
+[Install]
+WantedBy=timers.target

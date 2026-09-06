@@ -1,13 +1,16 @@
-# Institut Saint Irénée rebuild
+# Institut Saint Irénée
 
-Reconstruction Next.js depuis le build `old_build`.
+Application de production Next.js, hébergée sur VPS avec PostgreSQL local,
+authentification par cookie HttpOnly et sessions révocables, paiements Stripe
+et salles Daily privées. La couche `lib/supabase.ts` est une façade historique
+du backend PostgreSQL, pas une connexion au service Supabase.
 
 ## Stack
 
 - Bun `1.3.13`
-- Next.js `16.2.6`
+- Next.js `16.2.11`
 - React `19.2.6`
-- Supabase JS `2.106.0`
+- PostgreSQL (`pg`) et migrations SQL dans `supabase/migrations`
 - TypeScript `6.0.3`
 
 ## Commandes
@@ -21,14 +24,14 @@ bun run build
 ## Reconstruit
 
 - Pages publiques : accueil, formations, formateurs, à propos, contact/FAQ.
-- Auth : connexion et inscription Supabase côté client avec fallback local.
+- Auth : inscription et connexion PostgreSQL, cookie HttpOnly, révocation des sessions.
 - LMS : espace étudiant, détail cours, détail module, quiz/progression.
 - Cursus annuel : pass de 365 jours, accès aux cours publiés, examen final et certificat nominatif.
-- Documents pédagogiques : parchemins de module et de cours enregistrés dans Supabase.
+- Documents pédagogiques : parchemins de module et de cours enregistrés dans PostgreSQL.
 - Admin : dashboard, cours, utilisateurs, devoirs, paiements, paramètres, stats, pages légales.
 - API routes : courses, users, homework, payments, profile avatar, progress, settings, inscription.
 - Assets récupérés : logos, formateurs, partenaires.
-- Schéma Supabase inféré : `supabase/schema.sql`, complété par les migrations de `supabase/migrations`.
+- Schéma historique : `supabase/schema.sql`, complété par les migrations de `supabase/migrations`.
 
 ## Emails pédagogiques
 
@@ -36,9 +39,13 @@ Les parchemins et certificats sont placés dans `learning_documents` avec le sta
 Le worker Google Apps Script prêt à configurer se trouve dans `scripts/google-apps-script-learning-documents.gs`.
 Il récupère la file via `/api/automation/learning-documents`, envoie les pièces jointes avec Gmail, puis confirme la délivrance.
 
-## À compléter ensuite
+## Vérification et exploitation
 
-- Brancher les vraies politiques RLS Supabase selon les rôles.
-- Configurer le worker Google Apps Script et son secret dédié depuis les paramètres administrateur.
-- Remplacer les contenus de secours par les vrais contenus DB si la base les contient.
-- Recréer l'éditeur riche complet si TinyMCE/Cloudinary doit être conservé tel quel.
+`bun run lint` vérifie TypeScript. `bun run test:unit` exige une base isolée
+dont le nom contient `security_test` ; ne jamais utiliser les données de production.
+`bun audit` contrôle les dépendances verrouillées. Le build utilise le moteur
+Turbopack par défaut (`bun run build`).
+
+La production est `/srv/irenee-current`, un lien vers une release immuable.
+Les secrets restent dans `/etc/irenee/production.env`. Voir `ops/README.md`
+pour les sauvegardes, permissions du cache, vérifications et retour arrière.

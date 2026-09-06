@@ -167,6 +167,18 @@ export function getStripeConfig(settings: SystemSettings): StripeConfig {
   };
 }
 
+// Webhook signing secrets are independent from API key mode. A valid
+// signature alone must never let a test event change production entitlements.
+export function isExpectedStripeEventMode(event: unknown, secretKey: string) {
+  if (!event || typeof event !== "object" || Array.isArray(event)) return false;
+  const mode = /^(?:sk|rk)_(live|test)_/.exec(secretKey)?.[1];
+  if (!mode) return false;
+  const payload = event as { livemode?: unknown; data?: { object?: { livemode?: unknown } } };
+  const expected = mode === "live";
+  return payload.livemode === expected
+    && (payload.data?.object?.livemode === undefined || payload.data.object.livemode === expected);
+}
+
 export function buildStripeCheckoutSessionParams(input: StripeCheckoutSessionPayloadInput) {
   const params = new URLSearchParams();
   const bookTitle = normalizeStripeBookTitle(input.bookTitle || "", input.bookRequested);

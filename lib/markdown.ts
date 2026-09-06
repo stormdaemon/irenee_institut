@@ -20,7 +20,7 @@ function inlineMarkdown(value: string) {
     .replace(/`(.+?)`/g, "<code>$1</code>");
 }
 
-export function markdownToHtml(markdown: string) {
+export function markdownToHtml(markdown: string, headingOffset = 0) {
   const lines = markdown.replace(/\r\n/g, "\n").split("\n");
   const html: string[] = [];
   let paragraph: string[] = [];
@@ -51,7 +51,7 @@ export function markdownToHtml(markdown: string) {
     if (heading) {
       closeParagraph();
       closeList();
-      const level = heading[1].length;
+      const level = Math.min(6, heading[1].length + headingOffset);
       html.push(`<h${level}>${inlineMarkdown(heading[2])}</h${level}>`);
       continue;
     }

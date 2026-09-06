@@ -192,6 +192,11 @@ export default async function BlogArticlePage({ params }: BlogArticlePageProps) 
                   </Link>
                 </p>
                 <p>
+                  <Link className="feature-link" href="/#agenda">
+                    Découvrir les prochaines rencontres en ligne <ArrowRight size={14} />
+                  </Link>
+                </p>
+                <p>
                   <Link className="feature-link" href="/formations">
                     Voir les formations <ArrowRight size={14} />
                   </Link>

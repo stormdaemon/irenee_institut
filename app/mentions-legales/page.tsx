@@ -27,7 +27,7 @@ export default async function LegalNoticePage() {
       <section className="section" style={{ background: "white" }}>
         <div className="container" style={{ maxWidth: 900 }}>
           <article className="card" style={{ padding: 34 }}>
-            <div className="legal-content" dangerouslySetInnerHTML={{ __html: markdownToHtml(page.content) }} />
+            <div className="legal-content" dangerouslySetInnerHTML={{ __html: markdownToHtml(page.content, 1) }} />
           </article>
           <p style={{ marginTop: 24 }}><Link href="/contact" className="btn btn-outline">Nous contacter</Link></p>
         </div>

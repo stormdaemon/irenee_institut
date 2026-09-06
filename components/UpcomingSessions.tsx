@@ -5,7 +5,6 @@ import Link from "next/link";
 import { ArrowRight, BookOpen, Phone, Radio, Share2, User, Video } from "lucide-react";
 import { useState } from "react";
 import {
-  VISIO_SESSIONS,
   buildVisioWhatsAppShareUrl,
   formatVisioDate,
   formatVisioWhen,
@@ -30,7 +29,6 @@ function SessionThumb({ session }: { session: VisioSession }) {
           alt={session.imageAlt}
           fill
           sizes="(max-width: 640px) 70vw, 220px"
-          quality={95}
           style={{ objectFit: "cover", objectPosition: session.imagePosition }}
           onError={() => setFailed(true)}
         />
@@ -61,8 +59,8 @@ function ShareSessionButton({ session }: { session: VisioSession }) {
   );
 }
 
-export function UpcomingSessions() {
-  const firstSession = VISIO_SESSIONS[0];
+export function UpcomingSessions({ sessions }: { sessions: VisioSession[] }) {
+  const firstSession = sessions[0];
 
   return (
     <section className="section visio-section" id="agenda">
@@ -71,18 +69,19 @@ export function UpcomingSessions() {
           <span className="hero-eyebrow">
             <Radio size={16} /> En direct &middot; chaque mercredi à 20h30
           </span>
-          <h2 className="visio-title font-display">Premières rencontres en visio conférence à partir de septembre 2026</h2>
+          <h2 className="visio-title font-display">Prochaines rencontres en visioconférence</h2>
           <p className="visio-lead">
             Chaque mercredi soir, la promotion se retrouve en direct depuis le site pour travailler,
-            échanger et lire ensemble les Pères de l&apos;Église. Voici les premières rencontres annoncées.
+            échanger et lire ensemble les Pères de l&apos;Église. Découvrez les prochaines rencontres annoncées.
           </p>
+          <p className="visio-lead">Les rencontres de cet agenda sont accessibles avec un compte gratuit. Pour suivre l&apos;ensemble des cours à votre rythme, découvrez le pass annuel : 99 € conseillés, participation libre.</p>
           <p className="visio-contact-note">
             <Phone size={17} />
             <span>Pour toute autre question, appelez le <a href="tel:+33171681538">01.71.68.15.38</a>.</span>
           </p>
         </div>
 
-        <div className="visio-board">
+        {firstSession ? <div className="visio-board">
           <article className="visio-spotlight">
             <div className="visio-spotlight-image">
               <Image
@@ -94,7 +93,7 @@ export function UpcomingSessions() {
               />
             </div>
             <div className="visio-spotlight-copy">
-              <span className="badge">Première soirée</span>
+              <span className="badge">Prochaine rencontre</span>
               <h3>{firstSession.title}</h3>
               {firstSession.presenter && <span className="visio-presenter">Animée par {firstSession.presenter}</span>}
               <p>{firstSession.description}</p>
@@ -107,7 +106,7 @@ export function UpcomingSessions() {
           </article>
 
           <ol className="visio-schedule">
-            {VISIO_SESSIONS.slice(1).map(session => {
+            {sessions.slice(1).map(session => {
               const { day, monthShort } = formatVisioDate(session.isoDate);
               return (
                 <li className="visio-session" key={session.isoDate}>
@@ -130,11 +129,11 @@ export function UpcomingSessions() {
               );
             })}
           </ol>
-        </div>
+        </div> : <p className="visio-lead">Les prochaines dates seront annoncées ici. Les cours restent accessibles dans l&apos;espace étudiant.</p>}
 
         <div className="visio-actions">
-          <Link className="btn btn-gold" href="/espace-etudiant">
-            <Video size={18} /> Rejoindre les séances en direct
+          <Link className="btn btn-gold" href={firstSession ? `/direct/${firstSession.liveSessionId}` : "/espace-etudiant"}>
+            <Video size={18} /> {firstSession ? "Préparer ma prochaine séance" : "Accéder à mon espace étudiant"}
           </Link>
           <Link className="btn btn-outline" href="/formations">
             Voir les formations <ArrowRight size={17} />

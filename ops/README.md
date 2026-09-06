@@ -18,6 +18,30 @@ Ordre de mise en production :
 8. chiffrer les anciens paramètres secrets ;
 9. conserver au moins la release précédente pour un rollback immédiat.
 
+Avant la bascule, créer `.next/cache/images`, puis attribuer **uniquement**
+`.next/cache` et son contenu à `irenee:irenee`. Le code et les dépendances
+restent propriété de root. Tester `runuser -u irenee -- test -w <release>/.next/cache/images`.
+Une release construite par root sans cette étape provoque des erreurs de cache d'images.
+
+Le timer `irenee-backup.timer` lance chaque nuit une sauvegarde PostgreSQL au
+format custom, vérifie sa table des matières et écrit son empreinte SHA-256.
+Les sauvegardes sont privées dans `/var/backups/irenee/daily`, conservées 30 jours.
+Une sauvegarde sur le même VPS protège des erreurs applicatives ; une copie
+hors hôte reste nécessaire pour couvrir la perte du VPS.
+
+Installer `ops/nginx/irenee-measurement.conf` dans `/etc/nginx/conf.d/` avant
+la configuration de site. Le journal `irenee-measurement.log` utilise la
+rotation Nginx existante (14 fichiers quotidiens). Il contient des **requêtes**,
+pas des visiteurs uniques : routes publiques, source par catégorie, type
+d'appareil, code HTTP et durée. Il exclut IP, cookies, jetons, chaînes de requête
+et referrers bruts. Les préchargements RSC/prefetch sont exclus. Ne pas calculer
+un taux de conversion individuel à partir de ce journal agrégé.
+
+`scripts/align-announced-sessions.ts` documente la correction des deux séances
+du 28 octobre et 4 novembre 2026 pour conserver 20 h 30 à Paris après le changement
+d'heure. Il fonctionne en simulation par défaut, exige `--apply` pour écrire
+et refuse une séance modifiée depuis l'audit.
+
 Ne jamais rejouer directement tous les fichiers SQL. Le registre
 `irenee_ops.schema_migrations` verrouille l'ordre, l'application unique et
 l'empreinte SHA-256 de chaque fichier dans une transaction globale. Une

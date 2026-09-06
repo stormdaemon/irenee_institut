@@ -3,13 +3,14 @@ import assert from "node:assert/strict";
 import {
   VISIO_SESSIONS,
   formatVisioDate,
-  formatVisioWhen
+  formatVisioWhen,
+  getUpcomingVisioSessions,
+  getVisioSessionWindow
 } from "./live-sessions";
 
 test("the September schedule lists the five announced sessions", () => {
-  assert.equal(VISIO_SESSIONS.length, 5);
   assert.deepEqual(
-    VISIO_SESSIONS.map(session => session.isoDate),
+    VISIO_SESSIONS.filter(session => session.isoDate.startsWith("2026-09")).map(session => session.isoDate),
     ["2026-09-02", "2026-09-09", "2026-09-16", "2026-09-23", "2026-09-30"]
   );
 });
@@ -29,7 +30,7 @@ test("every session exposes an image and a non-empty alt text", () => {
 });
 
 test("the three patristic readings expect dedicated static illustrations", () => {
-  const readings = VISIO_SESSIONS.filter(session => session.kind === "reading");
+  const readings = VISIO_SESSIONS.filter(session => session.kind === "reading" && session.isoDate.startsWith("2026-09"));
   assert.deepEqual(
     readings.map(session => session.image),
     [
@@ -38,6 +39,20 @@ test("the three patristic readings expect dedicated static illustrations", () =>
       "/images/visio-clement-de-rome.jpg"
     ]
   );
+});
+
+test("the agenda advances after a session ends and handles an exhausted schedule", () => {
+  assert.equal(getUpcomingVisioSessions(Date.parse("2026-09-06T12:00:00Z"))[0].isoDate, "2026-09-09");
+  assert.equal(getUpcomingVisioSessions(Date.parse("2026-09-09T19:59:59Z"))[0].isoDate, "2026-09-09");
+  assert.equal(getUpcomingVisioSessions(Date.parse("2026-09-09T20:00:00Z"))[0].isoDate, "2026-09-16");
+  assert.deepEqual(getUpcomingVisioSessions(Date.parse("2027-01-01T00:00:00Z")), []);
+});
+
+test("20h30 Paris stays at 20h30 after the October clock change", () => {
+  const summer = getVisioSessionWindow(VISIO_SESSIONS.find(session => session.isoDate === "2026-10-21")!);
+  const winter = getVisioSessionWindow(VISIO_SESSIONS.find(session => session.isoDate === "2026-10-28")!);
+  assert.equal(new Date(summer.startsAt).toISOString(), "2026-10-21T18:30:00.000Z");
+  assert.equal(new Date(winter.startsAt).toISOString(), "2026-10-28T19:30:00.000Z");
 });
 
 test("formatVisioDate decomposes an ISO date into French parts", () => {

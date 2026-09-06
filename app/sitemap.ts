@@ -3,6 +3,7 @@ import { blogArticles } from "@/lib/blog";
 
 const baseUrl = "https://irenee-institut.org";
 const publicContentUpdatedAt = new Date("2026-07-15T18:30:00+02:00");
+const septemberUpdate = new Date("2026-09-06T20:00:00+02:00");
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes = [
@@ -26,13 +27,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     ...staticRoutes.map(route => ({
       url: `${baseUrl}${route}`,
-      lastModified: publicContentUpdatedAt,
+      lastModified: ["", "/mentions-legales", "/politique-confidentialite", "/cgv"].includes(route) ? septemberUpdate : publicContentUpdatedAt,
       changeFrequency: route === "/blog" ? "weekly" as const : "monthly" as const,
       priority: route === "" ? 1 : route === "/blog" ? 0.95 : route === "/institut-apologetique" ? 0.95 : 0.8
     })),
     ...blogArticles.map(article => ({
       url: `${baseUrl}/blog/${article.slug}`,
-      lastModified: publicContentUpdatedAt,
+      lastModified: septemberUpdate,
       changeFrequency: "monthly" as const,
       priority: article.featured ? 0.9 : 0.82
     }))

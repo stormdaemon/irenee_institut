@@ -6,6 +6,7 @@ import { ArrowRight, ExternalLink, PlayCircle } from "lucide-react";
 import { getCourses } from "@/lib/server-data";
 import { siteDescription, siteUrl } from "@/lib/seo";
 import { UpcomingSessions } from "@/components/UpcomingSessions";
+import { getUpcomingVisioSessions } from "@/lib/live-sessions";
 import { JsonLd } from "@/components/JsonLd";
 
 export const dynamic = "force-dynamic";
@@ -194,7 +195,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <UpcomingSessions />
+      <UpcomingSessions sessions={getUpcomingVisioSessions()} />
 
       <section className="section">
         <div className="container center">

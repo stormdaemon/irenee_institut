@@ -3,6 +3,7 @@ import { getSystemSettings } from "@/lib/settings";
 import {
   extractStripeCheckoutSessionSummary,
   getStripeConfig,
+  isExpectedStripeEventMode,
   retrieveStripeObject,
   STRIPE_CURRENCY,
   verifyStripeWebhookSignature,
@@ -145,6 +146,11 @@ export async function handleStripeWebhookRequest({
     }
     authenticated = true;
 
+    if (!isExpectedStripeEventMode(event, config.secretKey)) {
+      await recordSecurityEvent({ eventType: "payment.webhook.mode_rejected", metadata: { reason: "stripe" }, request });
+      return NextResponse.json({ ok: false, error: "Mode Stripe incohérent." }, { status: 409 });
+    }
+
     const reversal = extractStripeReversal(event);
     if (reversal) {
       const { data, error } = await supabase.rpc("process_payment_reversal", {
@@ -279,6 +285,9 @@ export async function handleStripeWebhookRequest({
         { status: 409 }
       );
     }
+    // Keep the provider event receipt separately from the order settlement
+    // row, which a later browser reconciliation can update.
+    await logStripeWebhook(supabase, "validated", summary);
     return NextResponse.json({ ok: true, validated: true, data: result.data || null });
   } catch (error) {
     if (authenticated) {

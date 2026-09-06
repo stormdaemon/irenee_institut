@@ -203,6 +203,23 @@ export function formatVisioWhen(session: VisioSession): string {
   return `${capitalized} ${day} ${month} · ${session.time}`;
 }
 
+export function getVisioSessionWindow(session: VisioSession) {
+  const time = /^(\d{1,2})h(\d{2})$/.exec(session.time);
+  if (!time) throw new Error("Horaire de séance invalide.");
+  const wallClock = Date.parse(`${session.isoDate}T${time[1].padStart(2, "0")}:${time[2]}:00Z`);
+  const offset = new Intl.DateTimeFormat("en", { timeZone: "Europe/Paris", timeZoneName: "shortOffset" })
+    .formatToParts(new Date(wallClock)).find(part => part.type === "timeZoneName")?.value;
+  const hours = Number(offset?.replace("GMT", ""));
+  if (!Number.isFinite(hours)) throw new Error("Fuseau de séance invalide.");
+  const startsAt = wallClock - hours * 60 * 60 * 1000;
+  return { startsAt, endsAt: startsAt + 90 * 60 * 1000 };
+}
+
+export function getUpcomingVisioSessions(now = Date.now(), sessions = VISIO_SESSIONS) {
+  return sessions.filter(session => getVisioSessionWindow(session).endsAt > now)
+    .sort((a, b) => getVisioSessionWindow(a).startsAt - getVisioSessionWindow(b).startsAt);
+}
+
 // Lien "wa.me" pré-rempli pour partager une séance dans un groupe WhatsApp.
 export function buildVisioWhatsAppShareUrl(session: VisioSession): string {
   const message = [
