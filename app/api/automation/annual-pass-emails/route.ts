@@ -5,7 +5,7 @@ import { createServerClient } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
-const ADMIN_RECIPIENTS = ["tlafont49@gmail.com", "sam3ams@gmail.com"];
+const ADMIN_RECIPIENTS = ["sam3ams@gmail.com"];
 const SITE_URL = "https://irenee-institut.org";
 const LOGO_URL = `${SITE_URL}/images/logo_with_text.png`;
 

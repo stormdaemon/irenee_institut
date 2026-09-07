@@ -215,7 +215,7 @@ describe("local PostgreSQL auth", () => {
     // La notification d'inscription passe par le canal générique : le corps de
     // l'email est construit ici, donc chaque champ collecté doit y figurer.
     const notification = payloads[0]?.campaign;
-    assert.equal(notification?.to, "sam3ams@gmail.com,tlafont49@gmail.com,oeuvrecatholiquefrance@gmail.com");
+    assert.equal(notification?.to, "sam3ams@gmail.com,oeuvrecatholiquefrance@gmail.com");
     assert.equal(notification?.subject, "Nouvelle inscription — Double Email");
     for (const expected of ["Double", "Email", email, "06 12 34 56 78"]) {
       assert.ok(String(notification?.body || "").includes(expected), `texte sans ${expected}`);

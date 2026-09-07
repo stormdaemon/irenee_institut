@@ -17,7 +17,7 @@ const mandatoryCampaignKey = "mandatory-registration-onboarding";
 // liste historique du worker Apps Script si la variable d'environnement est absente.
 const registrationNotificationRecipients = (
   process.env.REGISTRATION_NOTIFICATION_RECIPIENTS
-  || "sam3ams@gmail.com,tlafont49@gmail.com,oeuvrecatholiquefrance@gmail.com"
+  || "sam3ams@gmail.com,oeuvrecatholiquefrance@gmail.com"
 ).split(",").map(recipient => recipient.trim()).filter(Boolean);
 
 function appsScriptConfig() {
