@@ -41,10 +41,14 @@ test("the three patristic readings expect dedicated static illustrations", () =>
   );
 });
 
-test("the agenda advances after a session ends and handles an exhausted schedule", () => {
+test("a past session stays in the agenda for 3 days after it ends, then disappears", () => {
   assert.equal(getUpcomingVisioSessions(Date.parse("2026-09-06T12:00:00Z"))[0].isoDate, "2026-09-09");
   assert.equal(getUpcomingVisioSessions(Date.parse("2026-09-09T19:59:59Z"))[0].isoDate, "2026-09-09");
-  assert.equal(getUpcomingVisioSessions(Date.parse("2026-09-09T20:00:00Z"))[0].isoDate, "2026-09-16");
+  // La séance du 9 vient de finir (20h Paris) mais reste affichée pendant 3 jours.
+  assert.equal(getUpcomingVisioSessions(Date.parse("2026-09-09T20:00:00Z"))[0].isoDate, "2026-09-09");
+  assert.equal(getUpcomingVisioSessions(Date.parse("2026-09-12T19:59:59Z"))[0].isoDate, "2026-09-09");
+  // 3 jours pile après sa fin, elle disparaît et la suivante prend sa place.
+  assert.equal(getUpcomingVisioSessions(Date.parse("2026-09-12T20:00:00Z"))[0].isoDate, "2026-09-16");
   assert.deepEqual(getUpcomingVisioSessions(Date.parse("2027-01-01T00:00:00Z")), []);
 });
 

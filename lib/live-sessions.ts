@@ -215,8 +215,13 @@ export function getVisioSessionWindow(session: VisioSession) {
   return { startsAt, endsAt: startsAt + 90 * 60 * 1000 };
 }
 
+// Une séance reste affichée dans l'agenda public jusqu'à 3 jours après sa fin,
+// puis disparaît automatiquement : plus besoin de retirer les dates passées à la main.
+const AGENDA_PAST_SESSION_RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
+
 export function getUpcomingVisioSessions(now = Date.now(), sessions = VISIO_SESSIONS) {
-  return sessions.filter(session => getVisioSessionWindow(session).endsAt > now)
+  return sessions
+    .filter(session => getVisioSessionWindow(session).endsAt + AGENDA_PAST_SESSION_RETENTION_MS > now)
     .sort((a, b) => getVisioSessionWindow(a).startsAt - getVisioSessionWindow(b).startsAt);
 }
 
