@@ -28,7 +28,7 @@ const staticTeamMembers: TeamMember[] = [
       "Lecture théologique et pastorale des Écritures"
     ],
     description:
-      "En plus de sa mission de directeur des études, Frère Jean Emmanuel intervient comme bibliste pour accompagner le module de parcours biblique et aider les étudiants à entrer dans l'intelligence des Écritures.",
+      "En plus de sa mission d'accompagnateur théologique, Frère Jean Emmanuel intervient comme bibliste pour accompagner le module de parcours biblique et aider les étudiants à entrer dans l'intelligence des Écritures.",
     image: "/images/frere-jean-emmanuel-de-ena.png",
     imagePosition: "50% 50%",
     name: "Frère Jean Emmanuel",
@@ -161,7 +161,7 @@ export default async function FormateursPage() {
               <div className="about-director-photo">
                 <Image src="/images/frere-jean-emmanuel-de-ena.png" alt="Frère Jean Emmanuel" fill sizes="150px" style={{ objectFit: "cover", objectPosition: "50% 50%" }} />
               </div>
-              <span className="badge">Directeur des études</span>
+              <span className="badge">Accompagnateur théologique</span>
               <h3>Frère Jean Emmanuel</h3>
               <p className="muted">Accompagne l'exigence académique et spirituelle du parcours d'apologétique.</p>
             </article>
