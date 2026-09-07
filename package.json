@@ -38,11 +38,11 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@playwright/test": "^1.61.1",
-    "@types/node": "25.9.1",
+    "@types/node": "26.4.1",
     "@types/pg": "^8.20.0",
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
     "@types/sanitize-html": "^2.16.1",
-    "typescript": "6.0.3"
+    "typescript": "7.0.2"
   }
 }
