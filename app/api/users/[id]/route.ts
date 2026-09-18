@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/api-auth";
+import { query } from "@/lib/db";
 import { hashAuditSubject, recordSecurityEvent } from "@/lib/security-audit";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -11,6 +12,16 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const { id } = await params;
   if (!UUID_PATTERN.test(id)) return NextResponse.json({ ok: false, error: "Utilisateur introuvable." }, { status: 404 });
   if (id === auth.user.id) return NextResponse.json({ ok: false, error: "Vous ne pouvez pas supprimer votre propre compte administrateur." }, { status: 400 });
+
+  // A director account cannot be removed from the trash button: the deletion
+  // cascades through courses, payments and progress. Demote it first.
+  const target = await query<{ role: string }>("select role from public.profiles where id = $1", [id]);
+  if (target.rows[0]?.role === "directeur") {
+    return NextResponse.json(
+      { ok: false, error: "Un compte directeur ne peut pas être supprimé. Changez d'abord son rôle." },
+      { status: 409 }
+    );
+  }
 
   const deletedUser = await auth.supabase.auth.admin.deleteUser(id);
   const deletedUserError = (deletedUser as { error?: { message?: string } | null }).error;

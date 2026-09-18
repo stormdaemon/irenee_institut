@@ -193,7 +193,9 @@ export default function AdminUsersPage() {
                   <td><Calendar size={15} /> {new Date(user.created_at || Date.now()).toLocaleDateString("fr-FR")}</td>
                   <td className="table-actions">
                     <button className="btn btn-outline" type="button" onClick={() => openCourseModal(user)}><Plus size={16} /> Cours</button>
-                    <button className="btn btn-outline" type="button" aria-label={`Supprimer ${user.prenom} ${user.nom}`} onClick={() => deleteUser(user)}><Trash2 size={16} /></button>
+                    {user.role !== "directeur" && (
+                      <button className="btn btn-outline" type="button" aria-label={`Supprimer ${user.prenom} ${user.nom}`} onClick={() => deleteUser(user)}><Trash2 size={16} /></button>
+                    )}
                   </td>
                 </tr>
               ))}
