@@ -1046,6 +1046,8 @@ test.describe("reader journey functional regressions", () => {
       await expect(page.getByRole("status").filter({ hasText: "Mode aperçu équipe" })).toContainText(
         "Aucune progression ni attestation ne sera créée."
       );
+      await expect(page.locator(".module-preview-notice")).toHaveCSS("background-color", "rgb(28, 31, 48)");
+      await expect(page.locator(".module-preview-notice span")).toHaveCSS("color", "rgb(202, 199, 224)");
       await expect(page.getByRole("region", { name: "Fin de la prévisualisation" })).toBeVisible();
 
       const desktopPlan = page.locator(".module-plan-sidebar .module-course-plan");
