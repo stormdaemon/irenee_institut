@@ -7,7 +7,7 @@ for (const width of [320, 390, 1440]) {
       await page.goto(path);
       await expect(page.locator("main h1")).toHaveCount(1);
       const hero = page.locator(path === "/" ? ".apostolos-sanctuary" : ".apostolos-editorial-banner");
-      const image = hero.locator("img");
+      const image = hero.locator(":scope > img");
       await expect(image).toBeVisible();
       await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
       expect(await hero.evaluate(node => node.getBoundingClientRect().height)).toBeGreaterThan(300);

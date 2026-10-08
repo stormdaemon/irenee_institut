@@ -1192,6 +1192,9 @@ test.describe("reader mobile plan stress", () => {
     });
     await page.goto(`/cours/${course.slug}/modules/${stressModules[12].id}`);
     await expect(page.getByRole("heading", { level: 1, name: stressModules[12].titre })).toBeVisible();
+    await expect(page.frameLocator(".module-html-frame").locator("main.module-content")).toBeVisible();
+    await waitForStableUi(page);
+    await assertStableCourseFrame(page);
 
     const documentHeightBefore = await page.evaluate(() => document.documentElement.scrollHeight);
     const plan = page.locator(".module-mobile-plan");

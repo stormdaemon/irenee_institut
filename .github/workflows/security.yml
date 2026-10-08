@@ -53,6 +53,8 @@ jobs:
           psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -v runtime_password=isolated-ci-runtime-only -f ops/postgres/create-runtime-role.sql
       - run: bun audit
       - run: bunx tsc --noEmit
+      - name: Blog catalogue and SEO metadata
+        run: bun test tests/blog
       - name: HTTP API happy/sad paths and strict 100 percent coverage
         run: bun run test:api
       - if: always()

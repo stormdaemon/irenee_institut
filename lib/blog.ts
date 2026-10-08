@@ -1,3 +1,6 @@
+import { dossierArticles } from "./blog-dossiers";
+import { schoolArticles } from "./blog-school";
+
 export type BlogSource = {
   id: string;
   label: string;
@@ -26,7 +29,7 @@ export type BlogArticle = {
   sources: BlogSource[];
 };
 
-export const blogArticles: BlogArticle[] = [
+const instituteArticles: BlogArticle[] = [
   {
     "slug": "apprendre-a-poser-une-question",
     "title": "Avant de répondre, apprendre à questionner",
@@ -303,6 +306,14 @@ export const blogArticles: BlogArticle[] = [
     ],
     "sources": []
   }
+];
+
+// Keep every existing editorial collection reachable through the public blog,
+// article metadata and sitemap. The source modules import only this file's types.
+export const blogArticles: BlogArticle[] = [
+  ...instituteArticles,
+  ...schoolArticles,
+  ...dossierArticles
 ];
 
 export const blogCategories = Array.from(new Set(blogArticles.map(article => article.category)));

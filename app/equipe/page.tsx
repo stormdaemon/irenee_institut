@@ -2,6 +2,8 @@ import Image from "next/image";
 import type { Metadata } from "next";
 import { ExternalLink, Mail, UserRound } from "lucide-react";
 import { formatDbAvatar, getTrainers } from "@/lib/server-data";
+import { JsonLd } from "@/components/JsonLd";
+import { siteName, siteUrl } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -124,19 +126,40 @@ const staticTeamMembers: TeamMember[] = [
 ];
 
 export const metadata: Metadata = {
-  title: "Équipe de l'Institut Apostolos Saint Irénée",
+  title: "L’équipe de l’Institut Apostolos Saint Irénée",
   description:
     "Découvrez la direction et les formateurs de l'Institut Apostolos Saint Irénée au service d'une transmission catholique rigoureuse et accessible.",
   alternates: {
     canonical: "/equipe"
+  },
+  openGraph: {
+    type: "website",
+    url: "/equipe",
+    title: "L’équipe de l’Institut Apostolos Saint Irénée",
+    description: "Découvrez la direction et les formateurs de l'Institut Apostolos Saint Irénée au service d'une transmission catholique rigoureuse et accessible.",
+    siteName,
+    images: [{ url: "/images/apostolos/theo-lafont-directeur.png", alt: "Théo Lafont, directeur de l’Institut Apostolos Saint Irénée" }]
   }
 };
 
 export default async function FormateursPage() {
   const trainers = await getTrainers();
-  const samuelPhotoUrl = "https://bilan-previsionnel.fr/wp-content/uploads/2020/11/Bilan-Previsionnel-presentation-portrait-img-1.jpg";
+  const teamJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    name: "L’équipe de l’Institut Apostolos Saint Irénée",
+    url: `${siteUrl}/equipe`,
+    mainEntity: {
+      "@type": "Person",
+      name: "Théo Lafont",
+      jobTitle: "Directeur",
+      image: `${siteUrl}/images/apostolos/theo-lafont-directeur.png`,
+      worksFor: { "@type": "EducationalOrganization", name: siteName, url: siteUrl }
+    }
+  };
   return (
     <>
+      <JsonLd data={teamJsonLd} />
       <section className="apostolos-wrap apostolos-catalog-head">
         <span className="apostolos-label">Les visages de la transmission</span>
         <h1>Une école.<br /><em>Des voix, des savoirs.</em></h1>
@@ -148,11 +171,11 @@ export default async function FormateursPage() {
           <div className="about-directors">
             <article className="card about-director-card">
               <div className="about-director-photo">
-                <Image src={samuelPhotoUrl} alt="Samuel Armanios" fill sizes="150px" style={{ objectFit: "cover", objectPosition: "52% 14%", transform: "scale(1.62)" }} />
+                <Image src="/images/apostolos/theo-lafont-directeur.png" alt="Théo Lafont" fill sizes="(max-width: 520px) 220px, 260px" style={{ objectFit: "cover", objectPosition: "center top" }} />
               </div>
               <span className="badge">Directeur</span>
-              <h3>Samuel Armanios</h3>
-              <p className="muted">Diplômé en théologie à l'Université de la Sainte-Croix.</p>
+              <h3>Théo Lafont</h3>
+              <p className="muted">Direction de l’Institut Apostolos Saint Irénée.</p>
             </article>
             <article className="card about-director-card">
               <div className="about-director-photo">
@@ -165,7 +188,7 @@ export default async function FormateursPage() {
           </div>
         </div>
       </section>
-      <section className="section" style={{ background: "white" }}>
+      <section className="section apostolos-team-section">
         <div className="container center">
           <h2 className="section-title">Formateurs et directeurs d'études</h2>
           <p className="subtitle" style={{ maxWidth: 850, margin: "0 auto 60px" }}>

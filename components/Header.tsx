@@ -5,7 +5,7 @@ import {usePathname} from "next/navigation";
 import {useEffect,useState} from "react";
 import {Brand} from "./Brand";
 import {UserMenu} from "./UserMenu";
-const links=[["/formations","Les cours"],["/a-propos","L’Institut"],["/blog","Le journal"],["/contact","Contact"]];
+const links=[["/formations","Les cours"],["/a-propos","L’Institut"],["/equipe","L’équipe"],["/blog","Le journal"],["/contact","Contact"]];
 export function Header(){
  const path=usePathname(),[open,setOpen]=useState(false);
  useEffect(()=>{setOpen(false)},[path]);
