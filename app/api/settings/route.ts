@@ -1,3 +1,4 @@
+import { pgInsert, pgRead, pgUpdate } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/api-auth";
 import { legalPages } from "@/lib/legal";
@@ -5,10 +6,11 @@ import { protectSettingValue, secretSettingKeys, unprotectSettingValue } from "@
 import { PAYPAL_DEFAULT_AMOUNT_CENTS, PAYPAL_WEBHOOK_URL } from "@/lib/paypal";
 import { readJsonBodyWithLimit, RequestBodyError } from "@/lib/request-body";
 import { STRIPE_API_VERSION, STRIPE_LITE_WEBHOOK_URL, STRIPE_WEBHOOK_URL } from "@/lib/stripe";
-import { createServerClient } from "@/lib/supabase";
+import { createServerContext } from "@/lib/postgres";
 import { recordSecurityEvent } from "@/lib/security-audit";
 
 const defaults = {
+  paymentProvider: "stripe",
   rib: "",
   iban: "",
   bic: "",
@@ -18,7 +20,7 @@ const defaults = {
   googleAppsScriptMailSecretConfigured: false,
   dailyApiKey: "",
   dailyApiKeyConfigured: false,
-  paypalAppName: "irenee_institut",
+  paypalAppName: "Institut Apostolos Saint Irénée",
   paypalClientId: "",
   paypalClientIdConfigured: false,
   paypalClientIdPreview: "",
@@ -46,6 +48,7 @@ const editableSettingKeys = new Set([
   "adminEmail",
   "beneficiary",
   "bic",
+  "dailyApiKey",
   "googleAppsScriptMailSecret",
   "iban",
   "paypalAppName",
@@ -67,23 +70,18 @@ const editableSettingKeys = new Set([
 
 const editableLegalSlugs = new Set(Object.keys(legalPages));
 
-async function upsertSystemSetting(supabase: NonNullable<ReturnType<typeof createServerClient>>, key: string, value: unknown) {
+async function upsertSystemSetting(context: NonNullable<ReturnType<typeof createServerContext>>, key: string, value: unknown) {
   const normalized = protectSettingValue(key, value);
-  const { data: existing, error: selectError } = await supabase.from("system_settings").select("*").eq("key", key).maybeSingle();
+  const { data: existing, error: selectError } = await pgRead("select t.* from public.\"system_settings\" t where t.\"key\" = $1", [key], "optional");
   if (selectError) throw new Error(selectError.message);
 
   if (existing) {
-    const { data, error } = await supabase
-      .from("system_settings")
-      .update({ value: normalized, updated_at: new Date().toISOString() })
-      .eq("key", key)
-      .select()
-      .single();
+    const { data, error } = await pgUpdate("system_settings", { value: normalized, updated_at: new Date().toISOString() }, "t.\"key\" = $1", [key], { returning: "one" });
     if (error) throw new Error(error.message);
     return data;
   }
 
-  const { data, error } = await supabase.from("system_settings").insert({ key, value: normalized }).select().single();
+  const { data, error } = await pgInsert("system_settings", { key, value: normalized }, { returning: "one" });
   if (error) throw new Error(error.message);
   return data;
 }
@@ -93,8 +91,8 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   const [{ data: settings, error: settingsError }, { data: legalRows, error: legalError }] = await Promise.all([
-    auth.supabase.from("system_settings").select("*"),
-    auth.supabase.from("legal_pages").select("*")
+    pgRead("select t.* from public.\"system_settings\" t", [], "many"),
+    pgRead("select * from public.legal_pages")
   ]);
   if (settingsError || legalError) {
     console.error("admin_settings_read_failed", { legal: Boolean(legalError), settings: Boolean(settingsError) });
@@ -165,16 +163,11 @@ export async function POST(request: Request) {
       const legalResults = [];
       for (const [slug, contenu] of Object.entries(body.legalPages)) {
         if (!editableLegalSlugs.has(slug)) continue;
-        const { data, error } = await auth.supabase
-          .from("legal_pages")
-          .update({
+        const { data, error } = await pgInsert("legal_pages", {slug, ...{
             contenu: String(contenu),
             derniere_modification: new Date().toISOString(),
             updated_at: new Date().toISOString()
-          })
-          .eq("slug", slug)
-          .select()
-          .single();
+          }}, {conflict: ["slug"], returning: "one"});
         if (error) throw new Error(error.message);
         legalResults.push(data);
       }
@@ -184,7 +177,7 @@ export async function POST(request: Request) {
     for (const [key, value] of Object.entries(body)) {
       if (!editableSettingKeys.has(key)) continue;
       if (secretSettingKeys.has(key) && typeof value === "string" && !value.trim()) continue;
-      await upsertSystemSetting(auth.supabase, key, value);
+      await upsertSystemSetting(auth.context, key, value);
       verified[key] = true;
     }
 

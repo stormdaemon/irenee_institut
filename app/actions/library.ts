@@ -1,3 +1,5 @@
+import { siteUrl } from "@/lib/seo";
+import { pgInsert, pgRead } from "@/lib/postgres";
 "use server";
 
 import { cookies } from "next/headers";
@@ -11,36 +13,36 @@ import { getSystemSettings } from "@/lib/settings";
 import { SECURE_SESSION_COOKIE_NAME, SESSION_COOKIE_NAME, verifyAccessToken } from "@/lib/local-auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createStripeCheckoutSession, getStripeConfig, STRIPE_CURRENCY } from "@/lib/stripe";
-import { createServerClient } from "@/lib/supabase";
+import { createServerContext } from "@/lib/postgres";
 import type { Profile } from "@/lib/types";
 
 async function getStudentContext() {
-  const supabase = createServerClient();
-  if (!supabase) return { error: "Le paiement est momentanement indisponible.", status: 501 } as const;
+  const context = createServerContext();
+  if (!context) return { error: "Le paiement est momentanement indisponible.", status: 501 } as const;
 
   const cookieStore = await cookies();
   const token = cookieStore.get(SECURE_SESSION_COOKIE_NAME)?.value || cookieStore.get(SESSION_COOKIE_NAME)?.value || "";
   const { user } = await verifyAccessToken(token);
   if (!user) return { error: "Session invalide ou expiree.", status: 401 } as const;
 
-  const { data: profile, error: profileError } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+  const { data: profile, error: profileError } = await pgRead("select t.* from public.\"profiles\" t where t.\"id\" = $1", [user.id], "optional");
   if (profileError) return { error: profileError.message, status: 400 } as const;
   if (!profile) return { error: "Votre compte etudiant n'est pas encore pret.", status: 403 } as const;
   if (profile.role !== "etudiant") return { error: "Cette adhesion est reservee aux comptes etudiants.", status: 403 } as const;
 
   return {
     profile: profile as Profile,
-    supabase,
+    context,
     userId: user.id
   };
 }
 
 export async function getLibraryStripeConfigAction() {
-  const supabase = createServerClient();
-  if (!supabase) return { ok: false, error: "Le paiement est momentanement indisponible." };
+  const context = createServerContext();
+  if (!context) return { ok: false, error: "Le paiement est momentanement indisponible." };
 
   try {
-    const config = getStripeConfig(await getSystemSettings(supabase));
+    const config = getStripeConfig(await getSystemSettings(context));
     if (!config.secretKey) return { ok: false, error: "Le paiement Stripe n'est pas encore configure." };
     return { ok: true, currency: STRIPE_CURRENCY };
   } catch (error) {
@@ -63,18 +65,11 @@ export async function createLibraryMembershipCheckoutSessionAction() {
       };
     }
 
-    const { data: membership } = await context.supabase
-      .from("library_memberships")
-      .select("id")
-      .eq("user_id", context.userId)
-      .eq("status", "active")
-      .gt("expires_at", new Date().toISOString())
-      .limit(1)
-      .maybeSingle();
+    const { data: membership } = await pgRead("select t.\"id\" from public.\"library_memberships\" t where t.\"user_id\" = $1 and t.\"status\" = $2 and t.\"expires_at\" > $3 limit $4", [context.userId, "active", new Date().toISOString(), 1], "optional");
 
     if (membership) return { ok: true, alreadyActive: true, redirectUrl: "/espace-etudiant" };
 
-    const config = getStripeConfig(await getSystemSettings(context.supabase));
+    const config = getStripeConfig(await getSystemSettings(context.context));
     const session = await createStripeCheckoutSession({
       config,
       input: {
@@ -86,14 +81,14 @@ export async function createLibraryMembershipCheckoutSessionAction() {
           slug: LIBRARY_MEMBERSHIP_SLUG,
           titre: LIBRARY_MEMBERSHIP_NAME
         },
-        origin: "https://irenee-institut.org",
+        origin: siteUrl,
         productType: "library_membership",
         profile: context.profile,
         returnPath: "/paiement/merci?product=library-membership&stripe_session_id={CHECKOUT_SESSION_ID}"
       }
     });
 
-    const { error: orderError } = await context.supabase.from("paypal_orders").upsert({
+    const { error: orderError } = await pgInsert("paypal_orders", {
       amount_total: LIBRARY_MEMBERSHIP_AMOUNT_CENTS,
       book_requested: false,
       book_request_status: "none",
@@ -105,7 +100,7 @@ export async function createLibraryMembershipCheckoutSessionAction() {
       status: String(session.status || "open").toLowerCase(),
       updated_at: new Date().toISOString(),
       user_id: context.userId
-    }, { onConflict: "order_id" });
+    }, { conflict: ["order_id"] });
 
     if (orderError) throw new Error("order_persistence_failed");
     return { ok: true, checkoutUrl: String(session.url), sessionId: String(session.id) };

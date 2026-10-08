@@ -1,3 +1,4 @@
+import { pgRead } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/api-auth";
 import { createHomework, HomeworkInputError, parseHomeworkForm } from "@/lib/homework-admin";
@@ -6,9 +7,10 @@ import { readFormDataBodyWithLimit, RequestBodyError } from "@/lib/request-body"
 export async function GET(request: Request) {
   const auth = await authorizeRequest(request, ["directeur", "formateur"]);
   if (!auth.ok) return auth.response;
-  let query = auth.supabase.from("homework").select("*, homework_assignments(*)").order("created_at", { ascending: false });
-  if (auth.profile.role === "formateur") query = query.eq("auteur_id", auth.user.id);
-  const { data, error } = await query;
+  const { data, error } = await pgRead(`select t.*,
+    coalesce((select jsonb_agg(r) from public.homework_assignments r where r.homework_id=t.id), '[]'::jsonb) as homework_assignments
+    from public.homework t where ($1::boolean or t.auteur_id=$2) order by t.created_at desc`,
+    [auth.profile.role !== "formateur", auth.user.id]);
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
   return NextResponse.json(data);
 }

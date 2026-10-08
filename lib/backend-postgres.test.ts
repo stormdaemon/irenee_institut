@@ -1,4 +1,6 @@
-import { afterEach, describe, it } from "node:test";
+import { siteUrl } from "./seo";
+import { pgInsert, pgRead, pgUpdate } from "@/lib/postgres";
+import { afterEach, describe, it } from "bun:test";
 import assert from "node:assert/strict";
 import { randomInt, randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
@@ -14,7 +16,7 @@ import { runRegistrationAutomation } from "@/lib/google-apps-script";
 import { translateAuthError } from "@/lib/auth-errors";
 import { contentSecurityPolicy, securityHeaders } from "@/lib/security-headers";
 import { beginEmailSignUp, encodeJwtSecret, signInWithPassword, verifyAccessToken, verifyEmailToken } from "@/lib/local-auth";
-import { createServerClient } from "@/lib/supabase";
+import { createServerContext } from "@/lib/postgres";
 
 const testLocalAuthJwtSecret = "test-local-auth-secret-with-more-than-32-characters";
 if (!process.env.LOCAL_AUTH_JWT_SECRET) process.env.LOCAL_AUTH_JWT_SECRET = testLocalAuthJwtSecret;
@@ -140,11 +142,11 @@ describe("local PostgreSQL auth", () => {
     process.env.GOOGLE_APPS_SCRIPT_WEBHOOK_SECRET = "test-mail-secret";
     process.env.AUTH_COOKIE_SECURE = "false";
     const payloads: Array<Record<string, any>> = [];
-    globalThis.fetch = async (_input, init) => {
+    globalThis.fetch = Object.assign(async (_input: URL | RequestInfo, init?: RequestInit) => {
       const payload = JSON.parse(String(init?.body || "{}"));
       payloads.push(payload);
       return Response.json({ ok: true });
-    };
+    }, {preconnect: globalThis.fetch.preconnect});
 
     const signupRequest = (ip: string) => new Request("https://irenee.test/api/auth/signup", {
       body: JSON.stringify({
@@ -223,11 +225,11 @@ describe("local PostgreSQL auth", () => {
     }
     assert.deepEqual(payloads[1]?.welcomeRegistration, {
       contactEmail: "contact@irenee-institut.org",
-      dashboardUrl: "https://irenee-institut.org/espace-etudiant",
+      dashboardUrl: `${siteUrl}/espace-etudiant`,
       email,
       nom: "Email",
       prenom: "Double",
-      programUrl: "https://irenee-institut.org/formations"
+      programUrl: `${siteUrl}/formations`
     });
     assert.equal(payloads.some(payload => /Réinitialiser/.test(String(payload.campaign?.subject || ""))), false);
 
@@ -290,20 +292,20 @@ describe("local PostgreSQL auth", () => {
 
 describe("Supabase-style profile roles", () => {
   it("uses public.profiles.role for authorization and ignores role metadata from signup", async () => {
-    const supabase = createServerClient()!;
+    const supabase = createServerContext()!;
     const signup = await createVerifiedUser({
       email: testEmail(),
       password: "correct-password",
       metadata: { prenom: "Role", nom: "Spoof", role: "directeur" }
     });
     createdUserIds.push(signup.user!.id);
-    await supabase.from("profiles").upsert({
+    await pgInsert("profiles", {
       email: signup.user!.email,
       id: signup.user!.id,
       nom: "Spoof",
       prenom: "Role",
       role: "etudiant"
-    });
+    }, { conflict: ["id"] });
 
     const authRole = await query<{ role: string; metadata_role: string | null }>(
       `select role, raw_user_meta_data->>'role' as metadata_role from auth.users where id = $1`,
@@ -321,16 +323,16 @@ describe("Supabase-style profile roles", () => {
   });
 
   it("allows formateurs on staff endpoints but keeps director-only endpoints restricted", async () => {
-    const supabase = createServerClient()!;
+    const supabase = createServerContext()!;
     const signup = await createVerifiedUser({ email: testEmail(), password: "correct-password" });
     createdUserIds.push(signup.user!.id);
-    await supabase.from("profiles").upsert({
+    await pgInsert("profiles", {
       email: signup.user!.email,
       id: signup.user!.id,
       nom: "Staff",
       prenom: "Formateur",
       role: "formateur"
-    });
+    }, { conflict: ["id"] });
 
     const staff = await authorizeRequest(authRequest(signup.session!.access_token), ["directeur", "formateur"]);
     expect(staff.ok).toBe(true);
@@ -339,7 +341,7 @@ describe("Supabase-style profile roles", () => {
     expect(directorOnly.ok).toBe(false);
     if (!directorOnly.ok) expect(directorOnly.response.status).toBe(403);
 
-    await supabase.from("profiles").update({ role: "directeur" }).eq("id", signup.user!.id);
+    await pgUpdate("profiles", { role: "directeur" }, "t.\"id\" = $1", [signup.user!.id], { returning: "none" });
     const promoted = await authorizeRequest(authRequest(signup.session!.access_token), ["directeur"]);
     expect(promoted.ok).toBe(true);
   });
@@ -347,21 +349,21 @@ describe("Supabase-style profile roles", () => {
 
 describe("onboarding gate API", () => {
   it("shows onboarding for new students and hides it after completion", async () => {
-    const supabase = createServerClient()!;
+    const supabase = createServerContext()!;
     const signup = await createVerifiedUser({
       email: testEmail(),
       password: "correct-password",
       metadata: { prenom: "Accueil", nom: "Etudiant" }
     });
     createdUserIds.push(signup.user!.id);
-    await supabase.from("profiles").upsert({
+    await pgInsert("profiles", {
       email: signup.user!.email,
       id: signup.user!.id,
       nom: "Etudiant",
       onboarding_completed_at: null,
       prenom: "Accueil",
       role: "etudiant"
-    });
+    }, { conflict: ["id"] });
 
     const firstStatus = await onboardingStatusRouteGet(authRequest(signup.session!.access_token));
     const firstBody = await firstStatus.json();
@@ -442,9 +444,9 @@ describe("OWASP baseline controls", () => {
   });
 });
 
-describe("local Supabase-compatible PostgreSQL facade", () => {
+describe("native PostgreSQL persistence", () => {
   it("supports profile upsert/select/update/delete happy path", async () => {
-    const supabase = createServerClient()!;
+    const supabase = createServerContext()!;
     const id = randomUUID();
     createdUserIds.push(id);
     await query(
@@ -453,123 +455,86 @@ describe("local Supabase-compatible PostgreSQL facade", () => {
       [id, `profile-${id}@example.test`]
     );
 
-    const upsert = await supabase
-      .from("profiles")
-      .upsert({ email: `profile-${id}@example.test`, id, nom: "Test", prenom: "Facade", role: "etudiant" })
-      .select()
-      .single();
+    const upsert = await pgInsert("profiles", { email: `profile-${id}@example.test`, id, nom: "Test", prenom: "Facade", role: "etudiant" }, { returning: "one", conflict: ["id"] });
     expect(upsert.error).toBeNull();
     expect(upsert.data.id).toBe(id);
 
-    const selected = await supabase.from("profiles").select("id,email,prenom").eq("id", id).maybeSingle();
+    const selected = await pgRead("select t.\"id\", t.\"email\", t.\"prenom\" from public.\"profiles\" t where t.\"id\" = $1", [id], "optional");
     expect(selected.error).toBeNull();
-    expect(selected.data.prenom).toBe("Facade");
+    expect(selected.data!.prenom).toBe("Facade");
 
-    const updated = await supabase.from("profiles").update({ prenom: "Updated" }).eq("id", id).select("id,prenom").single();
+    const updated = await pgUpdate("profiles", { prenom: "Updated" }, "t.\"id\" = $1", [id], { returning: "one", columns: "id,prenom" });
     expect(updated.error).toBeNull();
     expect(updated.data.prenom).toBe("Updated");
 
-    const deleted = await supabase.from("profiles").delete().eq("id", id);
+    const deleted = await pgRead("delete from public.\"profiles\" t where t.\"id\" = $1", [id], "none");
     expect(deleted.error).toBeNull();
-    const afterDelete = await supabase.from("profiles").select("id").eq("id", id).maybeSingle();
+    const afterDelete = await pgRead("select t.\"id\" from public.\"profiles\" t where t.\"id\" = $1", [id], "optional");
     expect(afterDelete.data).toBeNull();
   });
 
-  it("returns sad-path errors for unsupported relations and RPC names", async () => {
-    const supabase = createServerClient()!;
-    const badRelation = await supabase.from("profiles").select("*, unsupported(*)").limit(1);
+  it("returns sad-path errors for missing relations and SQL functions", async () => {
+    const supabase = createServerContext()!;
+    const badRelation = await pgRead("select * from public.missing_relation");
     expect(badRelation.data).toBeNull();
-    expect(badRelation.error?.message).toContain("Unsupported relation");
-
-    const badRpc = await supabase.rpc("missing_rpc", {});
-    expect(badRpc.data).toBeNull();
-    expect(badRpc.error?.message).toContain("Unsupported RPC");
+    assert.ok(badRelation.error);
+    const badFunction = await pgRead("select public.missing_function()");
+    expect(badFunction.data).toBeNull();
+    assert.ok(badFunction.error);
   });
 });
 
 describe("validate_paypal_payment RPC on local PostgreSQL", () => {
   it("activates an annual pass for a valid capture and rejects missing capture ids", async () => {
-    const supabase = createServerClient()!;
+    const supabase = createServerContext()!;
     const signup = await createVerifiedUser({ email: testEmail(), password: "correct-password", metadata: { prenom: "Pay", nom: "Pal" } });
     createdUserIds.push(signup.user!.id);
-    await supabase.from("profiles").upsert({
+    await pgInsert("profiles", {
       email: signup.user!.email,
       id: signup.user!.id,
       nom: "Pal",
       prenom: "Pay",
       role: "etudiant"
-    });
+    }, { conflict: ["id"] });
 
     const orderId = `ORDER-${randomUUID()}`;
-    const ok = await supabase.rpc("validate_paypal_payment", {
-      p_amount_total: 9900,
-      p_book_requested: false,
-      p_book_title: "",
-      p_capture_id: `CAPTURE-${randomUUID()}`,
-      p_course_id: null,
-      p_currency: "EUR",
-      p_event_name: "paypal_capture_completed",
-      p_order_id: orderId,
-      p_product_type: "annual_pass",
-      p_raw_payload: { test: true },
-      p_user_id: signup.user!.id
-    });
+    const ok = await pgRead("select public.validate_paypal_payment($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) as result", [orderId, `CAPTURE-${randomUUID()}`, signup.user!.id, null, 9900, "EUR", "paypal_capture_completed", JSON.stringify({ test: true }), false, "", "annual_pass"], "scalar");
     expect(ok.error).toBeNull();
     expect((ok.data as any).ok).toBe(true);
 
-    const pass = await supabase.from("annual_access_passes").select("id,status").eq("provider_order_id", orderId).maybeSingle();
-    expect(pass.data.status).toBe("active");
+    const pass = await pgRead("select t.\"id\", t.\"status\" from public.\"annual_access_passes\" t where t.\"provider_order_id\" = $1", [orderId], "optional");
+    expect(pass.data!.status).toBe("active");
 
-    const sad = await supabase.rpc("validate_paypal_payment", {
-      p_amount_total: 9900,
-      p_capture_id: "",
-      p_currency: "EUR",
-      p_order_id: `ORDER-${randomUUID()}`,
-      p_product_type: "annual_pass",
-      p_user_id: signup.user!.id
-    });
+    const sad = await pgRead("select public.validate_paypal_payment($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) as result", [`ORDER-${randomUUID()}`, "", signup.user!.id, null, 9900, "EUR", null, JSON.stringify({}), null, null, "annual_pass"], "scalar");
     expect(sad.data).toBeNull();
     expect(sad.error?.message).toContain("capture id is required");
   });
 
   it("activates an annual pass through the provider-neutral Stripe validation RPC", async () => {
-    const supabase = createServerClient()!;
+    const supabase = createServerContext()!;
     const signup = await createVerifiedUser({ email: testEmail(), password: "correct-password", metadata: { prenom: "Stri", nom: "Pe" } });
     createdUserIds.push(signup.user!.id);
-    await supabase.from("profiles").upsert({
+    await pgInsert("profiles", {
       email: signup.user!.email,
       id: signup.user!.id,
       nom: "Pe",
       prenom: "Stri",
       role: "etudiant"
-    });
+    }, { conflict: ["id"] });
 
     const sessionId = `cs_test_${randomUUID()}`;
     const paymentIntentId = `pi_${randomUUID()}`;
-    const ok = await supabase.rpc("validate_payment", {
-      p_amount_total: 9900,
-      p_book_requested: false,
-      p_book_title: "",
-      p_capture_id: paymentIntentId,
-      p_course_id: null,
-      p_currency: "EUR",
-      p_event_name: "checkout.session.completed",
-      p_order_id: sessionId,
-      p_product_type: "annual_pass",
-      p_provider: "stripe",
-      p_raw_payload: { id: sessionId, payment_intent: paymentIntentId },
-      p_user_id: signup.user!.id
-    });
+    const ok = await pgRead("select public.validate_payment($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) as result", ["stripe", sessionId, paymentIntentId, signup.user!.id, null, 9900, "EUR", "checkout.session.completed", JSON.stringify({ id: sessionId, payment_intent: paymentIntentId }), false, "", "annual_pass"], "scalar");
     expect(ok.error).toBeNull();
     expect((ok.data as any).provider).toBe("stripe");
 
-    const pass = await supabase.from("annual_access_passes").select("provider,status").eq("provider_order_id", sessionId).maybeSingle();
-    expect(pass.data.provider).toBe("stripe");
-    expect(pass.data.status).toBe("active");
+    const pass = await pgRead("select t.\"provider\", t.\"status\" from public.\"annual_access_passes\" t where t.\"provider_order_id\" = $1", [sessionId], "optional");
+    expect(pass.data!.provider).toBe("stripe");
+    expect(pass.data!.status).toBe("active");
 
-    const event = await supabase.from("payment_events").select("provider,event_name").eq("provider_event_id", paymentIntentId).maybeSingle();
-    expect(event.data.provider).toBe("stripe");
-    expect(event.data.event_name).toBe("checkout.session.completed");
+    const event = await pgRead("select t.\"provider\", t.\"event_name\" from public.\"payment_events\" t where t.\"provider_event_id\" = $1", [paymentIntentId], "optional");
+    expect(event.data!.provider).toBe("stripe");
+    expect(event.data!.event_name).toBe("checkout.session.completed");
   });
 });
 
@@ -587,10 +552,10 @@ describe("Google Apps Script registration automation", () => {
     const calls: unknown[] = [];
     process.env.GOOGLE_APPS_SCRIPT_URL = "https://script.google.test/exec";
     process.env.GOOGLE_APPS_SCRIPT_WEBHOOK_SECRET = "test-secret";
-    globalThis.fetch = (async (_url, init) => {
+    globalThis.fetch = Object.assign((async (_url: URL | RequestInfo, init?: RequestInit) => {
       calls.push(JSON.parse(String(init?.body || "{}")));
       return Response.json({ ok: true });
-    }) as typeof fetch;
+    }) as unknown as typeof fetch, {preconnect: globalThis.fetch.preconnect});
 
     const warnings = await runRegistrationAutomation({
       email: signup.user!.email,
@@ -640,14 +605,14 @@ describe("Google Apps Script registration automation", () => {
     const calls: unknown[] = [];
     process.env.GOOGLE_APPS_SCRIPT_URL = "https://script.google.test/exec";
     process.env.GOOGLE_APPS_SCRIPT_WEBHOOK_SECRET = "test-secret";
-    globalThis.fetch = (async (_url, init) => {
+    globalThis.fetch = Object.assign((async (_url: URL | RequestInfo, init?: RequestInit) => {
       const payload = JSON.parse(String(init?.body || "{}"));
       calls.push(payload);
       if (payload.welcomeRegistration) {
         return Response.json({ ok: false, error: "Unsupported payload" }, { status: 200 });
       }
       return Response.json({ ok: true });
-    }) as typeof fetch;
+    }) as unknown as typeof fetch, {preconnect: globalThis.fetch.preconnect});
 
     const warnings = await runRegistrationAutomation({
       email: signup.user!.email,
@@ -661,8 +626,8 @@ describe("Google Apps Script registration automation", () => {
     expect(Boolean((calls[1] as { welcomeRegistration?: unknown }).welcomeRegistration)).toBe(true);
 
     const fallbackWelcome = (calls[2] as { campaign?: { htmlBody?: string; subject?: string } }).campaign;
-    expect(fallbackWelcome?.subject).toBe("Bienvenue à l’Institut Saint Irénée");
-    expect(fallbackWelcome?.htmlBody || "").toContain("Institut Saint Irénée");
+    expect(fallbackWelcome?.subject).toBe("Bienvenue à l’Institut Apostolos Saint Irénée");
+    expect(fallbackWelcome?.htmlBody || "").toContain("Institut Apostolos Saint Irénée");
     expect(fallbackWelcome?.htmlBody || "").toContain("Accéder au site");
   });
 
@@ -678,7 +643,7 @@ describe("Google Apps Script registration automation", () => {
 
     process.env.GOOGLE_APPS_SCRIPT_URL = "https://script.google.test/exec";
     process.env.GOOGLE_APPS_SCRIPT_WEBHOOK_SECRET = "test-secret";
-    globalThis.fetch = (async () => Response.json({ ok: false, error: "quota reached" }, { status: 200 })) as typeof fetch;
+    globalThis.fetch = Object.assign((async () => Response.json({ ok: false, error: "quota reached" }, { status: 200 })) as unknown as typeof fetch, {preconnect: globalThis.fetch.preconnect});
 
     const warnings = await runRegistrationAutomation({
       email: signup.user!.email,

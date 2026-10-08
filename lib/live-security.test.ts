@@ -1,4 +1,4 @@
-import test from "node:test";
+import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
@@ -32,7 +32,7 @@ function jsonFetch(responseBody: unknown, status = 200) {
       headers: { "Content-Type": "application/json" },
       status
     });
-  }) as typeof fetch;
+  }) as unknown as typeof fetch;
   return { fetcher, requests };
 }
 

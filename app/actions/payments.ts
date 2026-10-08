@@ -1,3 +1,5 @@
+import { siteUrl } from "@/lib/seo";
+import { pgInsert, pgRead } from "@/lib/postgres";
 "use server";
 
 import { cookies } from "next/headers";
@@ -6,12 +8,12 @@ import { SECURE_SESSION_COOKIE_NAME, SESSION_COOKIE_NAME, verifyAccessToken } fr
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getSystemSettings } from "@/lib/settings";
 import { createStripeCheckoutSession, getStripeConfig, normalizeStripeBookTitle, parseStripeAmountToCents, STRIPE_CURRENCY } from "@/lib/stripe";
-import { createServerClient } from "@/lib/supabase";
+import { createServerContext } from "@/lib/postgres";
 import type { Profile } from "@/lib/types";
 
 type CheckoutContext = {
   profile: Profile;
-  supabase: NonNullable<ReturnType<typeof createServerClient>>;
+  context: NonNullable<ReturnType<typeof createServerContext>>;
   userId: string;
 };
 
@@ -22,31 +24,31 @@ type CreateOrderInput = {
 };
 
 async function getCheckoutContext(): Promise<CheckoutContext | { error: string; status: number }> {
-  const supabase = createServerClient();
-  if (!supabase) return { error: "Le paiement est momentanement indisponible.", status: 501 };
+  const context = createServerContext();
+  if (!context) return { error: "Le paiement est momentanement indisponible.", status: 501 };
 
   const cookieStore = await cookies();
   const token = cookieStore.get(SECURE_SESSION_COOKIE_NAME)?.value || cookieStore.get(SESSION_COOKIE_NAME)?.value || "";
   const { user } = await verifyAccessToken(token);
   if (!user) return { error: "Session invalide ou expiree.", status: 401 };
 
-  const { data: profile, error: profileError } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+  const { data: profile, error: profileError } = await pgRead("select t.* from public.\"profiles\" t where t.\"id\" = $1", [user.id], "optional");
   if (profileError) return { error: profileError.message, status: 400 };
   if (!profile) return { error: "Votre compte n'est pas pret pour l'achat. Reconnectez-vous puis reessayez.", status: 403 };
 
   return {
     profile: profile as Profile,
-    supabase,
+    context,
     userId: user.id
   };
 }
 
 export async function getStripeCheckoutConfigAction() {
-  const supabase = createServerClient();
-  if (!supabase) return { ok: false, error: "Le paiement est momentanement indisponible." };
+  const context = createServerContext();
+  if (!context) return { ok: false, error: "Le paiement est momentanement indisponible." };
 
   try {
-    const config = getStripeConfig(await getSystemSettings(supabase));
+    const config = getStripeConfig(await getSystemSettings(context));
     if (!config.secretKey) return { ok: false, error: "Le paiement Stripe n'est pas encore configure." };
 
     return {
@@ -61,10 +63,10 @@ export async function getStripeCheckoutConfigAction() {
 
 export async function createStripeCheckoutSessionAction(input: CreateOrderInput) {
   try {
-    const context = await getCheckoutContext();
-    if ("error" in context) return { ok: false, error: context.error, status: context.status };
+    const checkout = await getCheckoutContext();
+    if ("error" in checkout) return { ok: false, error: checkout.error, status: checkout.status };
 
-    const { profile, supabase, userId } = context;
+    const { profile, context, userId } = checkout;
     const limit = await checkRateLimit(`checkout:user:${userId}`, 5, 10 * 60 * 1000);
     if (!limit.allowed) {
       return {
@@ -74,20 +76,13 @@ export async function createStripeCheckoutSessionAction(input: CreateOrderInput)
         status: 429
       };
     }
-    const { data: existingPass } = await supabase
-      .from("annual_access_passes")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("status", "active")
-      .gt("expires_at", new Date().toISOString())
-      .limit(1)
-      .maybeSingle();
+    const { data: existingPass } = await pgRead("select t.\"id\" from public.\"annual_access_passes\" t where t.\"user_id\" = $1 and t.\"status\" = $2 and t.\"expires_at\" > $3 limit $4", [userId, "active", new Date().toISOString(), 1], "optional");
 
     if (existingPass) {
       return { ok: true, alreadyActive: true, redirectUrl: "/espace-etudiant" };
     }
 
-    const settings = await getSystemSettings(supabase);
+    const settings = await getSystemSettings(context);
     const config = getStripeConfig(settings);
     const amountCents = parseStripeAmountToCents(input.amount);
     const bookTitle = normalizeStripeBookTitle(input.bookTitle, Boolean(input.bookRequested));
@@ -101,13 +96,13 @@ export async function createStripeCheckoutSessionAction(input: CreateOrderInput)
           slug: ANNUAL_PASS_SLUG,
           titre: ANNUAL_PASS_NAME
         },
-        origin: "https://irenee-institut.org",
+        origin: siteUrl,
         productType: "annual_pass",
         profile
       }
     });
 
-    const { error: orderError } = await supabase.from("paypal_orders").upsert({
+    const { error: orderError } = await pgInsert("paypal_orders", {
       order_id: String(session.id),
       provider: "stripe",
       user_id: userId,
@@ -120,7 +115,7 @@ export async function createStripeCheckoutSessionAction(input: CreateOrderInput)
       book_title: bookTitle || null,
       book_request_status: input.bookRequested ? "en_attente_direction" : "none",
       updated_at: new Date().toISOString()
-    }, { onConflict: "order_id" });
+    }, { conflict: ["order_id"] });
 
     if (orderError) throw new Error("order_persistence_failed");
 

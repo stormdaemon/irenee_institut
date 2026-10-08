@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   try {
-    const settings = await getSystemSettings(auth.supabase);
+    const settings = await getSystemSettings(auth.context);
     const config = getPayPalConfig(settings);
     if (!config.clientId || !config.clientSecret) {
       return NextResponse.json({ ok: false, error: "Les identifiants PayPal sont manquants." }, { status: 400 });

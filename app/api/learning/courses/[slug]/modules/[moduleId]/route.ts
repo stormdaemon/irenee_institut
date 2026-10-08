@@ -1,3 +1,4 @@
+import { pgRead } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { projectPublicQuiz } from "@/lib/learning-projection";
@@ -26,26 +27,9 @@ export async function GET(
 
   const now = new Date().toISOString();
   const [profileResult, courseResult, annualPassResult] = await Promise.all([
-    auth.supabase
-      .from("profiles")
-      .select("id,email,prenom,nom,role")
-      .eq("id", auth.user.id)
-      .maybeSingle(),
-    auth.supabase
-      .from("courses")
-      .select("id,titre,slug,description,image_url,objectifs,competences,prerequis,semestre,numero,duree,niveau,statut,nb_modules,duree_totale_minutes,duree_totale,prix,prix_reduit")
-      .eq("slug", slug)
-      .eq("statut", "publie")
-      .maybeSingle(),
-    auth.supabase
-      .from("annual_access_passes")
-      .select("id,expires_at")
-      .eq("user_id", auth.user.id)
-      .eq("status", "active")
-      .gt("expires_at", now)
-      .order("expires_at", { ascending: false })
-      .limit(1)
-      .maybeSingle()
+    pgRead("select t.\"id\", t.\"email\", t.\"prenom\", t.\"nom\", t.\"role\" from public.\"profiles\" t where t.\"id\" = $1", [auth.user.id], "optional"),
+    pgRead("select t.\"id\", t.\"titre\", t.\"slug\", t.\"description\", t.\"image_url\", t.\"objectifs\", t.\"competences\", t.\"prerequis\", t.\"semestre\", t.\"numero\", t.\"duree\", t.\"niveau\", t.\"statut\", t.\"nb_modules\", t.\"duree_totale_minutes\", t.\"duree_totale\", t.\"prix\", t.\"prix_reduit\" from public.\"courses\" t where t.\"slug\" = $1 and t.\"statut\" = $2", [slug, "publie"], "optional"),
+    pgRead("select t.\"id\", t.\"expires_at\" from public.\"annual_access_passes\" t where t.\"user_id\" = $1 and t.\"status\" = $2 and t.\"expires_at\" > $3 order by t.\"expires_at\" desc limit $4", [auth.user.id, "active", now, 1], "optional")
   ]);
   if (profileResult.error || courseResult.error || annualPassResult.error) {
     return privateJson({ ok: false, error: "Impossible de vérifier l'accès au module." }, 500);
@@ -54,13 +38,7 @@ export async function GET(
     return privateJson({ ok: false, error: "Module introuvable." }, 404);
   }
 
-  const enrollmentResult = await auth.supabase
-    .from("course_enrollments")
-    .select("id,statut,access_source,access_expires_at")
-    .eq("etudiant_id", auth.user.id)
-    .eq("course_id", courseResult.data.id)
-    .eq("statut", "en_cours")
-    .maybeSingle();
+  const enrollmentResult = await pgRead("select t.\"id\", t.\"statut\", t.\"access_source\", t.\"access_expires_at\" from public.\"course_enrollments\" t where t.\"etudiant_id\" = $1 and t.\"course_id\" = $2 and t.\"statut\" = $3", [auth.user.id, courseResult.data.id, "en_cours"], "optional");
   if (enrollmentResult.error) {
     return privateJson({ ok: false, error: "Impossible de vérifier l'accès au module." }, 500);
   }
@@ -78,11 +56,7 @@ export async function GET(
     return privateJson({ ok: false, error: "Ce cours n'est pas disponible sur votre compte." }, 403);
   }
 
-  const outlineResult = await auth.supabase
-    .from("course_modules")
-    .select("id,course_id,titre,description,ordre,duree,type_contenu")
-    .eq("course_id", courseResult.data.id)
-    .order("ordre", { ascending: true });
+  const outlineResult = await pgRead("select t.\"id\", t.\"course_id\", t.\"titre\", t.\"description\", t.\"ordre\", t.\"duree\", t.\"type_contenu\" from public.\"course_modules\" t where t.\"course_id\" = $1 order by t.\"ordre\" asc", [courseResult.data.id], "many");
   if (outlineResult.error) {
     return privateJson({ ok: false, error: "Le plan du cours est momentanément indisponible." }, 500);
   }
@@ -103,11 +77,7 @@ export async function GET(
   }
 
   const moduleIds = outline.map(module => module.id);
-  const progressResult = await auth.supabase
-    .from("module_progress")
-    .select("module_id,course_id,progression,complete,date_debut,date_completion,statut")
-    .eq("etudiant_id", auth.user.id)
-    .in("module_id", moduleIds);
+  const progressResult = await pgRead("select t.\"module_id\", t.\"course_id\", t.\"progression\", t.\"complete\", t.\"date_debut\", t.\"date_completion\", t.\"statut\" from public.\"module_progress\" t where t.\"etudiant_id\" = $1 and t.\"module_id\" = any($2)", [auth.user.id, moduleIds], "many");
   if (progressResult.error) {
     return privateJson({ ok: false, error: "La progression est momentanément indisponible." }, 500);
   }
@@ -116,7 +86,6 @@ export async function GET(
   const completedModuleIds = new Set(
     progress.filter(item => item.complete === true).map(item => String(item.module_id))
   );
-  const firstIncompleteModule = outline.find(module => !completedModuleIds.has(module.id));
   const missingPreviousModule = outline
     .slice(0, currentIndex)
     .find(module => !completedModuleIds.has(module.id));
@@ -124,16 +93,11 @@ export async function GET(
     return privateJson({
       error: "Terminez les modules précédents dans l'ordre du cours.",
       ok: false,
-      resumeModuleId: firstIncompleteModule?.id || missingPreviousModule.id
+      resumeModuleId: missingPreviousModule.id
     }, 409);
   }
 
-  const moduleResult = await auth.supabase
-    .from("course_modules")
-    .select("id,course_id,titre,description,ordre,contenu,contenu_html,url_video,url_sous_titres,duree,ressources,type_contenu,quiz")
-    .eq("course_id", courseResult.data.id)
-    .eq("id", moduleId)
-    .maybeSingle();
+  const moduleResult = await pgRead("select t.\"id\", t.\"course_id\", t.\"titre\", t.\"description\", t.\"ordre\", t.\"contenu\", t.\"contenu_html\", t.\"url_video\", t.\"url_sous_titres\", t.\"duree\", t.\"ressources\", t.\"type_contenu\", t.\"quiz\" from public.\"course_modules\" t where t.\"course_id\" = $1 and t.\"id\" = $2", [courseResult.data.id, moduleId], "optional");
   if (moduleResult.error) {
     return privateJson({ ok: false, error: "Le contenu du module est momentanément indisponible." }, 500);
   }
@@ -158,10 +122,7 @@ export async function GET(
     url_sous_titres: moduleResult.data.url_sous_titres || ""
   };
 
-  const publishedCoursesResult = await auth.supabase
-    .from("courses")
-    .select("slug,titre,semestre,numero")
-    .eq("statut", "publie");
+  const publishedCoursesResult = await pgRead<{slug:string;titre:string;semestre:number;numero:number}>("select t.\"slug\", t.\"titre\", t.\"semestre\", t.\"numero\" from public.\"courses\" t where t.\"statut\" = $1", ["publie"], "many");
   const nextCourse = resolveNextPublishedCourse(
     publishedCoursesResult.error ? null : publishedCoursesResult.data,
     courseResult.data.slug

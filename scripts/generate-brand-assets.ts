@@ -1,0 +1,15 @@
+import sharp from "sharp";
+import {writeFileSync} from "node:fs";
+const arch='<path d="M4 54V25C4 13 12 4 24 4s20 9 20 21v29M14 54V26c0-7 4-12 10-12s10 5 10 12v28M24 20v22M17 28h14M0 54h48" fill="none" stroke="#193f34" stroke-width="2"/>';
+const svg=(w:number,h:number,body:string)=>`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${body}</svg>`;
+const mark=svg(256,256,`<rect width="256" height="256" rx="40" fill="#f7f6ee"/><g transform="translate(52 32) scale(3.15)">${arch}</g>`);
+await sharp(Buffer.from(mark)).png().toFile('public/images/apostolos/mark.png');
+await sharp(Buffer.from(mark)).resize(180,180).png().toFile('public/apple-touch-icon.png');
+const icon=await sharp(Buffer.from(mark)).resize(48,48).png().toBuffer();
+const head=Buffer.alloc(22);head.writeUInt16LE(1,2);head.writeUInt16LE(1,4);head[6]=48;head[7]=48;head.writeUInt16LE(1,10);head.writeUInt16LE(32,12);head.writeUInt32LE(icon.length,14);head.writeUInt32LE(22,18);
+for(const path of ['app/favicon.ico','public/favicon.ico'])writeFileSync(path,Buffer.concat([head,icon]));
+const wordmark=svg(880,200,`<rect width="880" height="200" fill="#f7f6ee"/><g transform="translate(35 32) scale(2.3)">${arch}</g><text x="185" y="102" font-family="Georgia" font-size="64" letter-spacing="5" fill="#193f34">APOSTOLOS</text><text x="190" y="145" font-family="Arial" font-size="21" letter-spacing="4" fill="#193f34">INSTITUT SAINT IRÉNÉE</text>`);
+await sharp(Buffer.from(wordmark)).png().toFile('public/images/apostolos/wordmark.png');
+const og=svg(1200,630,`<rect width="1200" height="630" fill="#f7f6ee"/><rect x="890" width="310" height="630" fill="#193f34"/><path d="M900 630V250a145 145 0 0 1 290 0v380" fill="none" stroke="#a8b59b" stroke-width="2"/><g transform="translate(70 58) scale(1.2)">${arch}</g><text x="145" y="106" font-family="Georgia" font-size="34" letter-spacing="4" fill="#193f34">APOSTOLOS</text><text x="74" y="263" font-family="Georgia" font-size="70" fill="#193f34">La foi mérite</text><text x="74" y="345" font-family="Georgia" font-style="italic" font-size="70" fill="#193f34">d’être approfondie.</text><path d="M74 405h90" stroke="#a34b2e" stroke-width="3"/><text x="74" y="470" font-family="Arial" font-size="25" fill="#193f34">Institut Apostolos Saint Irénée</text><text x="74" y="515" font-family="Arial" font-size="20" fill="#68746c">Comprendre · Approfondir · Transmettre</text>`);
+for(const path of ['app/opengraph-image.png','app/twitter-image.png'])await sharp(Buffer.from(og)).png().toFile(path);
+console.log('Brand mark, wordmark, social cards and icons generated.');

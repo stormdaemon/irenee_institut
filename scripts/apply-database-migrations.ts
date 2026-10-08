@@ -14,7 +14,7 @@ type LedgerRow = {
   filename: string;
 };
 
-const migrationDirectory = join(process.cwd(), "supabase", "migrations");
+const migrationDirectory = join(process.cwd(), "database", "migrations");
 const args = process.argv.slice(2);
 const apply = args.includes("--apply");
 const baselineArgument = args.find(argument => argument.startsWith("--baseline-through="));

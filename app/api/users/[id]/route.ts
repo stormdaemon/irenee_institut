@@ -12,7 +12,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   if (!UUID_PATTERN.test(id)) return NextResponse.json({ ok: false, error: "Utilisateur introuvable." }, { status: 404 });
   if (id === auth.user.id) return NextResponse.json({ ok: false, error: "Vous ne pouvez pas supprimer votre propre compte administrateur." }, { status: 400 });
 
-  const deletedUser = await auth.supabase.auth.admin.deleteUser(id);
+  const deletedUser = await auth.context.users.delete(id);
   const deletedUserError = (deletedUser as { error?: { message?: string } | null }).error;
   if (deletedUserError) {
     console.error("admin_user_delete_failed", { actorUserId: auth.user.id });

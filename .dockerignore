@@ -1,0 +1,15 @@
+.git
+.next
+node_modules
+.env*
+.recovery
+coverage
+.playwright*
+.audit-*
+.codex-screenshots
+e2e
+tests
+seo-evidence
+old_build
+*.tsbuildinfo
+*.log

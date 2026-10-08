@@ -1,3 +1,4 @@
+import { siteUrl } from "@/lib/seo";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Course, Profile } from "@/lib/types";
 import type { SystemSettings } from "@/lib/settings";
@@ -13,8 +14,8 @@ export const STRIPE_DEFAULT_AMOUNT_CENTS = 9900;
 export const STRIPE_MIN_AMOUNT_CENTS = 100;
 export const STRIPE_MAX_AMOUNT_CENTS = 100_000_000;
 export const STRIPE_BOOK_TITLE_MAX_LENGTH = 180;
-export const STRIPE_WEBHOOK_URL = "https://irenee-institut.org/stripe_webhook";
-export const STRIPE_LITE_WEBHOOK_URL = "https://irenee-institut.org/stripe_webhook_lite";
+export const STRIPE_WEBHOOK_URL = `${siteUrl}/stripe_webhook`;
+export const STRIPE_LITE_WEBHOOK_URL = `${siteUrl}/stripe_webhook_lite`;
 
 export type StripeProductType = "annual_pass" | "library_membership" | "legacy_course";
 

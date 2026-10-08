@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import test from "node:test";
+import { test } from "bun:test";
 
 test("database migrations require an exact target, immutable checksums and one atomic ledger", () => {
   const script = readFileSync("scripts/apply-database-migrations.ts", "utf8");

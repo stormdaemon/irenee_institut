@@ -34,10 +34,10 @@ export default async function AdminPage() {
       <div className="container">
         <div style={{ display: "flex", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
           <div>
-            <h1 className="title">Dashboard Administration</h1>
-            <p className="subtitle">{isDirector ? "Accès complet à la plateforme Institut Saint Irénée" : "Espace pédagogique formateur"}</p>
+            <h1 className="title">Votre atelier pédagogique</h1>
+            <p className="subtitle">{isDirector ? "Accès complet à la plateforme Institut Apostolos Saint Irénée" : "Espace pédagogique formateur"}</p>
           </div>
-          <Link href="/" className="btn btn-outline">Déconnexion</Link>
+          <Link href="/" className="btn btn-outline">Voir le site</Link>
         </div>
 
         <div className="card" style={{ padding: 28, margin: "24px 0 34px", display: "flex", gap: 18, alignItems: "center" }}>

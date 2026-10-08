@@ -8,7 +8,7 @@ const faqs = [
   {
     category: "Inscription",
     items: [
-      ["Qui peut s'inscrire à l'Institut Saint Irénée ?", "Toute personne souhaitant approfondir la foi catholique et apprendre à la défendre avec intelligence et charité peut s'inscrire."],
+      ["Qui peut s'inscrire à l'Institut Apostolos Saint Irénée ?", "Toute personne souhaitant approfondir la foi catholique et apprendre à la défendre avec intelligence et charité peut s'inscrire."],
       ["Y a-t-il des prérequis pour s'inscrire au Semestre 2 ?", "Oui, le Semestre 2 suppose d'avoir validé ou maîtrisé les bases du premier semestre."],
     ],
   },
@@ -17,7 +17,7 @@ const faqs = [
     items: [
       ["Quel est le niveau requis pour suivre la formation ?", "Aucun prérequis académique strict. Les modules introduisent progressivement les notions et les méthodes."],
       ["Quelle est la durée de la formation complète ?", "Le parcours complet est structuré en deux semestres avec un accès en ligne aux contenus."],
-      ["Est-ce que la formation est diplômante ?", "Elle donne lieu à un certificat de formation délivré par l'Institut Saint Irénée."],
+      ["Est-ce que la formation est diplômante ?", "Elle donne lieu à un certificat de formation délivré par l'Institut Apostolos Saint Irénée."],
       ["Puis-je suivre la formation à mon rythme ?", "Oui, les contenus sont consultables en ligne et conçus pour s'adapter à votre rythme."],
       ["Puis-je reprendre un module si je ne réussis pas l'évaluation ?", "Oui, vous pouvez reprendre un module et consolider les notions avant de repasser l'évaluation."],
       ["Comment se déroulent les examens ?", "Les examens et devoirs sont transmis depuis l'espace étudiant, avec correction et suivi pédagogique."],
@@ -42,7 +42,6 @@ const faqs = [
     category: "Général",
     items: [
       ["Que faire si j'ai des questions pendant la formation ?", "Vous pouvez contacter l'équipe pédagogique et utiliser les espaces d'échange prévus."],
-      ["L'Institut Saint Irénée est-il lié à l'institut « Apostolos » ?", "Non. L'Institut d'Apologétique Saint Irénée (irenee-institut.org), porté par l'association Parole et Partage et présent en ligne depuis octobre 2025, propose une formation catholique à distance. Il est distinct et sans lien avec l'association « Apostolos – Institut d'Apologétique Saint-Irénée », créée en 2026, qui propose des sessions en présentiel à Paris. Pour nous rejoindre, vérifiez que l'adresse du site est bien irenee-institut.org."],
     ],
   },
 ];
@@ -86,8 +85,8 @@ export default function ContactPage() {
     <>
       <section className="page-hero">
         <div className="container">
-          <h1 className="font-display" style={{ fontSize: "4rem", margin: 0 }}>Contactez-nous</h1>
-          <p style={{ fontSize: "1.25rem", color: "#dce6f6" }}>Une question sur nos formations ? Notre équipe est à votre écoute.</p>
+          <h1 className="font-display" style={{ fontSize: "4rem", margin: 0 }}>Commençons par une question.</h1>
+          <p className="subtitle">Une question sur nos formations ? Notre équipe est à votre écoute.</p>
         </div>
       </section>
       <section className="section contact-section" style={{ background: "white" }}>

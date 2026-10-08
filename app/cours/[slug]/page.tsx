@@ -19,7 +19,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useParams } from "next/navigation";
 import { formatDuration } from "@/lib/data";
 import { buildCourseJourney } from "@/lib/course-experience";
-import { createBrowserClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/lib/browser-auth";
 import type { Course, ModuleProgress, Profile } from "@/lib/types";
 
 type StudentCourse = Course & {
@@ -62,10 +62,10 @@ export default function CoursePage() {
       setStatus("loading");
       setError("");
       try {
-        const supabase = createBrowserClient();
-        if (!supabase) throw new Error("Le service est momentanément indisponible. Réessayez dans quelques instants.");
+        const context = createBrowserClient();
+        if (!context) throw new Error("Le service est momentanément indisponible. Réessayez dans quelques instants.");
 
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        const { data: sessionData, error: sessionError } = await context.auth.getSession();
         if (sessionError || !sessionData.session) {
           if (!mounted) return;
           setError(sessionError?.message || "Connectez-vous pour accéder à ce cours.");

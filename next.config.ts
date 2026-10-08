@@ -4,6 +4,9 @@ import { securityHeaders } from "./lib/security-headers";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: { cpus: 1 },
+  output: "standalone",
+  turbopack: { root: process.cwd() },
   devIndicators: false,
   async headers() {
     return [

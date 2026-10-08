@@ -1,4 +1,4 @@
-import test from "node:test";
+import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -46,162 +46,36 @@ function pngDimensions(path: string) {
   };
 }
 
-test("homepage exposes the EIDM, library, live training and patristic session feature cards", () => {
-  const homepage = source("app/page.tsx");
-  assert.match(homepage, /L'EIDM devient l'Institut Saint Irénée/);
-  assert.match(homepage, /Bibliothèque d'école apologétique/);
-  assert.match(homepage, /Formation en visio hebdomadaire/);
-  assert.match(homepage, /Sessions patristiques en abbaye/);
-  assert.match(homepage, /Rentrée académique septembre 2026/);
-  assert.match(homepage, /https:\/\/youtu\.be\/AsclUFsCoAM\?is=Vxx2XTJ5DOkgPGh9/);
-  assert.doesNotMatch(homepage, /hero-cross/);
+test("Apostolos homepage presents real course counts and accessible generated imagery", () => {
+ const home=source("app/page.tsx");
+ assert.match(home,/await getCourses\(\)/);
+ assert.match(home,/courses\.length/);
+ assert.match(home,/moduleCount/);
+ assert.match(home,/Institut Apostolos Saint Irénée/);
+ assert.match(home,/<Image[^>]*alt="[^"\n]+"[^>]*sizes=/);
+ assert.deepEqual(pngDimensions("images/apostolos/cloitre.png"),{width:1536,height:1024});
+ assert.doesNotMatch(home,/autoPlay|<video|logo-elearning/);
 });
-
-test("homepage uses the requested e-learning logo asset", () => {
-  const homepage = source("app/page.tsx");
-
-  assert.match(homepage, /src="\/images\/logo-elearning\.png"/);
-  assert.deepEqual(pngDimensions("images/logo-elearning.png"), { width: 1754, height: 861 });
+test("public navigation exposes its state and supports closing with Escape", () => {
+ const header=source("components/Header.tsx");
+ assert.match(header,/aria-expanded=\{open\}/);
+ assert.match(header,/aria-controls="apostolos-mobile-nav"/);
+ assert.match(header,/e.key==="Escape"/);
+ assert.match(header,/aria-current=/);
 });
-
-test("homepage exposes Samy's presentation video in the hero without forcing autoplay", () => {
-  const homepage = source("app/page.tsx");
-
-  assert.match(homepage, /presentationVideoPath = "\/videos\/presentation-institut-saint-irenee-samy\.mp4"/);
-  assert.match(homepage, /className="hero-video-disclosure"/);
-  assert.match(homepage, /className="hero-video-toggle"/);
-  assert.match(homepage, /@type": "VideoObject"/);
-  assert.match(homepage, /<JsonLd data=\{presentationVideoJsonLd\} \/>/);
-  assert.match(homepage, /<video[\s\S]*controls[\s\S]*preload="none"[\s\S]*playsInline/);
-  assert.doesNotMatch(homepage, /autoPlay/);
+test("Apostolos defers onboarding without unsolicited floating distractions", () => {
+ const layout=source("app/layout.tsx"),chrome=source("components/DeferredClientChrome.tsx");
+ assert.match(layout,/DeferredClientChrome/);
+ assert.match(chrome,/dynamic\(/);
+ assert.match(chrome,/OnboardingGate/);
+ for(const source of [layout,chrome]) assert.doesNotMatch(source,/FloatingNetworkMenu|DonationPrompt|RadioPlayer/);
 });
-
-test("presentation video asset is available as the uploaded MP4", () => {
-  const video = publicAsset("videos/presentation-institut-saint-irenee-samy.mp4");
-
-  assert.equal(video.subarray(4, 8).toString("utf8"), "ftyp");
-  assert.ok(video.length > 60_000_000);
-});
-
-test("hero proof points read as editorial text instead of button-like pills", () => {
-  const homepage = source("app/page.tsx");
-  const styles = source("app/globals.css");
-  const proofPointRule = cssRule(styles, ".hero-proof-points span");
-
-  assert.match(homepage, /Formation hebdomadaire en visio sur cette plateforme à partir de septembre 2026/);
-  assert.doesNotMatch(homepage, /Rencontres en direct à partir de décembre 2026/);
-  assert.match(proofPointRule, /background:\s*transparent/);
-  assert.match(proofPointRule, /border:\s*0/);
-  assert.match(proofPointRule, /border-radius:\s*0/);
-  assert.match(proofPointRule, /box-shadow:\s*none/);
-  assert.doesNotMatch(proofPointRule, /cursor:\s*pointer/);
-  assert.match(styles, /\.hero-proof-points span::before\s*\{[^}]*content:\s*""/);
-});
-
-test("homepage uses optimized WebP assets for heavy visual backgrounds", () => {
-  const homepage = source("app/page.tsx");
-  const styles = source("app/globals.css");
-  const onboarding = source("components/OnboardingGate.tsx");
-
-  for (const asset of [
-    "eidm-institut-saint-irenee",
-    "irenee-feature-1",
-    "irenee-feature-3",
-    "cloitre-sessions-patristiques"
-  ]) {
-    assert.match(homepage, new RegExp(`/images/${asset}\\.webp`));
-    assert.match(onboarding, new RegExp(`/images/${asset}\\.webp`));
-  }
-
-  assert.match(styles, /url\("\/images\/irenee-hero-cathedral\.webp"\)/);
-  assert.match(styles, /url\("\/images\/irenee-parchment-quote-clean\.webp"\)/);
-  assert.match(onboarding, /\/images\/irenee-hero-cathedral\.webp/);
-  assert.match(onboarding, /\/images\/irenee-parchment-quote-clean\.webp/);
-
-  assertWebpAsset("images/irenee-hero-cathedral.webp", 420_000);
-  assertWebpAsset("images/eidm-institut-saint-irenee.webp", 320_000);
-  assertWebpAsset("images/cloitre-sessions-patristiques.webp", 360_000);
-  assertWebpAsset("images/irenee-parchment-quote-clean.webp", 360_000);
-  assertWebpAsset("images/irenee-feature-1.webp", 170_000);
-  assertWebpAsset("images/irenee-feature-3.webp", 170_000);
-
-  assert.ok(assetSize("images/irenee-hero-cathedral.webp") < assetSize("images/irenee-hero-cathedral.png"));
-  assert.ok(assetSize("images/irenee-parchment-quote-clean.webp") < assetSize("images/irenee-parchment-quote-clean.png"));
-});
-
-test("homepage prioritizes responsive AVIF backgrounds for mobile performance", () => {
-  const homepage = source("app/page.tsx");
-  const styles = source("app/globals.css");
-
-  for (const asset of [
-    "eidm-institut-saint-irenee",
-    "irenee-feature-1",
-    "irenee-feature-3",
-    "cloitre-sessions-patristiques"
-  ]) {
-    assert.match(homepage, new RegExp(`/images/${asset}\\.avif`));
-    assert.match(homepage, new RegExp(`/images/${asset}\\.webp`));
-  }
-
-  assert.match(homepage, /rel="preload"[\s\S]*\/images\/irenee-hero-cathedral-mobile\.avif[\s\S]*media="\(max-width: 700px\)"[\s\S]*fetchPriority="high"/);
-  assert.match(homepage, /rel="preload"[\s\S]*\/images\/irenee-hero-cathedral\.avif[\s\S]*media="\(min-width: 701px\)"[\s\S]*fetchPriority="high"/);
-
-  assert.match(styles, /\.home-hero\s*\{[^}]*image-set\([^}]*irenee-hero-cathedral\.avif[^}]*irenee-hero-cathedral\.webp/s);
-  assert.match(styles, /@media \(max-width: 700px\)\s*\{[^}]*\.home-hero\s*\{[^}]*image-set\([^}]*irenee-hero-cathedral-mobile\.avif[^}]*irenee-hero-cathedral-mobile\.webp/s);
-  assert.match(styles, /\.quote-banner\s*\{[^}]*image-set\([^}]*irenee-parchment-quote-clean\.avif[^}]*irenee-parchment-quote-clean\.webp/s);
-  assert.match(styles, /\.page-hero,\s*\.hero-band:not\(\.home-hero\)\s*\{/);
-  assert.match(styles, /\.page-hero,\s*\.hero-band:not\(\.home-hero\)\s*\{[^}]*image-set\([^}]*irenee-hero-cathedral\.avif[^}]*irenee-hero-cathedral\.webp/s);
-  assert.match(styles, /\.footer\s*\{[^}]*image-set\([^}]*irenee-hero-cathedral\.avif[^}]*irenee-hero-cathedral\.webp/s);
-  assert.doesNotMatch(styles, /\.page-hero,\s*\.hero-band\s*\{[^}]*irenee-hero-cathedral\.webp/s);
-
-  assertAvifAsset("images/irenee-hero-cathedral.avif", 120_000);
-  assertAvifAsset("images/irenee-hero-cathedral-mobile.avif", 80_000);
-  assertAvifAsset("images/eidm-institut-saint-irenee.avif", 42_000);
-  assertAvifAsset("images/cloitre-sessions-patristiques.avif", 115_000);
-  assertAvifAsset("images/irenee-parchment-quote-clean.avif", 80_000);
-  assertAvifAsset("images/irenee-feature-1.avif", 22_000);
-  assertAvifAsset("images/irenee-feature-3.avif", 26_000);
-  assertWebpAsset("images/irenee-hero-cathedral-mobile.webp", 120_000);
-
-  assert.ok(assetSize("images/irenee-hero-cathedral.avif") < assetSize("images/irenee-hero-cathedral.webp"));
-  assert.ok(assetSize("images/irenee-hero-cathedral-mobile.avif") < assetSize("images/irenee-hero-cathedral.webp"));
-  assert.ok(assetSize("images/cloitre-sessions-patristiques.avif") < assetSize("images/cloitre-sessions-patristiques.webp"));
-  assert.ok(assetSize("images/irenee-parchment-quote-clean.avif") < assetSize("images/irenee-parchment-quote-clean.webp"));
-});
-
-test("public homepage chrome avoids unnecessary anonymous network work", () => {
-  const homepage = source("app/page.tsx");
-  const header = source("components/Header.tsx");
-  const userMenu = source("components/UserMenu.tsx");
-
-  const publicHomeLinks = homepage
-    .match(/<Link\b[^>]*href="\/(?!\/)[^"]*"[^>]*>/g) || [];
-  const headerLinks = header.match(/<Link\b[^>]*>/g) || [];
-
-  assert.ok(publicHomeLinks.length > 0);
-  assert.ok(headerLinks.length > 0);
-  for (const link of [...publicHomeLinks, ...headerLinks]) {
-    assert.match(link, /prefetch=\{false\}/, link);
-  }
-
-  assert.doesNotMatch(userMenu, /if \(error \|\| !data\.user\)\s*\{\s*await \w+\(\)/);
-  assert.match(userMenu, /if \(!data\.user\)\s*\{\s*setProfile\(null\);\s*return;\s*\}/);
-});
-
-test("layout defers non-critical floating and onboarding chrome on public pages", () => {
-  const layout = source("app/layout.tsx");
-  const deferredChrome = source("components/DeferredClientChrome.tsx");
-
-  assert.match(layout, /import \{ DeferredClientChrome \} from "@\/components\/DeferredClientChrome"/);
-  assert.doesNotMatch(layout, /import \{ FloatingNetworkMenu \}/);
-  assert.doesNotMatch(layout, /import \{ DonationPrompt \}/);
-  assert.doesNotMatch(layout, /import \{ OnboardingGate \}/);
-  assert.match(deferredChrome, /"use client"/);
-  assert.match(deferredChrome, /dynamic\([\s\S]*import\("@\/components\/FloatingNetworkMenu"\)/);
-  assert.match(deferredChrome, /dynamic\([\s\S]*import\("@\/components\/DonationPrompt"\)/);
-  assert.match(deferredChrome, /dynamic\([\s\S]*import\("@\/components\/OnboardingGate"\)/);
-  assert.match(deferredChrome, /const publicChromeDelayMs = 7000/);
-  assert.match(deferredChrome, /pointerdown/);
+test("Apostolos provides narrow-screen layouts and respects reduced motion", () => {
+ const css=source("app/apostolos.css");
+ assert.match(css,/@media/);
+ assert.match(css,/prefers-reduced-motion/);
+ assert.match(css,/apostolos-mobile-nav/);
+ assert.match(css,/grid-template-columns:1fr/);
 });
 
 test("contact page cards collapse without horizontal overflow on narrow mobiles", () => {
@@ -248,9 +122,9 @@ test("public planning cards link to the protected live route", () => {
   assert.match(styles, /\.visio-participate\s*\{/);
 });
 
-test("fixed Heaven Radio player uses the requested RadioKing stream", () => {
+test("legacy radio asset remains available but is absent from Apostolos navigation", () => {
   assert.match(source("components/RadioPlayer.tsx"), /https:\/\/play\.radioking\.io\/heavenradio\/731077/);
-  assert.match(source("app/layout.tsx"), /<RadioPlayer \/>/);
+  assert.doesNotMatch(source("app/layout.tsx"), /<RadioPlayer \/>/);
 });
 
 test("fixed chrome keeps the radio player dark and the desktop network rail below it", () => {
@@ -301,8 +175,8 @@ test("admin server pages scope formateur courses and homework to owned courses",
 
   assert.match(serverData, /getHomework\(options: \{ authorId\?: string; courseIds\?: string\[\] \} = \{\}\)/);
   assert.match(serverData, /options\.courseIds && options\.courseIds\.length === 0/);
-  assert.match(serverData, /\.eq\("auteur_id", options\.authorId\)/);
-  assert.match(serverData, /\.in\("course_id", options\.courseIds\)/);
+  assert.ok(serverData.includes("t.auteur_id=$1"));
+  assert.ok(serverData.includes("t.course_id=any($2)"));
 
   assert.match(dashboard, /getCourses\("admin", isDirector \? \{\} : \{ authorId: profile\.id \}\)/);
   assert.match(dashboard, /getHomework\(isDirector \? \{\} : \{ authorId: profile\.id, courseIds: courses\.map\(course => course\.id\) \}\)/);
@@ -316,7 +190,7 @@ test("admin server pages scope formateur courses and homework to owned courses",
 test("SEO surfaces keep the established canonical page while adding the no-apostrophe school query", () => {
   const seo = source("lib/seo.ts");
   const schoolPage = source("app/ecole-apologetique-en-ligne/page.tsx");
-  assert.match(seo, /L'Institut Saint Irénée propose des formations catholiques structurées/);
+  assert.match(seo, /L'Institut Apostolos Saint Irénée propose des formations catholiques structurées/);
   assert.match(schoolPage, /canonical: "\/ecole-apologetique-en-ligne"/);
   assert.match(schoolPage, /école apologétique catholique/);
 });

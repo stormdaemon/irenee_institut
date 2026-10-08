@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Politique de confidentialité",
-  description: "Consultez la politique de confidentialité de l'Institut d'Apologétique Saint Irénée.",
+  description: "Consultez la politique de confidentialité de l'Institut Apostolos Saint Irénée.",
   alternates: {
     canonical: "/politique-confidentialite"
   }

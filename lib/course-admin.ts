@@ -40,7 +40,8 @@ const courseColumns = [
 ] as const;
 
 function courseValues(course: ParsedCourse["course"]) {
-  return courseColumns.map(column => course[column]);
+  return courseColumns.map(column => ["objectifs", "competences", "prerequis"].includes(column)
+    ? JSON.stringify(course[column]) : course[column]);
 }
 
 function moduleValues(courseId: string, module: ParsedCourseModule) {

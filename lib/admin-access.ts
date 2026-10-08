@@ -1,4 +1,5 @@
-import { createServerClient } from "@/lib/supabase";
+import { pgRead } from "@/lib/postgres";
+import { createServerContext } from "@/lib/postgres";
 import type { Course, Profile } from "@/lib/types";
 
 type ProfileSummary = Pick<Profile, "id" | "email" | "prenom" | "nom" | "role" | "created_at">;
@@ -61,8 +62,8 @@ function sortCourses(left: AdminCourseEnrollment, right: AdminCourseEnrollment) 
 }
 
 export async function getAdminAccessAudit(): Promise<AdminAccessAudit> {
-  const supabase = createServerClient();
-  if (!supabase) {
+  const context = createServerContext();
+  if (!context) {
     return {
       students: [],
       annualPasses: [],
@@ -71,22 +72,10 @@ export async function getAdminAccessAudit(): Promise<AdminAccessAudit> {
   }
 
   const [profilesResult, coursesResult, enrollmentsResult, passesResult] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id,email,prenom,nom,role,created_at")
-      .order("nom", { ascending: true }),
-    supabase
-      .from("courses")
-      .select("id,titre,slug,numero,statut")
-      .order("numero", { ascending: true }),
-    supabase
-      .from("course_enrollments")
-      .select("id,course_id,etudiant_id,statut,created_at")
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("annual_access_passes")
-      .select("id,user_id,provider_order_id,amount_total,currency,status,starts_at,expires_at,created_at")
-      .order("created_at", { ascending: false })
+    pgRead("select t.\"id\", t.\"email\", t.\"prenom\", t.\"nom\", t.\"role\", t.\"created_at\" from public.\"profiles\" t order by t.\"nom\" asc", [], "many"),
+    pgRead("select t.\"id\", t.\"titre\", t.\"slug\", t.\"numero\", t.\"statut\" from public.\"courses\" t order by t.\"numero\" asc", [], "many"),
+    pgRead("select t.\"id\", t.\"course_id\", t.\"etudiant_id\", t.\"statut\", t.\"created_at\" from public.\"course_enrollments\" t order by t.\"created_at\" desc", [], "many"),
+    pgRead("select t.\"id\", t.\"user_id\", t.\"provider_order_id\", t.\"amount_total\", t.\"currency\", t.\"status\", t.\"starts_at\", t.\"expires_at\", t.\"created_at\" from public.\"annual_access_passes\" t order by t.\"created_at\" desc", [], "many")
   ]);
 
   const firstError = profilesResult.error || coursesResult.error || enrollmentsResult.error || passesResult.error;

@@ -1,3 +1,4 @@
+import { siteUrl } from "@/lib/seo";
 import { ANNUAL_PASS_NAME } from "@/lib/curriculum";
 
 export type LearningDocumentKind = "module_parchment" | "course_parchment" | "final_certificate";
@@ -82,8 +83,8 @@ export function renderLearningDocumentSvg(document: LearningDocument) {
   <circle cx="800" cy="192" r="78" fill="#0b2a55" stroke="#bd9142" stroke-width="8"/>
   <circle cx="800" cy="192" r="58" fill="none" stroke="#efd58e" stroke-width="2"/>
   <text x="800" y="177" text-anchor="middle" font-family="Georgia,serif" font-size="34" fill="#efd58e">IHS</text>
-  <text x="800" y="216" text-anchor="middle" font-family="Georgia,serif" font-size="20" fill="#efd58e">INSTITUT SAINT IRÉNÉE</text>
-  <text x="800" y="325" text-anchor="middle" font-family="Georgia,serif" font-size="30" letter-spacing="7" fill="#9b6e28">INSTITUT D'APOLOGÉTIQUE SAINT IRÉNÉE</text>
+  <text x="800" y="216" text-anchor="middle" font-family="Georgia,serif" font-size="20" fill="#efd58e">APOSTOLOS</text>
+  <text x="800" y="325" text-anchor="middle" font-family="Georgia,serif" font-size="30" letter-spacing="7" fill="#9b6e28">INSTITUT APOSTOLOS SAINT IRÉNÉE</text>
   <text x="800" y="406" text-anchor="middle" font-family="Georgia,serif" font-size="${isCertificate ? 68 : 62}" font-weight="700" fill="url(#ink)">${title}</text>
   <text x="800" y="485" text-anchor="middle" font-family="Georgia,serif" font-size="28" fill="#704e22">est décerné à</text>
   <text x="800" y="575" text-anchor="middle" font-family="Georgia,serif" font-size="72" font-style="italic" fill="#102b53">${recipient}</text>
@@ -92,7 +93,7 @@ export function renderLearningDocumentSvg(document: LearningDocument) {
   <text x="800" y="744" text-anchor="middle" font-family="Georgia,serif" font-size="22" fill="#6a4a1f">${passName}</text>
   <text x="800" y="830" text-anchor="middle" font-family="Georgia,serif" font-size="24" fill="#38270f">Délivré le ${issuedAt}</text>
   <text x="800" y="866" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" fill="#62451e">Document pédagogique automatisé — identité déclarée par le titulaire, non vérifiée par l'Institut</text>
-  <text x="800" y="892" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" fill="#62451e">Vérification : irenee-institut.org/verifier-document — Référence ${number}</text>
+  <text x="800" y="892" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" fill="#62451e">Vérification : ${new URL(siteUrl).host}/verifier-document — Référence ${number}</text>
   <text x="264" y="939" text-anchor="middle" font-family="Georgia,serif" font-size="19" fill="#62451e">Direction de l'Institut</text>
   <path d="M145 906H383" stroke="#6d4d21" stroke-width="2"/>
   <text x="1336" y="939" text-anchor="middle" font-family="Georgia,serif" font-size="19" fill="#62451e">Référence ${number}</text>

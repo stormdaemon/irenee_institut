@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative, sep } from "node:path";
-import test from "node:test";
+import { test } from "bun:test";
 import * as adminAccess from "@/app/api/admin/access/route";
 import * as adminLiveById from "@/app/api/admin/live/[id]/route";
 import * as adminLive from "@/app/api/admin/live/route";
@@ -183,10 +183,10 @@ test("every HTTP route handler has a side-effect-free anonymous contract", async
 
   const originalFetch = globalThis.fetch;
   const failures: string[] = [];
-  globalThis.fetch = (async input => {
+  globalThis.fetch = Object.assign((async (input: URL | RequestInfo) => {
     const target = typeof input === "string" || input instanceof URL ? String(input) : input.url;
     throw new Error(`Unexpected network request from route contract: ${target}`);
-  }) as typeof fetch;
+  }) as unknown as typeof fetch, {preconnect: globalThis.fetch.preconnect});
 
   try {
     for (const item of cases) {

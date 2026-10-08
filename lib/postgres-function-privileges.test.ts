@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import test from "node:test";
+import { test } from "bun:test";
 
 test("PostgreSQL functions default to no PUBLIC execution and use an explicit allow-list", () => {
   const migration = readFileSync(

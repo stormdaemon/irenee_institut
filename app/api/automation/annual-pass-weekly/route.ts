@@ -1,17 +1,19 @@
+import { blogArticles } from "@/lib/blog";
+import { siteUrl } from "@/lib/seo";
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { emailOptoutUrl } from "@/lib/email-optout";
 import { annualPassCheckoutPath } from "@/lib/routes";
 import { getSystemSettings } from "@/lib/settings";
-import { createServerClient } from "@/lib/supabase";
+import { createServerContext } from "@/lib/postgres";
 
 export const runtime = "nodejs";
 
 const CAMPAIGN_PREFIX = "annual-pass-weekly-";
-const SITE_URL = "https://irenee-institut.org";
+const SITE_URL = siteUrl;
 const CHECKOUT_URL = `${SITE_URL}${annualPassCheckoutPath}`;
-const LOGO_URL = `${SITE_URL}/images/logo_with_text.png`;
+const LOGO_URL = `${SITE_URL}/images/apostolos/wordmark.png`;
 
 type WeeklyRow = {
   delivery_id: string;
@@ -30,59 +32,17 @@ type WeeklyTheme = {
   subject: string;
 };
 
-const themes: WeeklyTheme[] = [
-  {
-    eyebrow: "Le thème de la semaine",
-    title: "La fiabilité des Évangiles",
-    hook: "Manuscrits anciens, témoignages romains, archéologie : les Évangiles sont le texte antique le mieux attesté. Savoir le montrer calmement change toutes les conversations.",
-    articleLabel: "Lire le dossier complet",
-    articleUrl: `${SITE_URL}/blog/fiabilite-des-evangiles-dossier`,
-    subject: "Peut-on faire confiance aux Évangiles ? Formez-vous à répondre"
-  },
-  {
-    eyebrow: "Le thème de la semaine",
-    title: "Foi et raison, deux lumières",
-    hook: "« Je crois pour comprendre, je comprends pour croire. » La tradition catholique n'a jamais opposé l'intelligence et la foi — apprenez à le montrer.",
-    articleLabel: "Lire l'article",
-    articleUrl: `${SITE_URL}/blog/foi-et-raison-deux-lumieres`,
-    subject: "Foi et raison : et si vous appreniez à en rendre compte ?"
-  },
-  {
-    eyebrow: "Le thème de la semaine",
-    title: "Le problème du mal",
-    hook: "C'est l'objection la plus fréquente et la plus sensible. Y répondre sans durcir le cœur demande une vraie formation — pas des formules toutes faites.",
-    articleLabel: "Lire l'article",
-    articleUrl: `${SITE_URL}/blog/probleme-du-mal-repondre-sans-durcir-le-coeur`,
-    subject: "Répondre au problème du mal sans durcir le cœur"
-  },
-  {
-    eyebrow: "Le thème de la semaine",
-    title: "Science et foi, sortir des caricatures",
-    hook: "Un prêtre a formulé la théorie du Big Bang. L'opposition science-foi est une caricature moderne : les faits racontent une autre histoire.",
-    articleLabel: "Lire l'article",
-    articleUrl: `${SITE_URL}/blog/science-et-foi-sortir-des-caricatures`,
-    subject: "Science et foi : ce que l'histoire dit vraiment"
-  },
-  {
-    eyebrow: "Le thème de la semaine",
-    title: "La Résurrection, cœur de la foi",
-    hook: "Tombeau vide, témoins transformés, Église née en quelques années : le dossier historique de Pâques mérite mieux qu'un haussement d'épaules.",
-    articleLabel: "Lire l'article",
-    articleUrl: `${SITE_URL}/blog/resurrection-de-jesus-coeur-historique-foi`,
-    subject: "La Résurrection : un dossier historique à connaître"
-  },
-  {
-    eyebrow: "Le thème de la semaine",
-    title: "Saint Irénée, docteur de l'unité",
-    hook: "Face aux confusions de son temps, Irénée de Lyon répondait par les sources et la charité. C'est l'esprit de tout notre parcours de formation.",
-    articleLabel: "Lire l'article",
-    articleUrl: `${SITE_URL}/blog/saint-irenee-docteur-unite-foi-recue`,
-    subject: "L'esprit de saint Irénée : répondre par les sources"
-  }
-];
+const themes: WeeklyTheme[] = blogArticles.map(article => ({
+  eyebrow: "Le journal Apostolos",
+  title: article.title,
+  hook: article.description,
+  articleLabel: "Lire l’article",
+  articleUrl: `${SITE_URL}/blog/${article.slug}`,
+  subject: article.title
+}));
 
-function escapeHtml(value: unknown) {
-  return String(value ?? "")
+function escapeHtml(value: string) {
+  return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -97,9 +57,9 @@ function sameSecret(received: string, expected: string) {
   return left.length === right.length && timingSafeEqual(left, right);
 }
 
-async function authenticate(request: Request, supabase: NonNullable<ReturnType<typeof createServerClient>>) {
+async function authenticate(request: Request, context: NonNullable<ReturnType<typeof createServerContext>>) {
   const received = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() || "";
-  const settings = await getSystemSettings(supabase);
+  const settings = await getSystemSettings(context);
   const expected = String(settings.googleAppsScriptMailSecret || process.env.GOOGLE_APPS_SCRIPT_MAIL_SECRET || "").trim();
   return sameSecret(received, expected);
 }
@@ -113,48 +73,48 @@ function weeklyHtml(profile: WeeklyRow, theme: WeeklyTheme) {
   const optoutUrl = emailOptoutUrl(profile.profile_id);
   return `<!doctype html>
 <html>
-  <body style="margin:0;background:#04101e;padding:0;font-family:Arial,Helvetica,sans-serif;color:#f8f1df">
+  <body style="margin:0;background:#f7f6ee;padding:0;font-family:Arial,Helvetica,sans-serif;color:#193f34">
     <div style="display:none;max-height:0;overflow:hidden;color:transparent">${escapeHtml(theme.hook)}</div>
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#04101e;padding:28px 12px">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f7f6ee;padding:28px 12px">
       <tr>
         <td align="center">
-          <table role="presentation" width="620" cellspacing="0" cellpadding="0" style="width:100%;max-width:620px;border:1px solid rgba(220,180,107,.55);background:#071523;border-radius:8px;overflow:hidden">
+          <table role="presentation" width="620" cellspacing="0" cellpadding="0" style="width:100%;max-width:620px;border:1px solid rgba(220,180,107,.55);background:#ffffff;border-radius:8px;overflow:hidden">
             <tr>
-              <td style="padding:26px 28px 18px;border-bottom:1px solid rgba(220,180,107,.28);background:linear-gradient(180deg,#071724,#03111f)">
-                <img src="${LOGO_URL}" width="230" alt="Institut d'Apologétique Saint Irénée" style="display:block;width:230px;max-width:100%;height:auto;border:0;margin-bottom:20px">
-                <div style="color:#f0cf8a;font-weight:700;text-transform:uppercase;font-size:12px;letter-spacing:.08em">${escapeHtml(theme.eyebrow)}</div>
-                <h1 style="margin:8px 0 0;color:#fff7e7;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.15">${escapeHtml(theme.title)}</h1>
+              <td style="padding:26px 28px 18px;border-bottom:1px solid rgba(220,180,107,.28);background:linear-gradient(180deg,#f0eee4,#f7f6ee)">
+                <img src="${LOGO_URL}" width="230" alt="Institut Apostolos Saint Irénée" style="display:block;width:230px;max-width:100%;height:auto;border:0;margin-bottom:20px">
+                <div style="color:#8b422a;font-weight:700;text-transform:uppercase;font-size:12px;letter-spacing:.08em">${escapeHtml(theme.eyebrow)}</div>
+                <h1 style="margin:8px 0 0;color:#193f34;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.15">${escapeHtml(theme.title)}</h1>
               </td>
             </tr>
             <tr>
-              <td style="padding:28px;color:#f0dfc2;font-size:16px;line-height:1.65">
+              <td style="padding:28px;color:#35483f;font-size:16px;line-height:1.65">
                 <p style="margin:0 0 16px">Bonjour ${escapeHtml(name)},</p>
                 <p style="margin:0 0 16px">${escapeHtml(theme.hook)}</p>
-                <p style="margin:0 0 22px"><a href="${theme.articleUrl}" style="color:#f0cf8a;text-decoration:underline">${escapeHtml(theme.articleLabel)} →</a></p>
+                <p style="margin:0 0 22px"><a href="${theme.articleUrl}" style="color:#8b422a;text-decoration:underline">${escapeHtml(theme.articleLabel)} →</a></p>
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 22px;border:1px solid rgba(220,180,107,.4);border-radius:8px;background:rgba(220,180,107,.06)">
                   <tr>
-                    <td style="padding:20px 22px;color:#f0dfc2">
-                      <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;color:#f1d27a;margin-bottom:8px">Allez plus loin avec le pass annuel</div>
+                    <td style="padding:20px 22px;color:#35483f">
+                      <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;color:#193f34;margin-bottom:8px">Allez plus loin avec le pass annuel</div>
                       <p style="margin:0 0 8px;font-size:15px;line-height:1.7">Ce thème, et tous les autres, sont approfondis dans le cursus complet de l'Institut : modules progressifs, espace étudiant, évaluations corrigées, examen final et certificat nominatif.</p>
-                      <p style="margin:0;font-size:15px;line-height:1.7"><strong style="color:#fff7e7">365 jours d'accès, en participation libre</strong> (prix conseillé : 99&nbsp;€) — pour que la question financière n'écarte personne de l'étude.</p>
+                      <p style="margin:0;font-size:15px;line-height:1.7"><strong style="color:#193f34">365 jours d'accès, en participation libre</strong> (prix conseillé : 99&nbsp;€) — pour que la question financière n'écarte personne de l'étude.</p>
                     </td>
                   </tr>
                 </table>
                 <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 8px">
                   <tr>
-                    <td style="border-radius:6px;background:#dcb46b">
-                      <a href="${CHECKOUT_URL}" style="display:inline-block;padding:14px 22px;font-size:14px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#071523;text-decoration:none">Activer mon pass annuel</a>
+                    <td style="border-radius:6px;background:#e5b78b">
+                      <a href="${CHECKOUT_URL}" style="display:inline-block;padding:14px 22px;font-size:14px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#ffffff;text-decoration:none">Activer mon pass annuel</a>
                     </td>
                   </tr>
                 </table>
-                <p style="margin:16px 0 0;color:#d8c9ad;font-size:14px">Connectez-vous avec cette adresse email, puis laissez-vous guider : ${escapeHtml(CHECKOUT_URL)}</p>
+                <p style="margin:16px 0 0;color:#5c6961;font-size:14px">Connectez-vous avec cette adresse email, puis laissez-vous guider : ${escapeHtml(CHECKOUT_URL)}</p>
               </td>
             </tr>
             <tr>
-              <td style="padding:18px 28px;color:#b9ab8e;border-top:1px solid rgba(220,180,107,.22);font-size:12px;line-height:1.7">
-                Vous recevez cet email car un compte existe à cette adresse sur irenee-institut.org.<br>
-                <a href="${optoutUrl}" style="color:#d8c9ad;text-decoration:underline">Ne plus recevoir ces invitations</a>
-                &nbsp;·&nbsp; Institut d'Apologétique Saint Irénée — ${SITE_URL}
+              <td style="padding:18px 28px;color:#5c6961;border-top:1px solid rgba(220,180,107,.22);font-size:12px;line-height:1.7">
+                Vous recevez cet email car un compte existe à cette adresse auprès de l’Institut Apostolos Saint Irénée.<br>
+                <a href="${optoutUrl}" style="color:#5c6961;text-decoration:underline">Ne plus recevoir ces invitations</a>
+                &nbsp;·&nbsp; Institut Apostolos Saint Irénée — ${SITE_URL}
               </td>
             </tr>
           </table>
@@ -186,16 +146,16 @@ function buildJob(row: WeeklyRow, campaignKey: string, theme: WeeklyTheme) {
       "",
       `Ne plus recevoir ces invitations : ${emailOptoutUrl(row.profile_id)}`,
       "",
-      "Institut d'Apologétique Saint Irénée"
+      "Institut Apostolos Saint Irénée"
     ].join("\n"),
     to: row.email
   };
 }
 
 export async function GET(request: Request) {
-  const supabase = createServerClient();
-  if (!supabase) return NextResponse.json({ ok: false, error: "Service indisponible." }, { status: 501 });
-  if (!await authenticate(request, supabase)) return NextResponse.json({ ok: false, error: "Accès refusé." }, { status: 401 });
+  const context = createServerContext();
+  if (!context) return NextResponse.json({ ok: false, error: "Service indisponible." }, { status: 501 });
+  if (!await authenticate(request, context)) return NextResponse.json({ ok: false, error: "Accès refusé." }, { status: 401 });
 
   const week = await query<{ iso_week: string; week_number: number }>(
     `select
@@ -270,9 +230,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const supabase = createServerClient();
-  if (!supabase) return NextResponse.json({ ok: false, error: "Service indisponible." }, { status: 501 });
-  if (!await authenticate(request, supabase)) return NextResponse.json({ ok: false, error: "Accès refusé." }, { status: 401 });
+  const context = createServerContext();
+  if (!context) return NextResponse.json({ ok: false, error: "Service indisponible." }, { status: 501 });
+  if (!await authenticate(request, context)) return NextResponse.json({ ok: false, error: "Accès refusé." }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));
   const jobId = String(body.jobId || "").trim();

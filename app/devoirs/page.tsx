@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Clock, ClipboardList, FileUp, Loader2, MessageSquare, PenLine } from "lucide-react";
 import { useEffect, useState } from "react";
-import { createBrowserClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/lib/browser-auth";
 import type { Homework } from "@/lib/types";
 
 type HomeworkStatus = "loading" | "ready" | "unauthenticated" | "error";
@@ -17,15 +17,15 @@ export default function HomeworkPage() {
     let mounted = true;
 
     async function loadHomework() {
-      const supabase = createBrowserClient();
-      if (!supabase) {
+      const context = createBrowserClient();
+      if (!context) {
         if (!mounted) return;
         setError("Le service est momentanément indisponible. Réessayez dans quelques instants.");
         setStatus("error");
         return;
       }
 
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionError } = await context.auth.getSession();
       if (sessionError || !sessionData.session) {
         if (!mounted) return;
         setError(sessionError?.message || "Connectez-vous pour accéder à vos devoirs.");

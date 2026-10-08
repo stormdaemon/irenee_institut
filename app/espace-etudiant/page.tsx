@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { LearningDocumentButton } from "@/components/LearningDocumentButton";
 import { LibraryPanel } from "@/components/LibraryPanel";
 import { NextLiveSession } from "@/components/NextLiveSession";
-import { createBrowserClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/lib/browser-auth";
 import { formatDuration } from "@/lib/data";
 import type { BookRequest, Course, Homework, LibraryMembership, Profile } from "@/lib/types";
 import type { LearningDocument } from "@/lib/learning-documents";
@@ -38,15 +38,15 @@ export default function StudentSpacePage() {
     let mounted = true;
 
     async function loadStudentSpace() {
-      const supabase = createBrowserClient();
-      if (!supabase) {
+      const context = createBrowserClient();
+      if (!context) {
         if (!mounted) return;
         setError("Le service est momentanément indisponible. Réessayez dans quelques instants.");
         setStatus("error");
         return;
       }
 
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionError } = await context.auth.getSession();
       if (sessionError || !sessionData.session) {
         if (!mounted) return;
         setError(sessionError?.message || "Connectez-vous pour accéder à votre espace étudiant.");
@@ -130,12 +130,12 @@ export default function StudentSpacePage() {
   const profile = payload.profile;
 
   return (
-    <section className="section">
+    <section className="section apostolos-student-space">
       <div className="container">
         <div style={{ display: "flex", justifyContent: "space-between", gap: 20, alignItems: "start", flexWrap: "wrap" }}>
           <div>
-            <h1 className="title">Espace étudiant</h1>
-            <p className="subtitle">Bienvenue {profile.prenom || profile.email}, retrouvez vos cours, devoirs, progression et informations personnelles.</p>
+            <span className="apostolos-label">MON ESPACE DE FORMATION</span><h1 className="title">Votre chemin d’étude.</h1>
+            <p className="subtitle">Bonjour {profile.prenom || profile.email}. Reprenez votre lecture, suivez vos progrès et préparez la prochaine étape.</p>
           </div>
           <Link href="/parametres" className="btn btn-outline"><Settings size={18} /> Paramètres du compte</Link>
         </div>
@@ -147,21 +147,20 @@ export default function StudentSpacePage() {
           <div className="kpi"><Award color="#a855f7" /><strong>{completedModules}</strong><span>Modules terminés</span></div>
         </div>
 
-        <LibraryPanel membership={payload.libraryMembership} initialRequests={payload.bookRequests || []} />
 
         {payload.annualPass && (
           <div className="card" style={{ padding: 26, marginBottom: 28 }}>
             <span className="badge">Année scolaire active</span>
-            <h2 className="font-display" style={{ color: "var(--navy)" }}>Pass annuel de l'Institut d'Apologétique Saint Irénée</h2>
+            <h2 className="font-display" style={{ color: "var(--navy)" }}>Pass annuel de l'Institut Apostolos Saint Irénée</h2>
             <p className="muted">Accès illimité au cursus jusqu'au {new Date(payload.annualPass.expires_at).toLocaleDateString("fr-FR")}.</p>
             <p><strong>{payload.curriculum?.completedCourses || 0} / {payload.curriculum?.totalCourses || activeCourses.length}</strong> cours entièrement suivis.</p>
             <Link className="btn btn-primary" href="/examen-final"><GraduationCap size={18} /> {payload.finalExam?.eligible ? "Présenter l'examen final" : "Voir les conditions de l'examen"}</Link>
           </div>
         )}
 
-        <div className="grid-3" style={{ alignItems: "start" }}>
-          <div style={{ gridColumn: "span 2" }}>
-            <h2 className="font-display" style={{ color: "var(--navy)" }}>Mes formations</h2>
+        <div className="apostolos-student-grid">
+          <div>
+            <h2 className="font-display" style={{ color: "var(--navy)" }}>Reprendre les cours</h2>
             {activeCourses.length ? activeCourses.map((course) => {
               const progress = Number(course.progress || 0);
               const nextModule = course.modules.find(module => module.id === course.resumeModuleId) || course.modules[0];
@@ -197,7 +196,8 @@ export default function StudentSpacePage() {
             )}
           </div>
 
-          <aside>
+          <aside className="apostolos-student-aside">
+            <LibraryPanel membership={payload.libraryMembership} initialRequests={payload.bookRequests || []} />
             <NextLiveSession />
             <div className="card" style={{ padding: 24, marginBottom: 22 }}>
               <h2 className="font-display" style={{ color: "var(--navy)", marginTop: 0 }}>À faire</h2>

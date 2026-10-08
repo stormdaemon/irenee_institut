@@ -1,13 +1,15 @@
 "use client";
 
+
 import { BookOpen, CreditCard, Loader2, X } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { StripeCheckoutForm } from "@/components/StripeCheckoutForm";
-import { createBrowserClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/lib/browser-auth";
 
 type CheckoutApiResponse = {
   alreadyActive?: boolean;
+  provider?: "stripe";
   clientSecret?: string;
   code?: string;
   error?: string;
@@ -27,14 +29,14 @@ export function LibraryMembershipButton() {
   async function startCheckout() {
     setStatus("checking");
     setError("");
-    const supabase = createBrowserClient();
-    if (!supabase) {
+    const context = createBrowserClient();
+    if (!context) {
       setError("Paiement momentanement indisponible.");
       setStatus("error");
       return;
     }
 
-    const { data } = await supabase.auth.getSession();
+    const { data } = await context.auth.getSession();
     if (!data.session) {
       window.location.href = `/auth/login?next=${encodeURIComponent("/bibliotheque-apologetique")}`;
       return;
@@ -111,7 +113,7 @@ export function LibraryMembershipButton() {
           <div className="modal-card paypal-checkout-modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
             <div className="paypal-modal-header">
               <div>
-                <span className="badge"><CreditCard size={14} /> Stripe</span>
+                <span className="badge"><CreditCard size={14} /> Paiement sécurisé</span>
                 <h2 id={titleId} className="font-display">Adhesion bibliotheque</h2>
               </div>
               <button className="modal-close" type="button" onClick={closeModal} aria-label="Fermer le paiement"><X size={18} /></button>

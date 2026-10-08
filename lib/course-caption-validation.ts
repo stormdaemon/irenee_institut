@@ -14,7 +14,7 @@ type PublishedCourseInput = {
 
 export type CaptionValidationOptions = {
   concurrency?: number;
-  fetchImpl?: typeof fetch;
+  fetchImpl?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
   globalTimeoutMs?: number;
   maxBytes?: number;
   publicRoot?: string;
@@ -147,7 +147,7 @@ async function readRemoteFile(
   url: string,
   maxBytes: number,
   moduleIndex: number,
-  fetchImpl: typeof fetch,
+  fetchImpl: (input: string | URL | Request, init?: RequestInit) => Promise<Response>,
   globalSignal: AbortSignal,
   resourceTimeoutMs: number,
 ) {

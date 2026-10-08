@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import test from "node:test";
+import { test } from "bun:test";
 
 test("security retention is explicit, transactional and protected by an exact database guard", () => {
   const source = readFileSync(join(process.cwd(), "scripts/security-maintenance.ts"), "utf8");

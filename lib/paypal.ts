@@ -1,3 +1,4 @@
+import { siteUrl } from "@/lib/seo";
 import type { Course, Profile } from "@/lib/types";
 import type { SystemSettings } from "@/lib/settings";
 
@@ -6,7 +7,7 @@ export const PAYPAL_DEFAULT_AMOUNT_CENTS = 9900;
 export const PAYPAL_MIN_AMOUNT_CENTS = 100;
 export const PAYPAL_MAX_AMOUNT_CENTS = 100_000_000;
 export const PAYPAL_BOOK_TITLE_MAX_LENGTH = 180;
-export const PAYPAL_WEBHOOK_URL = "https://irenee-institut.org/paypal_checkout_valid";
+export const PAYPAL_WEBHOOK_URL = `${siteUrl}/paypal_checkout_valid`;
 
 export const PAYPAL_CHECKOUT_WEBHOOK_EVENTS = [
   "CHECKOUT.ORDER.APPROVED",
@@ -117,7 +118,7 @@ export function buildPayPalOrderPayload({ amountCents, bookRequested, cancelPath
           currency_code: PAYPAL_CURRENCY,
           value: amount
         },
-        soft_descriptor: "IRENEE INSTITUT"
+        soft_descriptor: "APOSTOLOS INSTITUT"
       }
     ],
     payer: {
@@ -134,7 +135,7 @@ export function buildPayPalOrderPayload({ amountCents, bookRequested, cancelPath
         experience_context: {
           payment_method_preference: "IMMEDIATE_PAYMENT_REQUIRED",
           payment_method_selected: "PAYPAL",
-          brand_name: "irenee_institut",
+          brand_name: "Institut Apostolos Saint Irénée",
           landing_page: "LOGIN",
           shipping_preference: "NO_SHIPPING",
           user_action: "PAY_NOW",

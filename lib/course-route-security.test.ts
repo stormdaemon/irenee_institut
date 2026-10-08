@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { test } from "node:test";
+import { test } from "bun:test";
 
 async function source(path: string) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");

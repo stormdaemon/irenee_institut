@@ -1,7 +1,8 @@
+import { siteUrl } from "@/lib/seo";
 import type { MetadataRoute } from "next";
 import { blogArticles } from "@/lib/blog";
 
-const baseUrl = "https://irenee-institut.org";
+const baseUrl = siteUrl;
 const publicContentUpdatedAt = new Date("2026-07-15T18:30:00+02:00");
 const septemberUpdate = new Date("2026-09-06T20:00:00+02:00");
 

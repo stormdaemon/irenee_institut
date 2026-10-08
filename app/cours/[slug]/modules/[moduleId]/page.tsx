@@ -34,7 +34,7 @@ import {
   sanitizeCourseStyleAttribute,
   stripAuthoredStyleBlocksBeforeParsing,
 } from "@/lib/course-html-style";
-import { createBrowserClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/lib/browser-auth";
 import type { Course, CourseModule, ModuleProgress, Profile } from "@/lib/types";
 
 type StudentCourse = Course & {
@@ -636,10 +636,10 @@ export default function ModulePage() {
       setError("");
       setLockedResumeId("");
       try {
-        const supabase = createBrowserClient();
-        if (!supabase) throw new Error("Le service est momentanément indisponible. Réessayez dans quelques instants.");
+        const context = createBrowserClient();
+        if (!context) throw new Error("Le service est momentanément indisponible. Réessayez dans quelques instants.");
 
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        const { data: sessionData, error: sessionError } = await context.auth.getSession();
         if (sessionError || !sessionData.session) {
           if (!mounted) return;
           setError(sessionError?.message || "Connectez-vous pour accéder à ce module.");
@@ -892,8 +892,8 @@ export default function ModulePage() {
       setSaveError("Répondez à toutes les questions avant de valider le quiz.");
       return;
     }
-    const supabase = createBrowserClient();
-    if (!supabase) {
+    const context = createBrowserClient();
+    if (!context) {
       setSaveError("Le service est momentanément indisponible. Votre lecture reste ouverte ; réessayez dans un instant.");
       return;
     }
@@ -902,7 +902,7 @@ export default function ModulePage() {
     setSaveError("");
     setQuizFeedback("");
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await context.auth.getSession();
       if (!sessionData.session) {
         setSaveError("Votre connexion a expiré. Reconnectez-vous dans un autre onglet, puis réessayez sans perdre votre lecture.");
         return;

@@ -1,0 +1,17 @@
+import {test,expect,mock,beforeEach} from "bun:test";
+let denied=false,token="test-token",viaCookie=true,originError:unknown,verification:any,cookie:any,cleared=false,revoked="";
+class RequestSecurityError extends Error{constructor(public status=403){super("CSRF")}}
+mock.module("@/lib/api-auth",()=>({authenticateRequest:async()=>denied?{ok:false,response:Response.json({ok:false},{status:401})}:{ok:true,user:{id:"user"}}}));
+mock.module("@/lib/local-auth",()=>({SESSION_TTL_SECONDS:3600,getRequestSessionToken:()=>({token,viaCookie}),verifyAccessToken:async()=>verification,revokeAccessToken:async(t:string)=>{revoked=t}}));
+mock.module("@/lib/auth-cookie",()=>({setSessionCookie:(_:unknown,value:unknown)=>{cookie=value},clearSessionCookie:()=>{cleared=true}}));
+mock.module("@/lib/request-security",()=>({RequestSecurityError,assertSameOrigin:()=>{if(originError!==undefined)throw originError}}));
+const logout=await import("@/app/api/auth/logout/route");
+const user=await import("@/app/api/auth/user/route");
+const session=await import("@/app/api/auth/session/route");
+const req=(auth?:string)=>new Request("https://test.local/api/auth/session",{method:"POST",headers:auth?{authorization:auth}:{}});
+beforeEach(()=>{denied=false;token="test-token";viaCookie=true;originError=undefined;verification={user:{id:"user"},expiresAt:Math.floor(Date.now()/1000)+300,error:null};cookie=undefined;cleared=false;revoked=""});
+test("current user is private and requires authentication",async()=>{denied=true;expect((await user.GET(req())).status).toBe(401);denied=false;const response=await user.GET(req());expect(response.headers.get("cache-control")).toBe("no-store");expect(await response.json()).toMatchObject({user:{id:"user"},session:{token_type:"cookie",expires_at:verification.expiresAt}})});
+test("logout checks cookie origin and never clears another origin's session",async()=>{for(const error of [new RequestSecurityError(),new Error("unknown")]){originError=error;expect((await logout.POST(req())).status).toBe(403);expect(cleared).toBe(false);expect(revoked).toBe("")}});
+test("logout revokes presented tokens and clears cookies, including already logged-out and bearer requests",async()=>{expect((await logout.POST(req())).status).toBe(200);expect(revoked).toBe(token);expect(cleared).toBe(true);token="";revoked="";expect((await logout.POST(req())).status).toBe(200);expect(revoked).toBe("");viaCookie=false;token="bearer-token";expect((await logout.POST(req())).status).toBe(200);expect(revoked).toBe(token)});
+test("session refresh refuses absent, empty, invalid and missing-user tokens",async()=>{for(const authorization of [undefined,"Bearer   "]){expect((await session.POST(req(authorization))).status).toBe(401)}for(const invalid of [{user:null,error:new Error("invalid")},{user:null,error:null},{user:{id:"user"},error:{message:""}}]){verification=invalid;expect((await session.POST(req("Bearer test"))).status).toBe(401);expect(cookie).toBeUndefined()}});
+test("session refresh preserves a verified expiry and supplies a bounded default when absent",async()=>{for(const expiresAt of [Math.floor(Date.now()/1000)+500,undefined]){verification.expiresAt=expiresAt;const response=await session.POST(req("Bearer valid"));expect(response.status).toBe(200);expect(cookie.access_token).toBe("valid");expect(cookie.expires_in).toBeGreaterThan(0);expect(cookie.expires_in).toBeLessThanOrEqual(3600);expect(cookie.token_type).toBe("bearer")}});

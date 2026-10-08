@@ -1,17 +1,18 @@
+import { pgRead } from "@/lib/postgres";
 import { NextResponse } from "next/server";
-import { createServerClient } from "@/lib/supabase";
+import { createServerContext } from "@/lib/postgres";
 import { getRequestSessionToken } from "@/lib/local-auth";
 import { assertSameOrigin, RequestSecurityError } from "@/lib/request-security";
-import type { LocalServerUser } from "@/lib/local-server-client";
+import type { LocalUser } from "@/lib/local-auth";
 import type { Profile, Role } from "@/lib/types";
 
-type ServerClient = NonNullable<ReturnType<typeof createServerClient>>;
+type ServerClient = NonNullable<ReturnType<typeof createServerContext>>;
 
 type AuthenticatedUser = {
   ok: true;
   authMethod: "bearer" | "cookie";
-  supabase: ServerClient;
-  user: LocalServerUser;
+  context: ServerClient;
+  user: LocalUser;
 };
 
 type AuthenticatedProfile = AuthenticatedUser & {
@@ -31,8 +32,8 @@ function errorResponse(error: string, status: number) {
 }
 
 export async function authenticateRequest(request: Request): Promise<AuthenticatedUser | AuthFailure> {
-  const supabase = createServerClient();
-  if (!supabase) {
+  const context = createServerContext();
+  if (!context) {
     return { ok: false, response: errorResponse("Le service est momentanement indisponible.", 501) };
   }
 
@@ -52,23 +53,19 @@ export async function authenticateRequest(request: Request): Promise<Authenticat
     }
   }
 
-  const { data, error } = await supabase.auth.getUser(token);
+  const { data, error } = await context.sessions.getUser(token);
   if (error || !data.user) {
     return { ok: false, response: errorResponse("Session invalide ou expirée.", 401) };
   }
 
-  return { authMethod: viaCookie ? "cookie" : "bearer", ok: true, supabase, user: data.user };
+  return { authMethod: viaCookie ? "cookie" : "bearer", ok: true, context, user: data.user };
 }
 
 export async function authorizeRequest(request: Request, allowedRoles: Role[]): Promise<AuthenticatedProfile | AuthFailure> {
   const authenticated = await authenticateRequest(request);
   if (!authenticated.ok) return authenticated;
 
-  const { data, error } = await authenticated.supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", authenticated.user.id)
-    .maybeSingle();
+  const { data, error } = await pgRead("select t.* from public.\"profiles\" t where t.\"id\" = $1", [authenticated.user.id], "optional");
 
   if (error) {
     console.error("authorization_profile_lookup_failed", { userId: authenticated.user.id });

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import test from "node:test";
+import { test } from "bun:test";
 import { query } from "@/lib/db";
 import { beginEmailSignUp, verifyEmailToken } from "@/lib/local-auth";
 import { getHomework } from "@/lib/server-data";

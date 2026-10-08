@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { Metadata } from "next";
-import { ExternalLink, Mail } from "lucide-react";
+import { ExternalLink, Mail, UserRound } from "lucide-react";
 import { formatDbAvatar, getTrainers } from "@/lib/server-data";
 
 export const dynamic = "force-dynamic";
@@ -124,9 +124,9 @@ const staticTeamMembers: TeamMember[] = [
 ];
 
 export const metadata: Metadata = {
-  title: "Équipe de l'Institut d'Apologétique Saint Irénée",
+  title: "Équipe de l'Institut Apostolos Saint Irénée",
   description:
-    "Découvrez la direction et les formateurs de l'Institut d'Apologétique Saint Irénée au service d'une transmission catholique rigoureuse et accessible.",
+    "Découvrez la direction et les formateurs de l'Institut Apostolos Saint Irénée au service d'une transmission catholique rigoureuse et accessible.",
   alternates: {
     canonical: "/equipe"
   }
@@ -137,13 +137,10 @@ export default async function FormateursPage() {
   const samuelPhotoUrl = "https://bilan-previsionnel.fr/wp-content/uploads/2020/11/Bilan-Previsionnel-presentation-portrait-img-1.jpg";
   return (
     <>
-      <section className="page-hero">
-        <div className="container">
-          <h1 className="font-display" style={{ fontSize: "4rem", margin: 0 }}>Notre équipe</h1>
-          <p style={{ fontSize: "1.3rem", color: "#dce6f6", maxWidth: 760 }}>
-            Une direction engagée et des experts passionnés, alliant rigueur académique et pédagogie accessible.
-          </p>
-        </div>
+      <section className="apostolos-wrap apostolos-catalog-head">
+        <span className="apostolos-label">Les visages de la transmission</span>
+        <h1>Une école.<br /><em>Des voix, des savoirs.</em></h1>
+        <p>Théologie, philosophie, histoire : des approches complémentaires pour étudier la foi avec méthode et approfondir chaque question.</p>
       </section>
       <section className="section about-direction-section">
         <div className="container center">
@@ -179,16 +176,16 @@ export default async function FormateursPage() {
             {trainers.map(trainer => (
               <article className="card team-member-card" key={trainer.id} style={{ padding: 28 }}>
                 <div style={{ display: "flex", gap: 22, alignItems: "center" }}>
-                  <Image
-                    src={formatDbAvatar(trainer) || "/images/guillaume-maspero.jpg"}
+                  {formatDbAvatar(trainer) ? <Image
+                    src={formatDbAvatar(trainer)!}
                     alt={`${trainer.prenom} ${trainer.nom}`}
                     width={96}
                     height={96}
                     style={{ borderRadius: "50%", objectFit: "cover" }}
-                  />
+                  /> : <span className="apostolos-person-placeholder" aria-hidden="true"><UserRound size={32} /></span>}
                   <div>
                     <h2 className="font-display" style={{ color: "var(--navy)", margin: 0 }}>{trainer.prenom} {trainer.nom}</h2>
-                    <strong style={{ color: "#b28a0d" }}>{trainer.profession || "Formateur"}</strong>
+                    <strong style={{ color: "var(--terracotta)" }}>{trainer.profession || "Formateur"}</strong>
                     <p><Mail size={18} color="var(--navy)" /> {trainer.email}</p>
                   </div>
                 </div>
@@ -213,7 +210,7 @@ export default async function FormateursPage() {
                   />
                   <div>
                     <h2 className="font-display" style={{ color: "var(--navy)", margin: 0 }}>{member.name}</h2>
-                    <strong style={{ color: "#b28a0d" }}>{member.title}</strong>
+                    <strong style={{ color: "var(--terracotta)" }}>{member.title}</strong>
                     {member.email && <p><Mail size={18} color="var(--navy)" /> {member.email}</p>}
                   </div>
                 </div>

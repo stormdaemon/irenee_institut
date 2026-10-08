@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, test } from "node:test";
+import { afterEach, test } from "bun:test";
 import type { ParsedCourseModule } from "./course-input";
 import { validatePublishedCaptionResources } from "./course-caption-validation";
 

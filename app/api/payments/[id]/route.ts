@@ -1,3 +1,4 @@
+import { pgUpdate } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/api-auth";
 import { readJsonBodyWithLimit, RequestBodyError } from "@/lib/request-body";
@@ -22,10 +23,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const status = String(body.statut || "validee");
   if (!allowedStatuses.has(status)) return NextResponse.json({ ok: false, error: "Statut de paiement invalide." }, { status: 400 });
 
-  const { data, error } = await auth.supabase.from("profiles").update({
+  const { data, error } = await pgUpdate("profiles", {
     statut_inscription: status,
     updated_at: new Date().toISOString()
-  }).eq("id", id).select().single();
+  }, "t.\"id\" = $1", [id], { returning: "one" });
   if (error) return NextResponse.json({ error: "Le statut de paiement n'a pas pu être enregistré." }, { status: 500 });
   if (data.statut_inscription !== status) {
     return NextResponse.json({ ok: false, verified: false, error: "Payment status verification failed" }, { status: 409 });

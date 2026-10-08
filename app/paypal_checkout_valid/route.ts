@@ -1,3 +1,4 @@
+import { pgInsert, pgRead } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import {
   capturePayPalOrder,
@@ -10,7 +11,7 @@ import {
   verifyPayPalWebhookSignature
 } from "@/lib/paypal";
 import { getSystemSettings } from "@/lib/settings";
-import { createServerClient } from "@/lib/supabase";
+import { createServerContext } from "@/lib/postgres";
 import { RequestBodyTooLargeError, readTextBodyWithLimit } from "@/lib/webhook-security";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { extractPayPalReversal, validatePayPalWebhookHeaders } from "@/lib/payment-reversals";
@@ -42,14 +43,14 @@ function stringFrom(value: unknown) {
 }
 
 async function logWebhook(
-  supabase: NonNullable<ReturnType<typeof createServerClient>>,
+  context: NonNullable<ReturnType<typeof createServerContext>>,
   event: PayPalWebhookEvent,
   status: string,
   orderId?: string
 ) {
   const eventId = stringFrom(event.id).slice(0, 255);
-  if (!eventId) return;
-  await supabase.from("payment_events").upsert({
+  // Only authenticated events with a validated, non-empty id reach this logger.
+  await pgInsert("payment_events", {
     provider: "paypal",
     provider_event_id: eventId,
     event_name: stringFrom(event.event_type).slice(0, 200) || "paypal_webhook",
@@ -57,14 +58,14 @@ async function logWebhook(
     amount_total: parsePayPalValueToCents(event.resource?.amount?.value),
     currency: stringFrom(event.resource?.amount?.currency_code) || PAYPAL_CURRENCY,
     status
-  }, { onConflict: "provider,provider_event_id" });
+  }, { conflict: ["provider","provider_event_id"] });
 }
 
 async function validateCapturedOrder({
   capture,
   orderId,
   status,
-  supabase
+  context
 }: {
   capture: {
     amountCents: number;
@@ -74,13 +75,9 @@ async function validateCapturedOrder({
   };
   orderId: string;
   status: string;
-  supabase: NonNullable<ReturnType<typeof createServerClient>>;
+  context: NonNullable<ReturnType<typeof createServerContext>>;
 }) {
-  const { data: orderRow, error: orderError } = await supabase
-    .from("paypal_orders")
-    .select("*")
-    .eq("order_id", orderId)
-    .maybeSingle();
+  const { data: orderRow, error: orderError } = await pgRead("select t.* from public.\"paypal_orders\" t where t.\"order_id\" = $1", [orderId], "optional");
 
   if (orderError) throw new Error("order_lookup_failed");
   if (!orderRow) return { ok: false, missingOrder: true };
@@ -95,19 +92,7 @@ async function validateCapturedOrder({
     return { ok: false, paymentMismatch: true };
   }
 
-  const { data, error } = await supabase.rpc("validate_paypal_payment", {
-    p_amount_total: capture.amountCents,
-    p_book_requested: Boolean(orderRow.book_requested),
-    p_book_title: String(orderRow.book_title || ""),
-    p_capture_id: capture.captureId,
-    p_course_id: orderRow.course_id,
-    p_currency: capture.currency,
-    p_event_name: status,
-    p_order_id: orderId,
-    p_product_type: String(orderRow.product_type || "annual_pass"),
-    p_raw_payload: null,
-    p_user_id: orderRow.user_id
-  });
+  const { data, error } = await pgRead("select public.validate_paypal_payment($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) as result", [orderId, capture.captureId, orderRow.user_id, orderRow.course_id, capture.amountCents, capture.currency, status, JSON.stringify({}), Boolean(orderRow.book_requested), String(orderRow.book_title || ""), String(orderRow.product_type || "annual_pass")], "scalar");
 
   if (error) throw new Error("payment_validation_failed");
   return { ok: true, data };
@@ -118,8 +103,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = createServerClient();
-  if (!supabase) return NextResponse.json({ ok: false, error: "Le service est momentanement indisponible." }, { status: 501 });
+  const context = createServerContext();
+  if (!context) return NextResponse.json({ ok: false, error: "Le service est momentanement indisponible." }, { status: 501 });
 
   let rawBody: string;
   try {
@@ -156,7 +141,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const settings = await getSystemSettings(supabase);
+    const settings = await getSystemSettings(context);
     const config = getPayPalConfig(settings);
     const verified = await verifyPayPalWebhookSignature({ config, event, headers: request.headers });
 
@@ -173,17 +158,7 @@ export async function POST(request: Request) {
 
     const reversal = extractPayPalReversal(event);
     if (reversal) {
-      const { data, error } = await supabase.rpc("process_payment_reversal", {
-        p_amount_total: reversal.amountTotal,
-        p_capture_id: reversal.captureId,
-        p_currency: reversal.currency,
-        p_event_name: reversal.eventName,
-        p_kind: reversal.kind,
-        p_object_id: reversal.objectId,
-        p_order_id: reversal.orderId,
-        p_provider: "paypal",
-        p_provider_event_id: reversal.eventId
-      });
+      const { data, error } = await pgRead("select public.process_payment_reversal($1,$2,$3,$4,$5,$6,$7,$8,$9) as result", ["paypal", reversal.eventId, reversal.eventName, reversal.kind, reversal.objectId, reversal.orderId, reversal.captureId, reversal.amountTotal, reversal.currency], "scalar");
       if (error) throw new Error("payment_reversal_failed");
       if (!(data as { ok?: boolean } | null)?.ok) {
         return NextResponse.json({ ok: false, error: "La commande PayPal liée au litige est introuvable." }, { status: 409 });
@@ -192,26 +167,22 @@ export async function POST(request: Request) {
     }
 
     if (eventType === "CHECKOUT.ORDER.APPROVED" && orderId) {
-      const { data: orderRow, error: orderError } = await supabase
-        .from("paypal_orders")
-        .select("provider,status")
-        .eq("order_id", orderId)
-        .maybeSingle();
+      const { data: orderRow, error: orderError } = await pgRead("select t.\"provider\", t.\"status\" from public.\"paypal_orders\" t where t.\"order_id\" = $1", [orderId], "optional");
       if (orderError) throw new Error("order_lookup_failed");
       if (!orderRow || stringFrom(orderRow.provider).toLowerCase() !== "paypal") {
-        await logWebhook(supabase, event, "order_not_found", orderId).catch(() => undefined);
+        await logWebhook(context, event, "order_not_found", orderId).catch(() => undefined);
         return NextResponse.json({ ok: false, error: "Commande PayPal inconnue." }, { status: 409 });
       }
       const settledStatus = stringFrom(orderRow?.status).toLowerCase();
       if (["completed", "partially_refunded", "refunded", "reversed", "denied", "disputed"].includes(settledStatus)) {
-        await logWebhook(supabase, event, `already_${settledStatus}`, orderId).catch(() => undefined);
+        await logWebhook(context, event, `already_${settledStatus}`, orderId).catch(() => undefined);
         return NextResponse.json({ ok: true, alreadySettled: true, status: settledStatus });
       }
 
       const capture = await capturePayPalOrder({ config, orderId });
       const completedCapture = extractCompletedCapture(capture);
       if (!completedCapture) {
-        await logWebhook(supabase, event, "approved_without_capture", orderId).catch(() => undefined);
+        await logWebhook(context, event, "approved_without_capture", orderId).catch(() => undefined);
         return NextResponse.json({ ok: true, pendingCapture: true });
       }
 
@@ -219,10 +190,10 @@ export async function POST(request: Request) {
         capture: completedCapture,
         orderId,
         status: "paypal_order_approved_capture_completed",
-        supabase
+        context
       });
       if (!result.ok) {
-        await logWebhook(supabase, event, result.paymentMismatch ? "capture_mismatch" : "order_not_found", orderId).catch(() => undefined);
+        await logWebhook(context, event, result.paymentMismatch ? "capture_mismatch" : "order_not_found", orderId).catch(() => undefined);
         return NextResponse.json({ ok: false, error: "La capture PayPal ne correspond pas à la commande." }, { status: 409 });
       }
 
@@ -239,12 +210,12 @@ export async function POST(request: Request) {
         },
         orderId,
         status: "paypal_webhook_capture_completed",
-        supabase
+        context
       });
 
       if (!result.ok) {
         const failureStatus = result.paymentMismatch ? "capture_mismatch" : "order_not_found";
-        await logWebhook(supabase, event, failureStatus, orderId).catch(() => undefined);
+        await logWebhook(context, event, failureStatus, orderId).catch(() => undefined);
         if (result.paymentMismatch) {
           return NextResponse.json({ ok: false, error: "La capture PayPal ne correspond pas à la commande." }, { status: 409 });
         }
@@ -255,15 +226,15 @@ export async function POST(request: Request) {
     }
 
     if (eventType === "PAYMENT.CAPTURE.PENDING") {
-      await logWebhook(supabase, event, stringFrom(event.resource?.status) || "payment_not_completed", orderId).catch(() => undefined);
+      await logWebhook(context, event, stringFrom(event.resource?.status) || "payment_not_completed", orderId).catch(() => undefined);
       return NextResponse.json({ ok: true, pending: true });
     }
 
-    await logWebhook(supabase, event, "ignored", orderId).catch(() => undefined);
+    await logWebhook(context, event, "ignored", orderId).catch(() => undefined);
     return NextResponse.json({ ok: true, ignored: eventType || "unknown" });
   } catch {
     if (authenticated) {
-      await logWebhook(supabase, event, "processing_error", orderId).catch(() => undefined);
+      await logWebhook(context, event, "processing_error", orderId).catch(() => undefined);
       await recordSecurityEvent({ eventType: "payment.webhook.processing_error", metadata: { reason: "paypal" }, request });
     }
     return NextResponse.json({ ok: false, error: "Webhook PayPal impossible à traiter." }, { status: 500 });

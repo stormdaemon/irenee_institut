@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Conditions générales de vente",
-  description: "Consultez les conditions générales de vente des formations de l'Institut d'Apologétique Saint Irénée.",
+  description: "Consultez les conditions générales de vente des formations de l'Institut Apostolos Saint Irénée.",
   alternates: {
     canonical: "/cgv"
   }

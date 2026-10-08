@@ -1,8 +1,8 @@
 {
-  "name": "institut-irenee-rebuild",
+  "name": "institut-apostolos",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "bun@1.3.13",
+  "packageManager": "bun@1.3.14",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -15,34 +15,43 @@
     "db:migrate": "bun scripts/apply-database-migrations.ts",
     "security:maintenance": "bun scripts/security-maintenance.ts",
     "test:e2e": "bun scripts/run-playwright.mjs",
-    "test:e2e:update": "bun scripts/run-playwright.mjs --update-snapshots"
+    "test:e2e:update": "bun scripts/run-playwright.mjs --update-snapshots",
+    "test:api": "bun scripts/run-api-coverage.ts",
+    "content:import": "bun scripts/import-course-content.ts"
   },
   "overrides": {
     "postcss": "8.5.28",
     "nanoid": "3.3.18",
-    "sharp": "0.35.4"
+    "sharp": "0.35.5",
+    "source-map-js": "1.2.2",
+    "baseline-browser-mapping": "2.11.27"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
-    "dompurify": "3.4.15",
+    "dompurify": "3.4.16",
     "jose": "^6.2.3",
     "lucide-react": "1.16.0",
-    "next": "16.2.11",
+    "next": "16.3.8",
     "pdf-lib": "1.17.1",
     "pg": "^8.22.0",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "sanitize-html": "2.17.7",
-    "sharp": "0.35.4"
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@playwright/test": "^1.61.1",
+    "@types/bun": "^1.4.2",
+    "@types/istanbul-lib-coverage": "^2.0.6",
+    "@types/istanbul-lib-instrument": "^1.7.8",
     "@types/node": "25.9.1",
     "@types/pg": "^8.20.0",
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
     "@types/sanitize-html": "^2.16.1",
+    "istanbul-lib-coverage": "^3.2.2",
+    "istanbul-lib-instrument": "^6.0.3",
     "typescript": "6.0.3"
   }
 }

@@ -67,9 +67,8 @@ export async function POST(request: Request) {
       });
       await recordSecurityEvent({ actorUserId: result.user.id, eventType: "auth.email.verification_resent", request });
     }
-  } catch (error) {
+  } catch {
     console.error("verification_email_resend_failed", {
-      error: error instanceof Error ? error.message : String(error),
       subjectHash: hashAuditSubject(email)
     });
   }

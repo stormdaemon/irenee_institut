@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 
-export const siteUrl = "https://irenee-institut.org";
-export const siteName = "Institut d'Apologétique Saint Irénée";
-export const organizationName = "Institut Saint Irénée";
+export const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://apostolos-saint-irenee.duckdns.org";
+export const siteName = "Institut Apostolos Saint Irénée";
+export const organizationName = "Institut Apostolos Saint Irénée";
 export const siteDescription =
-  "L'Institut Saint Irénée propose des formations catholiques structurées en ligne pour comprendre, défendre et transmettre la foi avec rigueur et charité.";
+  "L'Institut Apostolos Saint Irénée propose des formations catholiques structurées en ligne pour comprendre, défendre et transmettre la foi avec rigueur et charité.";
 
 export const privatePageMetadata: Metadata = {
   robots: {
@@ -26,7 +26,7 @@ export const organizationJsonLd = {
   name: organizationName,
   alternateName: siteName,
   url: siteUrl,
-  logo: `${siteUrl}/images/logo_without_text.png`,
+  logo: `${siteUrl}/images/apostolos/mark.png`,
   description: siteDescription,
   email: "oeuvrecatholiquefrance@gmail.com",
   telephone: "+33171681538",

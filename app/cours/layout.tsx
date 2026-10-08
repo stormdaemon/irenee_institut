@@ -3,7 +3,7 @@ import { privatePageMetadata } from "@/lib/seo";
 export const metadata = {
   ...privatePageMetadata,
   title: "Espace de cours",
-  description: "Lecture des cours et suivi de progression de l'Institut Saint Irénée."
+  description: "Lecture des cours et suivi de progression de l'Institut Apostolos Saint Irénée."
 };
 
 export default function CourseLayout({ children }: { children: React.ReactNode }) {

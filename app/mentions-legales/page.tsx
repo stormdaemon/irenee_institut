@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Mentions légales",
-  description: "Consultez les mentions légales de l'Institut d'Apologétique Saint Irénée.",
+  description: "Consultez les mentions légales de l'Institut Apostolos Saint Irénée.",
   alternates: {
     canonical: "/mentions-legales"
   }

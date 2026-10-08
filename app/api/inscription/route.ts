@@ -1,3 +1,4 @@
+import { pgInsert } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { runRegistrationAutomation } from "@/lib/google-apps-script";
@@ -24,12 +25,12 @@ export async function POST(request: Request) {
     if (error instanceof ProfileInputError) return NextResponse.json({ error: error.message }, { status: error.status });
     return NextResponse.json({ error: "Inscription invalide." }, { status: 400 });
   }
-  const { data, error } = await auth.supabase.from("profiles").upsert({
+  const { data, error } = await pgInsert("profiles", {
     ...payload,
     id: auth.user.id,
     email: auth.user.email || "",
     updated_at: new Date().toISOString()
-  }).select().single();
+  }, { returning: "one", conflict: ["id"] });
   if (error) return NextResponse.json({ error: "L'inscription n'a pas pu être enregistrée." }, { status: 400 });
   const automationWarnings = await runRegistrationAutomation(data).catch(error => [
     error instanceof Error ? error.message : String(error)

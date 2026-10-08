@@ -7,7 +7,7 @@ import {
   isDailyRoomNotFoundError,
   updateDailyRoomTimeBounds
 } from "../lib/live";
-import { createServerClient } from "../lib/supabase";
+import { createServerContext } from "../lib/postgres";
 
 type RoomRow = {
   id: string;
@@ -33,7 +33,7 @@ async function main() {
   if (String(process.env.DAILY_HARDENING_DATABASE || "") !== databaseName) {
     throw new Error("DAILY_HARDENING_DATABASE doit correspondre exactement à la base ciblée.");
   }
-  const supabase = createServerClient();
+  const supabase = createServerContext();
   if (!supabase) throw new Error("Le client serveur est indisponible.");
   const apiKey = await getDailyApiKey(supabase);
   if (!apiKey) throw new Error("La clé Daily côté serveur n'est pas configurée.");

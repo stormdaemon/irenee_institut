@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "bun:test";
 import { ProfileInputError, parseProfileUpdate, parseRegistrationInput } from "./profile-input";
 
 test("profile updates normalize personal data and safe social URLs", () => {

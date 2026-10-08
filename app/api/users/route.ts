@@ -1,3 +1,4 @@
+import { pgRead, pgUpdate } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import { authenticateRequest, authorizeRequest } from "@/lib/api-auth";
 import { ProfileAdministrationError, replaceManualCourseEnrollments } from "@/lib/profile-admin";
@@ -13,7 +14,7 @@ export async function GET(request: Request) {
   const auth = await authorizeRequest(request, ["directeur"]);
   if (!auth.ok) return auth.response;
 
-  const { data, error } = await auth.supabase.from("profiles").select("*").order("created_at", { ascending: false });
+  const { data, error } = await pgRead("select t.* from public.\"profiles\" t order by t.\"created_at\" desc", [], "many");
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
   return NextResponse.json(data);
 }
@@ -32,7 +33,7 @@ export async function PATCH(request: Request) {
   const id = String(body.id || "").trim();
   if (!UUID_PATTERN.test(id)) return NextResponse.json({ ok: false, error: "Identifiant utilisateur invalide." }, { status: 400 });
 
-  const { data: actor, error: actorError } = await auth.supabase.from("profiles").select("role").eq("id", auth.user.id).maybeSingle();
+  const { data: actor, error: actorError } = await pgRead("select t.\"role\" from public.\"profiles\" t where t.\"id\" = $1", [auth.user.id], "optional");
   if (actorError) return NextResponse.json({ ok: false, error: "L'autorisation n'a pas pu être vérifiée." }, { status: 500 });
 
   const isDirector = actor?.role === "directeur";
@@ -69,12 +70,7 @@ export async function PATCH(request: Request) {
 
   let profile: Record<string, unknown> | null = null;
   if (Object.keys(profilePayload).length) {
-    const { data, error } = await auth.supabase
-      .from("profiles")
-      .update({ ...profilePayload, updated_at: new Date().toISOString() })
-      .eq("id", id)
-      .select()
-      .single();
+    const { data, error } = await pgUpdate("profiles", { ...profilePayload, updated_at: new Date().toISOString() }, "t.\"id\" = $1", [id], { returning: "one" });
     if (error) return NextResponse.json({ ok: false, verified: false, error: "Le profil n'a pas pu être enregistré." }, { status: 400 });
     profile = data;
     if (changesRole) {
@@ -86,7 +82,7 @@ export async function PATCH(request: Request) {
       });
     }
   } else {
-    const { data, error } = await auth.supabase.from("profiles").select("*").eq("id", id).single();
+    const { data, error } = await pgRead("select t.* from public.\"profiles\" t where t.\"id\" = $1", [id], "one");
     if (error) return NextResponse.json({ ok: false, verified: false, error: "Le profil est introuvable." }, { status: 404 });
     profile = data;
   }

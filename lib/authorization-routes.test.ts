@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import test from "node:test";
+import { test } from "bun:test";
 import { GET as getAdminLive, POST as createAdminLive } from "@/app/api/admin/live/route";
 import { PATCH as patchAdminLive } from "@/app/api/admin/live/[id]/route";
 import { GET as getCourses } from "@/app/api/courses/route";

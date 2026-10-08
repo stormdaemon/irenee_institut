@@ -1,3 +1,4 @@
+import { siteUrl } from "@/lib/seo";
 import type { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
@@ -7,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/api/", "/admin"]
     },
-    sitemap: "https://irenee-institut.org/sitemap.xml"
+    sitemap: `${siteUrl}/sitemap.xml`
   };
 }

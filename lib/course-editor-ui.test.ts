@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { describe, test } from "node:test";
+import { describe, test } from "bun:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import AdminCoursesPage, {
+import AdminCoursesPage from "../app/admin/courses/page";
+import {
   courseStatusForSave,
   courseDraftSignature,
   duplicateCourseModuleDraft,
@@ -11,7 +12,7 @@ import AdminCoursesPage, {
   serializeCourseModules,
   validateCourseDraft,
   type CourseDraft,
-} from "../app/admin/courses/page";
+} from "./course-editor-draft";
 import { RichHtmlEditor, richEditorTemplates } from "../components/RichHtmlEditor";
 import { sanitizeCourseHtml } from "./course-input";
 import {

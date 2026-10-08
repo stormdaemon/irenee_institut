@@ -1,3 +1,4 @@
+import { pgRead } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import {
@@ -36,16 +37,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!UUID_PATTERN.test(id)) return json({ ok: false, error: "Séance introuvable." }, 404);
 
   const [{ data: profile, error: profileError }, { data, error }] = await Promise.all([
-    auth.supabase
-      .from("profiles")
-      .select("role,prenom,nom")
-      .eq("id", auth.user.id)
-      .maybeSingle(),
-    auth.supabase
-      .from("live_sessions")
-      .select("id,titre,description,starts_at,ends_at,course_id,created_by,daily_room_name,daily_room_url,status")
-      .eq("id", id)
-      .maybeSingle()
+    pgRead("select t.\"role\", t.\"prenom\", t.\"nom\" from public.\"profiles\" t where t.\"id\" = $1", [auth.user.id], "optional"),
+    pgRead("select t.\"id\", t.\"titre\", t.\"description\", t.\"starts_at\", t.\"ends_at\", t.\"course_id\", t.\"created_by\", t.\"daily_room_name\", t.\"daily_room_url\", t.\"status\" from public.\"live_sessions\" t where t.\"id\" = $1", [id], "optional")
   ]);
 
   if (profileError || error) {
@@ -59,7 +52,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // Rejoindre une séance ne requiert pas d'en être propriétaire : tout
   // formateur est traité comme staff par canAccessSession (cf. getStudentLiveContext).
   // Seule la gestion (édition/annulation) via /api/admin/live/[id] reste scopée au créateur.
-  const ctx = await getStudentLiveContext(auth.supabase, auth.user.id, role);
+  const ctx = await getStudentLiveContext(auth.context, auth.user.id, role);
   if (!ctx.verified) {
     console.error("live_join_access_lookup_failed", { sessionId: id, userId: auth.user.id });
     return json({ ok: false, error: "Votre accès à la séance ne peut pas être vérifié." }, 503);
@@ -94,7 +87,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   try {
-    const apiKey = await getDailyApiKey(auth.supabase);
+    const apiKey = await getDailyApiKey(auth.context);
     if (!apiKey) return json({ ok: false, error: "La visioconférence est momentanément indisponible." }, 503);
 
     // This upgrades legacy public rooms before access is minted. New rooms are

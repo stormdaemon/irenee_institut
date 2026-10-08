@@ -14,3 +14,6 @@ e2e/.auth/
 old_build/
 seo-evidence/captures/
 supabase/.temp/
+.recovery/
+coverage/
+recovery-observations.json

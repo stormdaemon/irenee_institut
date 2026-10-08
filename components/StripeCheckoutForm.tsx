@@ -145,11 +145,11 @@ export function StripeCheckoutForm({
       // paiement aboutit ; on ne traite ici que les refus.
       const result = await checkout.confirm();
       if (result?.type === "error" || result?.error) {
-        setError(result.error?.message || "Le paiement n'a pas abouti. Aucun montant n'a été débité.");
+        setError(result.error?.message || "Le paiement n’a pas abouti. Vérifiez les informations affichées avant de réessayer.");
         setStatus("ready");
       }
     } catch {
-      setError("Le paiement n'a pas pu être confirmé. Aucun montant n'a été débité.");
+      setError("La confirmation du paiement est momentanément indisponible. Consultez votre espace avant de réessayer.");
       setStatus("ready");
     }
   }, [status]);
@@ -178,7 +178,7 @@ export function StripeCheckoutForm({
         <Lock size={13} aria-hidden="true" />
         <span>Paiement sécurisé — vos données bancaires ne transitent pas par l’Institut.</span>
       </p>
-      <p className="stripe-checkout-powered">Powered by Paypal</p>
+      <p className="stripe-checkout-powered">Paiement opéré par Stripe</p>
     </div>
   );
 }

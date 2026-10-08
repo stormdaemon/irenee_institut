@@ -1,9 +1,10 @@
+import { pgRead } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import { matchesDeclaredRecipient, normalizeDocumentReference } from "@/lib/document-verification";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { readJsonBodyWithLimit, RequestBodyError } from "@/lib/request-body";
 import { assertSameOrigin, getTrustedClientIp, RequestSecurityError } from "@/lib/request-security";
-import { createServerClient } from "@/lib/supabase";
+import { createServerContext } from "@/lib/postgres";
 
 function invalidResult() {
   return NextResponse.json({ valid: false }, { headers: { "Cache-Control": "private, no-store" } });
@@ -34,13 +35,9 @@ export async function POST(request: Request) {
   const recipient = String(body.recipient || "");
   if (!reference || !recipient || recipient.length > 240) return invalidResult();
 
-  const supabase = createServerClient();
-  if (!supabase) return NextResponse.json({ valid: false, error: "Service indisponible." }, { status: 503 });
-  const { data, error } = await supabase
-    .from("learning_documents")
-    .select("document_kind,document_number,recipient_name,issued_at,course_title,module_title")
-    .eq("document_number", reference)
-    .maybeSingle();
+  const context = createServerContext();
+  if (!context) return NextResponse.json({ valid: false, error: "Service indisponible." }, { status: 503 });
+  const { data, error } = await pgRead("select t.\"document_kind\", t.\"document_number\", t.\"recipient_name\", t.\"issued_at\", t.\"course_title\", t.\"module_title\" from public.\"learning_documents\" t where t.\"document_number\" = $1", [reference], "optional");
   if (error) return NextResponse.json({ valid: false, error: "Vérification indisponible." }, { status: 503 });
   if (!data || !matchesDeclaredRecipient(data.recipient_name, recipient)) return invalidResult();
 

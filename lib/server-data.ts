@@ -1,6 +1,6 @@
-import { courses as fallbackCourses, fallbackProfile, homework as fallbackHomework, profiles as fallbackProfiles } from "./data";
+import { pgRead } from "@/lib/postgres";
 import { legalPages, type LegalPageKey } from "./legal";
-import { createServerClient } from "./supabase";
+import { createServerContext } from "./postgres";
 import { cloudinaryAvatarUrl } from "./cloudinary";
 import { query } from "./db";
 import type { BookRequest, Course, CourseModule, Homework, Profile } from "./types";
@@ -33,36 +33,6 @@ function isExcludedPublicName(name: string) {
   return normalizedName.includes("raffray") || normalizedName.includes("rafray") || normalizedName.includes("nezchristos") || normalizedName.includes("tanouarn");
 }
 
-function isLegacyBalzaacProfile(profile: Profile) {
-  return [profile.prenom, profile.nom, profile.avatar_public_id, profile.avatar_url]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase()
-    .includes("balzaac");
-}
-
-function normalizePublicTrainer(profile: Profile): Profile {
-  if (!isLegacyBalzaacProfile(profile)) return profile;
-  return {
-    ...profile,
-    email: "maspero@pusc.it",
-    prenom: "Giulio",
-    nom: "Maspero",
-    profession: "Directeur d'études",
-    bio: "Prêtre catholique, professeur ordinaire de théologie dogmatique à l'Université pontificale de la Sainte-Croix et doyen de sa Faculté de théologie depuis 2024.",
-    bio_description: "Prêtre catholique, professeur ordinaire de théologie dogmatique à l'Université pontificale de la Sainte-Croix et doyen de sa Faculté de théologie depuis 2024. Il est notamment l'auteur de l'ouvrage Il mistero di Dio uno e trino.",
-    specialites: ["Théologie dogmatique", "Mystère de Dieu", "Transmission de la foi"],
-    realisations: [
-      "Professeur ordinaire de théologie dogmatique",
-      "Doyen de la Faculté de théologie de l'Université pontificale de la Sainte-Croix",
-      "Auteur de Il mistero di Dio uno e trino",
-      "Formation académique en physique théorique et en théologie"
-    ],
-    avatar_url: "/images/guillaume-maspero.jpg",
-    avatar_public_id: undefined
-  };
-}
-
 function cleanPublicCourseTitle(title: string) {
   return title.replace(/\s+et ses fractures\b/iu, "").trim();
 }
@@ -71,7 +41,7 @@ function normalizeCourse(course: RawCourse, modules: CourseModule[] = []): Cours
   return {
     ...course,
     titre: cleanPublicCourseTitle(course.titre),
-    auteur_nom: course.auteur_nom && isExcludedPublicName(course.auteur_nom) ? "Institut Saint Irénée" : course.auteur_nom,
+    auteur_nom: course.auteur_nom && isExcludedPublicName(course.auteur_nom) ? "Institut Apostolos Saint Irénée" : course.auteur_nom,
     description: course.description || "",
     niveau: course.niveau || "debutant",
     duree_totale: Number(course.duree_totale_minutes || course.duree_totale || course.duree || 0),
@@ -105,57 +75,41 @@ function normalizeModule(module: RawModule): CourseModule {
 }
 
 export async function getProfiles(): Promise<Profile[]> {
-  const supabase = createServerClient();
-  if (!supabase) return fallbackProfiles;
-  const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
-  return error || !data ? fallbackProfiles : data as Profile[];
-}
-
-export async function getCurrentProfile(): Promise<Profile> {
-  const profiles = await getProfiles();
-  return profiles.find(profile => profile.role === "directeur") || profiles[0] || fallbackProfile;
+  const context = createServerContext();
+  if (!context) throw new Error("La base de données est indisponible.");
+  const { data, error } = await pgRead("select t.* from public.\"profiles\" t order by t.\"created_at\" desc", [], "many");
+  if (error) throw new Error("Les profils ne peuvent pas être chargés.");
+  return (data || []) as Profile[];
 }
 
 export async function getTrainers(): Promise<Profile[]> {
-  const supabase = createServerClient();
-  const { data, error } = supabase
-    ? await supabase
-      .from("profiles")
-      .select("id,email,role,nom,prenom,profession,bio,bio_description,specialites,realisations,formation_academique,linkedin_url,twitter_url,instagram_url,tiktok_url,avatar_url,avatar_public_id,created_at,updated_at")
-      .eq("role", "formateur")
-      .order("created_at", { ascending: false })
-    : { data: fallbackProfiles, error: null };
-  const profiles = error || !data ? fallbackProfiles : data as Profile[];
+  const context = createServerContext();
+  if (!context) throw new Error("La base de données est indisponible.");
+  const { data, error } = await pgRead("select t.\"id\", t.\"email\", t.\"role\", t.\"nom\", t.\"prenom\", t.\"profession\", t.\"bio\", t.\"bio_description\", t.\"specialites\", t.\"realisations\", t.\"formation_academique\", t.\"linkedin_url\", t.\"twitter_url\", t.\"instagram_url\", t.\"tiktok_url\", t.\"avatar_url\", t.\"avatar_public_id\", t.\"created_at\", t.\"updated_at\" from public.\"profiles\" t where t.\"role\" = $1 order by t.\"created_at\" desc", ["formateur"], "many");
+
+  if (error) throw new Error("Les formateurs ne peuvent pas être chargés.");
+  const profiles = (data || []) as Profile[];
   return profiles
-    .filter(profile => profile.role === "formateur" && !isExcludedPublicName(`${profile.prenom} ${profile.nom}`))
-    .map(normalizePublicTrainer);
+    .filter(profile => profile.role === "formateur" && !isExcludedPublicName(`${profile.prenom} ${profile.nom}`));
 }
 
 export async function getCourses(
   scope: "public" | "admin" = "public",
   options: { authorId?: string } = {}
 ): Promise<Course[]> {
-  const supabase = createServerClient();
-  if (!supabase) {
-    if (scope === "public") return fallbackCourses.filter(course => course.statut === "publie");
-    return options.authorId ? fallbackCourses.filter(course => course.auteur_id === options.authorId) : fallbackCourses;
-  }
-  const baseQuery = supabase.from("courses").select("*").order("numero", { ascending: true });
-  const { data, error } = scope === "public"
-    ? await baseQuery.eq("statut", "publie")
-    : options.authorId
-      ? await baseQuery.eq("auteur_id", options.authorId)
-      : await baseQuery;
-  if (error || !data) {
-    if (scope === "public") return fallbackCourses.filter(course => course.statut === "publie");
-    return options.authorId ? fallbackCourses.filter(course => course.auteur_id === options.authorId) : fallbackCourses;
-  }
+  const context = createServerContext();
+  if (!context) throw new Error("La base de données est indisponible.");
+  const { data, error } = await pgRead<RawCourse>(
+    `select * from public.courses where ($1::boolean or statut='publie')
+     and ($2::uuid is null or auteur_id=$2) order by numero asc`,
+    [scope === "admin", scope === "admin" ? options.authorId || null : null]);
+  if (error) throw new Error("Les cours ne peuvent pas être chargés.");
 
-  const courses = data as RawCourse[];
+  const courses = (data || []) as RawCourse[];
   if (scope === "public") return courses.map(course => normalizeCourse(course, []));
   const ids = courses.map(course => course.id);
   const { data: moduleRows, error: moduleError } = ids.length
-    ? await supabase.from("course_modules").select("*").in("course_id", ids).order("ordre", { ascending: true })
+    ? await pgRead("select t.* from public.\"course_modules\" t where t.\"course_id\" = any($1) order by t.\"ordre\" asc", [ids], "many")
     : { data: [], error: null };
   if (moduleError) {
     throw new Error("Les modules des cours n'ont pas pu être chargés sans risque.");
@@ -195,37 +149,30 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
 export async function getHomework(options: { authorId?: string; courseIds?: string[] } = {}): Promise<Homework[]> {
   if (options.courseIds && options.courseIds.length === 0) return [];
 
-  const fallback = (fallbackHomework as (Homework & { auteur_id?: string | null })[]).filter(item => {
-    const matchesAuthor = options.authorId === undefined || item.auteur_id === options.authorId;
-    const matchesCourse = options.courseIds === undefined || Boolean(item.course_id && options.courseIds.includes(item.course_id));
-    return matchesAuthor && matchesCourse;
-  });
-  const supabase = createServerClient();
-  if (!supabase) return fallback;
-  const baseQuery = supabase.from("homework").select("*, homework_assignments(*)");
-  let scopedQuery = options.authorId === undefined
-    ? baseQuery
-    : baseQuery.eq("auteur_id", options.authorId);
-  if (options.courseIds) scopedQuery = scopedQuery.in("course_id", options.courseIds);
-  const { data, error } = await scopedQuery.order("created_at", { ascending: false });
-  return error || !data ? fallback : data as Homework[];
+  const context = createServerContext();
+  if (!context) throw new Error("La base de données est indisponible.");
+  const { data, error } = await pgRead(`select t.*,
+    coalesce((select jsonb_agg(r) from public.homework_assignments r where r.homework_id=t.id), '[]'::jsonb) as homework_assignments
+    from public.homework t where ($1::uuid is null or t.auteur_id=$1)
+    and ($2::uuid[] is null or t.course_id=any($2)) order by t.created_at desc`,
+    [options.authorId || null, options.courseIds || null]);
+  if (error) throw new Error("Les devoirs ne peuvent pas être chargés.");
+  return (data || []) as Homework[];
 }
 
 export async function getPaymentRequests(): Promise<Profile[]> {
   const profiles = await getProfiles();
   return profiles.filter(profile => {
+    if (profile.role !== "etudiant") return false;
     const hasRegistration = Boolean(profile.formation_choisie || profile.tarif_applicable || profile.modalite_paiement || profile.moyen_paiement);
     return hasRegistration || profile.statut_inscription === "en_attente";
   });
 }
 
 export async function getBookRequests(): Promise<BookRequest[]> {
-  const supabase = createServerClient();
-  if (!supabase) return [];
-  const { data, error } = await supabase
-    .from("book_requests")
-    .select("*, profiles(prenom, nom, email), courses(titre, slug)")
-    .order("requested_at", { ascending: false });
+  const context = createServerContext();
+  if (!context) return [];
+  const { data, error } = await pgRead("select t.*, (select to_jsonb(nested) from (select r.\"prenom\", r.\"nom\", r.\"email\" from public.\"profiles\" r where r.\"id\" = t.\"user_id\" limit 1) nested) as \"profiles\", (select to_jsonb(nested) from (select r.\"titre\", r.\"slug\" from public.\"courses\" r where r.\"id\" = t.\"course_id\" limit 1) nested) as \"courses\" from public.\"book_requests\" t order by t.\"requested_at\" desc", [], "many");
   return error || !data ? [] : data as BookRequest[];
 }
 
@@ -239,10 +186,10 @@ export async function getStats() {
 }
 
 export async function getLegalPage(slug: LegalPageKey) {
-  const supabase = createServerClient();
+  const context = createServerContext();
   const fallback = legalPages[slug];
-  if (!supabase) return fallback;
-  const { data, error } = await supabase.from("legal_pages").select("*").eq("slug", slug).maybeSingle();
+  if (!context) return fallback;
+  const { data, error } = await pgRead("select * from public.legal_pages where slug=$1", [slug], "optional");
   if (error || !data) return fallback;
   return {
     title: data.titre || fallback.title,
@@ -253,9 +200,7 @@ export async function getLegalPage(slug: LegalPageKey) {
 
 export function formatDbAvatar(profile: Profile) {
   const src = profile.avatar_public_id || profile.avatar_url;
-  if (!src) return profile.role === "formateur" ? "/images/guillaume-maspero.jpg" : undefined;
+  if (!src) return undefined;
   if (src.startsWith("http") || src.startsWith("/")) return src;
-  if (src.includes("balzaac")) return "/images/guillaume-maspero.jpg";
-  if (src.includes("nezchristos")) return "/images/nezchristos.jpeg";
   return cloudinaryAvatarUrl(src);
 }

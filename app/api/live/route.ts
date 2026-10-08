@@ -1,3 +1,4 @@
+import { pgRead } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { canAccessSession, getLiveJoinDecision, getStudentLiveContext, toPublicSession } from "@/lib/live";
@@ -9,11 +10,7 @@ export async function GET(request: Request) {
   const auth = await authenticateRequest(request);
   if (!auth.ok) return auth.response;
 
-  const { data: profile, error: profileError } = await auth.supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", auth.user.id)
-    .maybeSingle();
+  const { data: profile, error: profileError } = await pgRead("select t.\"role\" from public.\"profiles\" t where t.\"id\" = $1", [auth.user.id], "optional");
   if (profileError) {
     console.error("live_list_profile_failed", { userId: auth.user.id });
     return NextResponse.json({ ok: false, error: "Les séances ne peuvent pas être chargées." }, {
@@ -23,7 +20,7 @@ export async function GET(request: Request) {
   }
   const role = (profile?.role as string) || "etudiant";
 
-  const ctx = await getStudentLiveContext(auth.supabase, auth.user.id, role);
+  const ctx = await getStudentLiveContext(auth.context, auth.user.id, role);
   if (!ctx.verified) {
     console.error("live_list_access_lookup_failed", { userId: auth.user.id });
     return NextResponse.json({ ok: false, error: "Votre accès aux séances ne peut pas être vérifié." }, {
@@ -35,11 +32,7 @@ export async function GET(request: Request) {
 
   // Un formateur est traité comme staff par canAccessSession : il voit toutes
   // les séances actives, pas seulement celles qu'il a lui-même créées.
-  const { data, error } = await auth.supabase
-    .from("live_sessions")
-    .select("id,titre,description,starts_at,ends_at,course_id,created_by,daily_room_name,daily_room_url,status")
-    .in("status", ["scheduled", "live"])
-    .order("starts_at", { ascending: true });
+  const { data, error } = await pgRead("select t.\"id\", t.\"titre\", t.\"description\", t.\"starts_at\", t.\"ends_at\", t.\"course_id\", t.\"created_by\", t.\"daily_room_name\", t.\"daily_room_url\", t.\"status\" from public.\"live_sessions\" t where t.\"status\" = any($1) order by t.\"starts_at\" asc", [["scheduled", "live"]], "many");
 
   if (error) {
     console.error("live_list_lookup_failed", { userId: auth.user.id });

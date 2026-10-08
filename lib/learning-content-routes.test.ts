@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import test from "node:test";
+import { test } from "bun:test";
 import { GET as getCourseOverview } from "@/app/api/learning/courses/[slug]/route";
 import { GET as getCourseModule } from "@/app/api/learning/courses/[slug]/modules/[moduleId]/route";
 import { GET as getStudentDashboard } from "@/app/api/me/route";
