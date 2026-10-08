@@ -68,6 +68,18 @@ jobs:
         env:
           E2E_SKIP_BUILD: "true"
         run: bun run test:e2e --project=chromium --retries=0
+      - name: Generate final contrast references for review
+        if: failure() && steps.browser-tests.outcome == 'failure'
+        env:
+          E2E_SKIP_BUILD: "true"
+        run: bun run test:e2e --project=chromium --retries=0 --update-snapshots=all --grep 'course overview is responsive|unavailable video preserves'
+      - name: Upload final contrast reference candidates
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apostolos-final-contrast-candidates
+          path: e2e/__screenshots__
+          retention-days: 7
       - if: github.event_name == 'schedule'
         run: bunx playwright install --with-deps webkit
       - if: github.event_name == 'schedule'
