@@ -46,16 +46,13 @@ function pngDimensions(path: string) {
   };
 }
 
-test("Apostolos homepage presents real course counts and accessible generated imagery", () => {
- const home=source("app/page.tsx");
- assert.match(home,/getCourses\(\)/);
- assert.match(home,/await Promise\.all/);
- assert.match(home,/courses\.length/);
- assert.match(home,/moduleCount/);
- assert.match(home,/Institut Apostolos Saint Irénée/);
- assert.match(home,/<Image[^>]*alt="[^"\n]+"[^>]*sizes=/);
- assert.deepEqual(pngDimensions("images/apostolos/cloitre.png"),{width:1536,height:1024});
- assert.doesNotMatch(home,/autoPlay|<video|logo-elearning/);
+test("stained-glass homepage assets are valid WebP files within delivery budgets", () => {
+ for (const name of ["hero", "return-band", "apologetique", "ecriture", "philosophie", "journal"]) {
+  assertWebpAsset(`images/apostolos/vitrail/${name}.webp`, 600_000);
+ }
+ for (const name of ["emblem", "button", "frame", "texture"]) {
+  assertWebpAsset(`images/apostolos/vitrail/${name}.webp`, 150_000);
+ }
 });
 test("public navigation exposes its state and supports closing with Escape", () => {
  const header=source("components/Header.tsx");

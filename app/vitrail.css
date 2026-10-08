@@ -166,3 +166,13 @@ body .course-studio-page :is(.btn.btn-primary,.btn.btn-outline,.icon-button,.too
  .vitrail-motto{margin-top:30px}.vitrail-domain-copy p{font-size:9px}.vitrail-return h2{font-size:28px}
  .course-program-mobile-actions .btn{font-size:11px;padding:9px;min-height:42px}
 }
+
+/* Auth and editor surfaces must not inherit the former accent treatment. */
+body .auth-shell .btn.btn-primary,body .auth-shell .btn.btn-outline{background:#061727 var(--glass) center/100% 100% no-repeat;color:#f7f9ff;border:0;transform:none}
+.auth-shell .auth-link{color:#d5eaff}
+.course-studio-page :is(.course-studio-editor,.course-studio-sidebar,.course-program-panel,.soft-card,.module-editor,.course-quiz-builder){background:linear-gradient(#06111deb,#06111deb),var(--glass-texture);border-color:#41596e}
+.course-studio-page .course-list-item.active{background:#13324b;border-color:#759dbd}
+.course-studio-page .toolbar-button.active{background-color:#183e5c;box-shadow:inset 0 0 0 2px #a0ccec;color:white}
+.module-course-plan li>a:hover{background:#15334b;border-color:#8bbddd;color:white}
+.reader-font-controls button.active,.reader-font-controls button:hover,.reader-measure-toggle[aria-pressed=true]{background:#b4d7ef;color:#06121c;border-color:#b4d7ef}
+.course-quiz-card .course-quiz-option:has(input:checked){background:#15314b;border-color:#a1c7e4;box-shadow:0 0 0 3px #81b6dd18}
