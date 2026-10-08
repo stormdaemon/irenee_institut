@@ -11,6 +11,7 @@ type ApiRouteCase = {
   path: string;
   source: string;
   crossSite?: boolean;
+  contentType?: string;
 };
 
 const missingUuid = "00000000-0000-0000-0000-000000000000";
@@ -18,6 +19,12 @@ const missingUuid = "00000000-0000-0000-0000-000000000000";
 // Keep this list explicit. The inventory test below fails whenever a route
 // file or exported HTTP handler is added without a corresponding safe probe.
 const apiRoutes: ApiRouteCase[] = [
+  { source: "app/api/automation/annual-pass-weekly/route.ts", method: "GET", path: "/api/automation/annual-pass-weekly", expectedStatus: 401 },
+  { source: "app/api/automation/annual-pass-weekly/route.ts", method: "POST", path: "/api/automation/annual-pass-weekly", expectedStatus: 401 },
+  { source: "app/api/download/apps-script-partage/route.ts", method: "GET", path: "/api/download/apps-script-partage", expectedStatus: 401 },
+  { source: "app/api/download/rapport/route.ts", method: "GET", path: "/api/download/rapport", expectedStatus: 401 },
+  { source: "app/api/emails/desinscription/route.ts", method: "GET", path: "/api/emails/desinscription", expectedStatus: 400, contentType: "text/html" },
+
   { source: "app/api/admin/access/route.ts", method: "GET", path: "/api/admin/access", expectedStatus: 401 },
   { source: "app/api/admin/live/route.ts", method: "GET", path: "/api/admin/live", expectedStatus: 401 },
   { source: "app/api/admin/live/route.ts", method: "POST", path: "/api/admin/live", expectedStatus: 401 },
@@ -129,14 +136,14 @@ async function probe(request: APIRequestContext, route: ApiRouteCase) {
 test.describe("API route inventory and anonymous safety contracts", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test("the explicit matrix covers all 51 route files and all 63 exported handlers", () => {
+  test("the explicit matrix covers all 55 route files and all 68 exported handlers", () => {
     const expectedFiles = [...new Set(apiRoutes.map(route => route.source))].sort();
     const actualFiles = routeFilesUnder(resolve(process.cwd(), "app")).sort();
     const expectedHandlers = apiRoutes.map(route => `${route.source}#${route.method}`).sort();
     const actualHandlers = actualFiles.flatMap(exportedHandlers).sort();
 
-    expect(expectedFiles).toHaveLength(51);
-    expect(apiRoutes).toHaveLength(63);
+    expect(expectedFiles).toHaveLength(55);
+    expect(apiRoutes).toHaveLength(68);
     expect(actualFiles).toEqual(expectedFiles);
     expect(actualHandlers).toEqual(expectedHandlers);
   });
@@ -147,7 +154,7 @@ test.describe("API route inventory and anonymous safety contracts", () => {
       const contentType = response.headers()["content-type"] || "";
 
       expect(response.status()).toBe(route.expectedStatus);
-      expect(contentType).toContain("application/json");
+      expect(contentType).toContain(route.contentType || "application/json");
     });
   }
 });

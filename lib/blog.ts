@@ -34,8 +34,8 @@ export const blogArticles: BlogArticle[] = [
     "category": "Méthode",
     "date": "2026-10-08",
     "readingMinutes": 3,
-    "image": "/images/apostolos/etude.png",
-    "imageAlt": "Livres et architecture d’étude — Apostolos",
+    "image": "/images/apostolos/manuscrits.png",
+    "imageAlt": "Illustration du monde d’étude Apostolos",
     "tags": [
       "Méthode"
     ],
@@ -80,8 +80,8 @@ export const blogArticles: BlogArticle[] = [
     "category": "Pratique",
     "date": "2026-10-08",
     "readingMinutes": 3,
-    "image": "/images/apostolos/cloitre.png",
-    "imageAlt": "Livres et architecture d’étude — Apostolos",
+    "image": "/images/apostolos/raison.png",
+    "imageAlt": "Illustration du monde d’étude Apostolos",
     "tags": [
       "Pratique"
     ],
@@ -126,8 +126,8 @@ export const blogArticles: BlogArticle[] = [
     "category": "Vie étudiante",
     "date": "2026-10-08",
     "readingMinutes": 3,
-    "image": "/images/apostolos/etude.png",
-    "imageAlt": "Livres et architecture d’étude — Apostolos",
+    "image": "/images/apostolos/manuscrits.png",
+    "imageAlt": "Illustration du monde d’étude Apostolos",
     "tags": [
       "Vie étudiante"
     ],
@@ -172,8 +172,8 @@ export const blogArticles: BlogArticle[] = [
     "category": "Dialogue",
     "date": "2026-10-08",
     "readingMinutes": 3,
-    "image": "/images/apostolos/cloitre.png",
-    "imageAlt": "Livres et architecture d’étude — Apostolos",
+    "image": "/images/apostolos/raison.png",
+    "imageAlt": "Illustration du monde d’étude Apostolos",
     "tags": [
       "Dialogue"
     ],
@@ -218,8 +218,8 @@ export const blogArticles: BlogArticle[] = [
     "category": "Sources",
     "date": "2026-10-08",
     "readingMinutes": 3,
-    "image": "/images/apostolos/etude.png",
-    "imageAlt": "Livres et architecture d’étude — Apostolos",
+    "image": "/images/apostolos/manuscrits.png",
+    "imageAlt": "Illustration du monde d’étude Apostolos",
     "tags": [
       "Sources"
     ],
@@ -264,8 +264,8 @@ export const blogArticles: BlogArticle[] = [
     "category": "L’Institut",
     "date": "2026-10-08",
     "readingMinutes": 3,
-    "image": "/images/apostolos/cloitre.png",
-    "imageAlt": "Livres et architecture d’étude — Apostolos",
+    "image": "/images/apostolos/raison.png",
+    "imageAlt": "Illustration du monde d’étude Apostolos",
     "tags": [
       "L’Institut"
     ],

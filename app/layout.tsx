@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./apostolos.css";
+import "./imagery.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { DeferredClientChrome } from "@/components/DeferredClientChrome";

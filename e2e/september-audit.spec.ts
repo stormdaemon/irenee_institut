@@ -1,3 +1,4 @@
+import { siteUrl } from "../lib/seo";
 import { expect, test } from "@playwright/test";
 import { getUpcomingVisioSessions } from "../lib/live-sessions";
 
@@ -47,7 +48,7 @@ test("public pages preserve SEO and technical downloads require authentication",
   for (const path of ["/mentions-legales", "/politique-confidentialite", "/cgv"]) {
     await page.goto(path);
     await expect(page.locator("h1")).toHaveCount(1);
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `https://irenee-institut.org${path}`);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `${siteUrl}${path}`);
   }
   for (const path of ["/api/download/rapport", "/api/download/apps-script-partage"]) {
     expect((await request.get(`${path}?code=obsolete`)).status()).toBe(401);

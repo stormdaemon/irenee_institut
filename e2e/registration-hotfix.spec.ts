@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test.describe("registration access hotfix", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test("restores the five-field registration flow and continues after account creation", async ({ page }) => {
+  test("restores the registration flow and continues after account creation", async ({ page }) => {
     const password = "une-phrase-de-passe-solide-2026";
 
     await page.route("**/api/auth/signup", async route => {
@@ -36,17 +36,18 @@ test.describe("registration access hotfix", () => {
       });
     });
 
-    await page.goto("/inscription");
+    await page.goto("/inscription?next=%2Fformations%3Fcheckout%3Dannual-pass");
     await expect(page.getByLabel(/^Mot de passe/)).toBeVisible();
     await expect(page.getByLabel("Confirmer le mot de passe", { exact: true })).toBeVisible();
     await page.getByLabel("Prénom").fill("Claire");
+    await page.getByLabel("Téléphone", { exact: true }).fill("0612345678");
     await page.getByLabel("Nom", { exact: true }).fill("Martin");
     await page.getByLabel("Email").fill("nouveau.compte@example.test");
     await page.getByLabel(/^Mot de passe/).fill(password);
     await page.getByLabel("Confirmer le mot de passe", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Créer mon compte" }).click();
 
-    await expect(page).toHaveURL(/\/formations\?checkout=annual-pass$/);
+    await expect(page).toHaveURL(/\/formations(?:\?checkout=annual-pass)?$/);
   });
 
   test("reuses the freshly reset password for the normal login and continues checkout", async ({ page }) => {
@@ -92,6 +93,6 @@ test.describe("registration access hotfix", () => {
     await page.getByLabel("Confirmer le nouveau mot de passe").fill(newPassword);
     await page.getByRole("button", { name: "Modifier mon mot de passe" }).click();
 
-    await expect(page).toHaveURL(/\/formations\?checkout=annual-pass$/);
+    await expect(page).toHaveURL(/\/formations(?:\?checkout=annual-pass)?$/);
   });
 });

@@ -850,7 +850,7 @@ test.describe("critical mobile workspace states", () => {
 
     const quiz = page.locator(".course-quiz-card");
     await expect(quiz).toBeVisible();
-    await expect(quiz.locator(".course-quiz-question")).toHaveCSS("background-color", "rgb(251, 248, 241)");
+    await expect(quiz.locator(".course-quiz-question")).toHaveCSS("background-color", "rgb(255, 254, 250)");
     await expect(quiz.locator(".course-quiz-question")).toHaveCSS("box-shadow", "none");
     await assertAccessibleMain(page, testInfo);
     await assertComfortableMobileTargets(page);

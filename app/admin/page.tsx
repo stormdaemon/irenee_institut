@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { LucideIcon } from "lucide-react";
 import { BarChart3, BookOpen, ClipboardList, CreditCard, FileText, KeyRound, Radio, Settings, Users } from "lucide-react";
 import { requireAdminPage } from "@/lib/admin-auth";
@@ -32,6 +33,7 @@ export default async function AdminPage() {
   return (
     <section className="section">
       <div className="container">
+        <div className="apostolos-workspace-art"><Image src="/images/apostolos/tradition.png" alt="" fill sizes="100vw"/><span>Transmettre un héritage vivant.</span></div>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
           <div>
             <h1 className="title">Votre atelier pédagogique</h1>

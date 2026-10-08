@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { courseArtwork } from "@/lib/course-art";
 import { AlertTriangle, Award, BookOpen, CalendarClock, CheckCircle2, ClipboardList, FileText, GraduationCap, Loader2, ScrollText, Settings, TrendingUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { LearningDocumentButton } from "@/components/LearningDocumentButton";
@@ -132,6 +134,7 @@ export default function StudentSpacePage() {
   return (
     <section className="section apostolos-student-space">
       <div className="container">
+        <div className="apostolos-workspace-art"><Image src="/images/apostolos/manuscrits.png" alt="" fill sizes="100vw"/><span>Lire. Comprendre. Grandir.</span></div>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 20, alignItems: "start", flexWrap: "wrap" }}>
           <div>
             <span className="apostolos-label">MON ESPACE DE FORMATION</span><h1 className="title">Votre chemin d’étude.</h1>
@@ -165,7 +168,7 @@ export default function StudentSpacePage() {
               const progress = Number(course.progress || 0);
               const nextModule = course.modules.find(module => module.id === course.resumeModuleId) || course.modules[0];
               return (
-                <article className="card" key={course.id} style={{ padding: 26, marginBottom: 18 }}>
+                <article className="card apostolos-student-course" key={course.id} style={{ padding: 26, marginBottom: 18 }}><div className="apostolos-student-course-art"><Image src={courseArtwork(course.slug).src} alt={courseArtwork(course.slug).alt} fill sizes="(max-width:800px) 100vw, 65vw"/></div>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
                     <div>
                       <h3 className="font-display" style={{ color: "var(--navy)", fontSize: "1.55rem", marginTop: 0 }}>{course.titre}</h3>
