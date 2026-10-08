@@ -22,6 +22,8 @@ export function LibraryMembershipButton() {
   const stableId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const titleId = `library-stripe-checkout-title-${stableId}`;
   const [open, setOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
   const [error, setError] = useState("");
   const [status, setStatus] = useState<"idle" | "checking" | "ready" | "loading" | "error">("idle");
   const [payment, setPayment] = useState<{ clientSecret: string; publishableKey: string } | null>(null);
@@ -99,7 +101,7 @@ export function LibraryMembershipButton() {
     setStatus("ready");
   }
 
-  const disabled = status === "checking" || status === "loading";
+  const disabled = !hydrated || status === "checking" || status === "loading";
 
   return (
     <span className="buy-course">

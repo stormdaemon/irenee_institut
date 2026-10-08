@@ -74,7 +74,7 @@ export function UpcomingSessions({ sessions, unavailable = false }: { sessions: 
             Retrouvez les séances annoncées par l’Institut pour travailler,
             échanger et lire ensemble les Pères de l&apos;Église. Découvrez les prochaines rencontres annoncées.
           </p>
-          <p className="visio-lead">Les rencontres de cet agenda sont accessibles avec un compte gratuit. Pour suivre l&apos;ensemble des cours à votre rythme, découvrez le pass annuel : 99 € conseillés, participation libre.</p>
+          <p className="visio-lead">Les rencontres sont accessibles aux étudiants disposant d’un accès actif aux cours. Pour suivre l&apos;ensemble des cours à votre rythme, découvrez le pass annuel : 99 € conseillés, participation libre.</p>
           <p className="visio-contact-note">
             <Phone size={17} />
             <span>Pour toute autre question, appelez le <a href="tel:+33171681538">01.71.68.15.38</a>.</span>

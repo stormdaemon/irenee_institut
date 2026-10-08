@@ -1108,11 +1108,12 @@ export default function AdminCoursesPage() {
                       type="button"
                       className={`course-studio-step ${active ? "active" : ""}`}
                       aria-current={active ? "step" : undefined}
+                      aria-label={section.label}
                       onClick={() => setActiveSection(section.id)}
                     >
                       <span className="course-list-title">
                         {complete && <Check size={17} aria-label="Étape complète" />}
-                        {section.label}
+                        <span className="studio-step-label-long">{section.label}</span><span className="studio-step-label-short" aria-hidden="true">{{ overview: "Aperçu", pedagogy: "Objectifs", modules: "Modules", publication: "Publier" }[section.id]}</span>
                       </span>
                       <span className="muted">{section.description}</span>
                     </button>

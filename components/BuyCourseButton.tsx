@@ -38,6 +38,8 @@ export function BuyCourseButton({
   const [status, setStatus] = useState<"idle" | "checking" | "ready" | "loading" | "error">("idle");
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
   const [amount, setAmount] = useState(() => (defaultAmountCents / 100).toFixed(0));
   const [bookRequested, setBookRequested] = useState(false);
   const [bookTitle, setBookTitle] = useState("");
@@ -142,7 +144,7 @@ export function BuyCourseButton({
     setStatus("ready");
   }
 
-  const disabled = status === "checking" || status === "loading";
+  const disabled = !hydrated || status === "checking" || status === "loading";
 
   return (
     <span className="buy-course">

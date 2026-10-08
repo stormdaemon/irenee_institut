@@ -38,3 +38,7 @@
  .course-program-editor .module-editor-body>.grid-2:first-child>p{margin-top:0}
 }
 .apostolos-editorial-banner h1 em{color:#e6c991}
+
+.studio-step-label-short{display:none}
+@media(max-width:700px){.studio-step-label-long{display:none}.studio-step-label-short{display:inline}.course-studio-step .course-list-title{font-size:11px}}
+@media(max-width:360px){.course-studio-mobile-switch>label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.course-studio-mobile-switch.has-read-action{grid-template-rows:auto!important}.course-program-panel>.module-editor-head{margin-bottom:6px}}
