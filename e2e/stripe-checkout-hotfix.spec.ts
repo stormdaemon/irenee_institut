@@ -1,5 +1,29 @@
 import { expect, test } from "@playwright/test";
 
+test.describe("checkout remains usable during background onboarding lookup", () => {
+  test.use({ storageState: { cookies: [], origins: [] }, viewport: { width: 390, height: 900 } });
+  test("a pending welcome lookup cannot intercept the library checkout click", async ({ page }) => {
+    const user = { email: "student.checkout@example.test", id: "browser-checkout-student" };
+    await page.route("**/api/auth/user", route => route.fulfill({ json: { user, session: { user, expires_at: 2000000000, token_type: "cookie" } } }));
+    let lookupStarted = false;
+    let releaseLookup!: () => void;
+    const pending = new Promise<void>(resolve => { releaseLookup = resolve; });
+    await page.route("**/api/onboarding/status", async route => {
+      lookupStarted = true;
+      await pending;
+      await route.fulfill({ json: { ok: true, needsOnboarding: false } });
+    });
+    try {
+      await page.goto("/bibliotheque-apologetique");
+      await expect.poll(() => lookupStarted).toBe(true);
+      await page.getByRole("button", { name: /Adh[eé]rer pour 15/i }).click({ timeout: 3000 });
+      await expect(page.getByRole("dialog")).toBeInViewport();
+    } finally {
+      releaseLookup();
+    }
+  });
+});
+
 const flows = [
   { product: "annual-pass", page: "/formations", endpoint: "/api/payments/checkout", open: /Obtenir le pass annuel/i },
   { product: "library", page: "/bibliotheque-apologetique", endpoint: "/api/payments/library/checkout", open: /Adh[eé]rer pour 15/i }
