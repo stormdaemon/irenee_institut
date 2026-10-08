@@ -3,6 +3,19 @@ import { expect, test } from "@playwright/test";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
+test("illustrated identity uses real image assets for the emblem, controls and borders", async ({ page }) => {
+  await page.goto("/");
+  const emblem = page.locator(".apostolos-header .apostolos-brand img");
+  await expect(emblem).toHaveAttribute("src", /apostolos\/ui\/emblem/);
+  await expect(emblem).toBeVisible();
+  const control = page.locator(".apostolos-sanctuary .apostolos-cta").first();
+  await expect(control).toHaveCSS("background-image", /apostolos\/ui\/button/);
+  const frame = page.locator(".apostolos-conviction-image");
+  await expect(frame).toHaveCSS("border-image-source", /apostolos\/ui\/frame/);
+  await expect(control.locator("svg").first()).toHaveCSS("background-image", /apostolos\/ui\/icons/);
+  await expect(page.locator("body")).toHaveCSS("background-image", /apostolos\/ui\/texture/);
+});
+
 test("the shared interface is dark, contemporary and readable on public pages", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   for (const path of ["/", "/formations", "/blog", "/auth/login"]) {
