@@ -48,7 +48,8 @@ function pngDimensions(path: string) {
 
 test("Apostolos homepage presents real course counts and accessible generated imagery", () => {
  const home=source("app/page.tsx");
- assert.match(home,/await getCourses\(\)/);
+ assert.match(home,/getCourses\(\)/);
+ assert.match(home,/await Promise\.all/);
  assert.match(home,/courses\.length/);
  assert.match(home,/moduleCount/);
  assert.match(home,/Institut Apostolos Saint Irénée/);
