@@ -978,7 +978,11 @@ test("reader preferences persist and locked modules are not actionable", async (
   await page.getByRole("button", { name: "Augmenter la taille du texte" }).click();
   await expect(page.getByRole("button", { name: "Augmenter la taille du texte" })).toHaveAttribute("aria-pressed", "true");
   await page.reload();
-  await page.locator(".reader-preferences > summary").click();
+  // Chromium may restore an open native <details> after a reload.
+  const preferencesPanel = page.locator(".reader-preferences");
+  await expect(preferencesPanel).toBeVisible();
+  if (await preferencesPanel.getAttribute("open") === null) await preferencesPanel.locator("summary").click();
+  await expect(preferencesPanel).toHaveAttribute("open", "");
   await expect(page.getByRole("button", { name: "Augmenter la taille du texte" })).toHaveAttribute("aria-pressed", "true");
   assertNoRuntimeErrors(page);
 });

@@ -106,5 +106,8 @@ body .section{background:#f7f6ee;color:#203b33}body .section::before{display:non
   .course-program-editor .module-editor-actions { display:flex; width:100%; gap:8px; }
   .course-program-editor .module-editor-actions .btn { flex:1 1 120px; }
 }
+@media (max-width:360px) {
+  .admin-shell .course-studio-page .course-studio-panel { padding:6px!important; }
+}
 
 }
