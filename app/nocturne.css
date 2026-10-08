@@ -115,6 +115,8 @@ input:-webkit-autofill,textarea:-webkit-autofill{-webkit-text-fill-color:#eef0fa
 .course-studio-step{color:#bbc2d7;border-radius:10px}.course-studio-page .course-list-title{color:inherit}.course-list-meta{color:#abb5ca}.course-list-item.active:after{color:#cbbcff}
 .course-program-mobile-more-menu{background:#151a28;border:1px solid #47516a;box-shadow:0 20px 50px #0008}.course-program-mobile-more>summary{background:#1b2031;color:#e1d9ff;border-color:#47516a;border-radius:10px}
 .course-cover-preview,.course-cover-preview-copy,.course-cover-preview-image,.course-studio-mobile-actions{background:#161b2a;color:#eef0fa;border-color:#343b50}.course-cover-preview-meta :is(dt,dd){color:#b7bed2}
+.course-cover-preview-placeholder{background:radial-gradient(circle at 70% 20%,#6945a333,transparent 8rem),#1b2031;color:#bac4dc}
+.course-studio-step>.muted{display:none}
 .course-studio-page .rich-canvas{background:#10141f;color:#d9deeb;caret-color:#ff977a;color-scheme:dark;font-family:var(--font-body)}
 .rich-canvas{--editor-text-fill:#d9deeb}.rich-canvas :is(p,li,span,strong,em,td){color:#d9deeb}.rich-canvas :is(h1,h2,h3,h4){font-family:var(--font-display);color:#e8e6f7}.rich-canvas a{color:#c4afff}
 .rich-canvas :is(.course-callout,.course-block,.course-quote,.definition-box,.note-box,.warning-box){background:#211d32;border-color:#9e82ce;color:#e1dcec}
@@ -152,7 +154,7 @@ input:-webkit-autofill,textarea:-webkit-autofill{-webkit-text-fill-color:#eef0fa
  .apostolos-article-header h1{font-size:36px}.apostolos-article-body h2{font-size:27px}.apostolos-workspace-art span{font-size:20px}.auth-shell .title{font-size:32px}.apostolos-student-space .title{font-size:32px}
  .course-studio-step .course-list-title{font-family:var(--font-body);font-size:10px}.course-studio-page .course-list-title{letter-spacing:-.01em}.course-program-panel>.module-editor-head h3{font-family:var(--font-body);font-size:14px;letter-spacing:-.02em}.course-program-mobile-actions .btn{font-size:11px;padding-inline:8px}
 }
-@media(max-width:360px){.apostolos-header .apostolos-brand strong{font-size:18px;letter-spacing:-.04em}.apostolos-header .apostolos-brand small{font-size:6px}.apostolos-course-body{padding:22px}.apostolos-editorial-banner h1{font-size:30px}.apostolos-conviction h2,.apostolos-section-head h2,.apostolos-method h2{font-size:29px}}
+@media(max-width:360px){.apostolos-header .apostolos-brand strong{font-size:18px;letter-spacing:-.04em}.apostolos-header .apostolos-brand small{font-size:6px}.apostolos-course-body{padding:22px}.apostolos-editorial-banner h1{font-size:30px}.apostolos-conviction h2,.apostolos-section-head h2,.apostolos-method h2{font-size:29px}.course-studio-steps{padding-block:2px}}
 @media(prefers-reduced-motion:reduce){
  html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}
  .apostolos-sanctuary>img{transform:scale(1.13);will-change:auto}.apostolos-motion-word{transform:none}.apostolos-scroll-progress{display:none}

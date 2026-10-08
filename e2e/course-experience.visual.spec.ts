@@ -1292,6 +1292,7 @@ for (const viewport of stickyToolbarViewports) {
       await mockApplicationApis(page);
       await page.goto(`/admin/courses?course=${course.slug}`);
       await expect(page.getByLabel("Cours actif")).toHaveValue(course.id);
+      await expect(page.getByLabel("Titre du cours *")).toHaveValue(course.titre);
 
       if (viewport.width <= 390) {
         await openProgrammeByTouch(page);
