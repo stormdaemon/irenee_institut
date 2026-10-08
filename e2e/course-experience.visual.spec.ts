@@ -502,7 +502,7 @@ for (const viewport of viewports) {
       await expect(page.getByRole("heading", { level: 1, name: course.titre })).toBeVisible();
       const progressCopy = page.locator(".course-progress-summary > div:not(.course-progress-dial)");
       await expect(progressCopy.locator("strong")).toHaveText("0 sur 2");
-      await expect(progressCopy.locator("strong")).toHaveCSS("color", "rgb(211, 200, 255)");
+      await expect(progressCopy.locator("strong")).toHaveCSS("color", "rgb(200, 228, 255)");
       await expect(page.locator(".course-progress-summary > small")).toHaveCSS("color", "rgb(176, 185, 208)");
       await expect(page.locator(".course-progress-dial strong")).toHaveCSS("font-family", /Barlow Condensed/);
       await waitForStableUi(page);
@@ -549,7 +549,7 @@ for (const viewport of viewports) {
         const style = getComputedStyle(element);
         return { color: style.color, decoration: style.textDecorationLine, fontWeight: style.fontWeight };
       });
-      expect(normalizedLink).toMatchObject({ color: "rgb(196, 175, 255)", decoration: "underline" });
+      expect(normalizedLink).toMatchObject({ color: "rgb(196, 227, 255)", decoration: "underline" });
       if (viewport.width === 320) {
         const clippedCells = await contentFrame.locator(".module-responsive-table td").evaluateAll(cells => cells
           .filter(cell => cell.scrollWidth > cell.clientWidth + 1)
@@ -852,7 +852,7 @@ test.describe("critical mobile workspace states", () => {
 
     const quiz = page.locator(".course-quiz-card");
     await expect(quiz).toBeVisible();
-    await expect(quiz.locator(".course-quiz-question")).toHaveCSS("background-color", "rgb(18, 22, 34)");
+    await expect(quiz.locator(".course-quiz-question")).toHaveCSS("background-color", "rgb(8, 18, 29)");
     await expect(quiz.locator(".course-quiz-question")).toHaveCSS("box-shadow", "none");
     await assertAccessibleMain(page, testInfo);
     await assertComfortableMobileTargets(page);
@@ -877,7 +877,7 @@ test.describe("critical mobile workspace states", () => {
     await expect(page.getByRole("heading", { name: "Vidéo temporairement indisponible" })).toBeVisible();
     await expect(page.frameLocator("iframe[title^='Contenu du module']").getByText("Une lecture confortable")).toBeVisible();
     await fallback.scrollIntoViewIfNeeded();
-    await expect(fallback).toHaveCSS("background-color", "rgb(40, 33, 53)");
+    await expect(fallback).toHaveCSS("background-color", "rgb(33, 43, 53)");
     await assertAccessibleMain(page, testInfo);
     await expect(fallback).toHaveScreenshot("module-reader-video-fallback-mobile.png");
     assertNoRuntimeErrors(page);
@@ -1047,7 +1047,7 @@ test.describe("reader journey functional regressions", () => {
         "Aucune progression ni attestation ne sera créée."
       );
       await expect(page.locator(".module-preview-notice")).toHaveCSS("background-color", "rgb(28, 31, 48)");
-      await expect(page.locator(".module-preview-notice span")).toHaveCSS("color", "rgb(202, 199, 224)");
+      await expect(page.locator(".module-preview-notice span")).toHaveCSS("color", "rgb(199, 212, 224)");
       await expect(page.getByRole("region", { name: "Fin de la prévisualisation" })).toBeVisible();
 
       const desktopPlan = page.locator(".module-plan-sidebar .module-course-plan");

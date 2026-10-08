@@ -135,7 +135,7 @@ body .course-studio-page :is(.btn.btn-primary,.btn.btn-outline,.icon-button,.too
  .apostolos-header .apostolos-brand strong,body:has(.vitrail-home) .apostolos-brand strong{font-size:20px;letter-spacing:.1em}
  .apostolos-header .apostolos-brand small,body:has(.vitrail-home) .apostolos-brand small{font-size:7px;letter-spacing:0;white-space:normal}
  .apostolos-brand{gap:9px}.apostolos-header-actions{flex:none;gap:10px}.apostolos-header .user-trigger{padding:6px 8px}
- .apostolos-header .btn-outline{font-size:11px;padding:9px 11px;min-height:42px}
+ .apostolos-header .btn-outline{font-size:11px;padding:9px 11px;min-height:44px}
  body:has(.vitrail-home) .apostolos-header-inner{height:88px}
  .vitrail-hero{height:800px;min-height:0}.vitrail-hero>.vitrail-hero-image{object-position:60% center}
  .vitrail-hero-shade{background:linear-gradient(90deg,#020609be,#02060945),linear-gradient(0deg,#02060990,transparent)}
@@ -164,7 +164,7 @@ body .course-studio-page :is(.btn.btn-primary,.btn.btn-outline,.icon-button,.too
  .vitrail-hero{height:760px}.vitrail-hero-content{padding-top:170px}.vitrail-hero h1{font-size:55px}.vitrail-hero .vitrail-intro{font-size:16px}.desktop-break{display:none}
  .vitrail-actions{gap:12px;flex-direction:column;align-items:flex-start}.vitrail-actions .vitrail-button{min-width:225px}
  .vitrail-motto{margin-top:30px}.vitrail-domain-copy p{font-size:9px}.vitrail-return h2{font-size:28px}
- .course-program-mobile-actions .btn{font-size:11px;padding:9px;min-height:42px}
+ .course-program-mobile-actions .btn{font-size:11px;padding:9px;min-height:44px}
 }
 
 /* Auth and editor surfaces must not inherit the former accent treatment. */
@@ -176,3 +176,11 @@ body .auth-shell .btn.btn-primary,body .auth-shell .btn.btn-outline{background:#
 .module-course-plan li>a:hover{background:#15334b;border-color:#8bbddd;color:white}
 .reader-font-controls button.active,.reader-font-controls button:hover,.reader-measure-toggle[aria-pressed=true]{background:#b4d7ef;color:#06121c;border-color:#b4d7ef}
 .course-quiz-card .course-quiz-option:has(input:checked){background:#15314b;border-color:#a1c7e4;box-shadow:0 0 0 3px #81b6dd18}
+
+@font-face{font-family:"Barlow Condensed";src:url('/fonts/barlow-condensed-regular.ttf') format('truetype');font-weight:400;font-display:swap}
+.vitrail-section-heading h2,.vitrail-journal h2,.vitrail-domain h3{font-weight:400}
+.vitrail-hero h1{margin-bottom:0}
+.vitrail-actions .vitrail-button{padding-inline:18px}.vitrail-actions .vitrail-button-secondary{padding-inline:22px}
+.vitrail-button>span,.vitrail-round-arrow{font-size:19px}
+@media(min-width:801px){.vitrail-return{padding-left:22%}.apostolos-nav a{font-size:14px}}
+.vitrail-home .visio-section{background:linear-gradient(#040b13ed,#040b13ed),url('/images/apostolos/vitrail/journal.webp') center/cover;border-top:1px solid #8c744f}

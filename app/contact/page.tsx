@@ -89,7 +89,7 @@ export default function ContactPage() {
           <p className="subtitle">Une question sur nos formations ? Notre équipe est à votre écoute.</p>
         </div>
       </section>
-      <section className="section contact-section" style={{ background: "white" }}>
+      <section className="section contact-section">
         <div className="container grid-2">
           <form method="post" className="soft-card contact-form-card" style={{ padding: 30 }} onSubmit={sendMessage}>
             <h2 className="font-display" style={{ color: "var(--navy)" }}>Envoyez-nous un message</h2>
@@ -135,7 +135,7 @@ export default function ContactPage() {
                 <div><strong>{title}</strong><p className="muted">{value}</p></div>
               </div>
             ))}
-            <div className="soft-card contact-info-card" style={{ padding: 24, background: "#f6f8fc" }}>
+            <div className="soft-card contact-info-card" style={{ padding: 24 }}>
               <h3>Temps de réponse</h3>
               <p>Nous nous engageons à répondre à votre message sous <strong>48 heures maximum</strong>.</p>
             </div>
@@ -174,14 +174,14 @@ export default function ContactPage() {
               </div>
             ))}
           </div>
-          <div className="soft-card center" style={{ padding: 26, marginTop: 40, background: "#eaf3ff" }}>
+          <div className="soft-card center" style={{ padding: 26, marginTop: 40 }}>
             <h3>Vous ne trouvez pas la réponse ?</h3>
             <p>N'hésitez pas à nous contacter directement.</p>
             <p><Mail size={16} aria-hidden="true" /> oeuvrecatholiquefrance@gmail.com</p>
           </div>
         </div>
       </section>
-      <section className="section" style={{ background: "white" }}>
+      <section className="section">
         <div className="container center">
           <h2 className="section-title">Nous trouver</h2>
           <div className="map-frame">

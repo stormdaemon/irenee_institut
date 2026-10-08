@@ -24,7 +24,7 @@ export default async function TermsPage() {
           <p style={{ fontSize: "1.25rem", color: "#dce6f6", maxWidth: 760 }}>{page.intro}</p>
         </div>
       </section>
-      <section className="section" style={{ background: "white" }}>
+      <section className="section">
         <div className="container" style={{ maxWidth: 900 }}>
           <article className="card" style={{ padding: 34 }}>
             <div className="legal-content" dangerouslySetInnerHTML={{ __html: markdownToHtml(page.content, 1) }} />
