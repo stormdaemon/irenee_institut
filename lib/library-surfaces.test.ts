@@ -143,7 +143,7 @@ test("module iframe discards authored style blocks before applying its controlle
   assert.match(modulePage, /FORBID_TAGS:\s*\[/);
   assert.match(modulePage, /"style"/);
   assert.match(modulePage, /querySelectorAll<HTMLElement>\("\[style\]"\)[\s\S]*element\.removeAttribute\("style"\)/);
-  assert.match(modulePage, /\.module-content,\s*\.module-content \*,\s*body > \* \{ color: #172033 !important;/);
+  assert.match(modulePage, /\.module-content,\s*\.module-content \*,\s*body > \* \{ color: #d9deeb !important;/);
   assert.match(modulePage, /\.module-content :is\(\.definition-box, \.quote-box, \.biblical-quote, \.note-box, \.warning-box, \.success-box, \.example-box\)/);
   assert.doesNotMatch(modulePage, /const normalizedHtml = html\.replace\(/);
   assert.match(modulePage, /DOMPurify\.sanitize\(stripAuthoredStyleBlocksBeforeParsing\(html\), \{/);
@@ -152,10 +152,10 @@ test("module iframe discards authored style blocks before applying its controlle
   assert.match(modulePage, /querySelectorAll<HTMLElement>\("\.comparison-table:not\(table\)"\)/);
 });
 
-test("admin rich editor keeps saved light text readable while editing", () => {
+test("admin rich editor controls authored text color through the active theme", () => {
   const css = source("app/globals.css");
   assert.match(css, /\.admin-shell \.rich-editor \.rich-canvas,\s*\.admin-shell \.rich-editor \.rich-canvas \*/);
-  assert.match(css, /-webkit-text-fill-color: #172033 !important;/);
+  assert.match(css, /-webkit-text-fill-color: var\(--editor-text-fill, #172033\) !important;/);
   assert.match(css, /caret-color: #071d49;/);
 });
 

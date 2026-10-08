@@ -502,7 +502,7 @@ for (const viewport of viewports) {
       await expect(page.getByRole("heading", { level: 1, name: course.titre })).toBeVisible();
       const progressCopy = page.locator(".course-progress-summary > div:not(.course-progress-dial)");
       await expect(progressCopy.locator("strong")).toHaveText("0 sur 2");
-      await expect(progressCopy.locator("strong")).toHaveCSS("color", "rgb(16, 43, 70)");
+      await expect(progressCopy.locator("strong")).toHaveCSS("color", "rgb(211, 200, 255)");
       await waitForStableUi(page);
       await assertNoHorizontalOverflow(page);
       await assertAccessibleMain(page, testInfo);
@@ -539,7 +539,7 @@ for (const viewport of viewports) {
         };
       });
       expect(normalizedLegacyText).toMatchObject({
-        color: "rgb(23, 32, 51)",
+        color: "rgb(217, 222, 235)",
         fontSize: viewport.width <= 640 ? "17px" : "18px",
         whiteSpace: "normal"
       });
@@ -547,7 +547,7 @@ for (const viewport of viewports) {
         const style = getComputedStyle(element);
         return { color: style.color, decoration: style.textDecorationLine, fontWeight: style.fontWeight };
       });
-      expect(normalizedLink).toMatchObject({ color: "rgb(122, 23, 23)", decoration: "underline" });
+      expect(normalizedLink).toMatchObject({ color: "rgb(196, 175, 255)", decoration: "underline" });
       if (viewport.width === 320) {
         const clippedCells = await contentFrame.locator(".module-responsive-table td").evaluateAll(cells => cells
           .filter(cell => cell.scrollWidth > cell.clientWidth + 1)
@@ -850,7 +850,7 @@ test.describe("critical mobile workspace states", () => {
 
     const quiz = page.locator(".course-quiz-card");
     await expect(quiz).toBeVisible();
-    await expect(quiz.locator(".course-quiz-question")).toHaveCSS("background-color", "rgb(255, 254, 250)");
+    await expect(quiz.locator(".course-quiz-question")).toHaveCSS("background-color", "rgb(18, 22, 34)");
     await expect(quiz.locator(".course-quiz-question")).toHaveCSS("box-shadow", "none");
     await assertAccessibleMain(page, testInfo);
     await assertComfortableMobileTargets(page);

@@ -16,7 +16,16 @@ test("the shared interface is dark, contemporary and readable on public pages", 
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(391);
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
     expect(results.violations).toEqual([]);
+    await expect(page).toHaveScreenshot(`nocturne-${path === "/" ? "home" : path.replaceAll("/", "-")}-mobile.png`);
   }
+});
+
+test("dark illustrated homepage balances large typography and imagery on desktop", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/");
+  await page.evaluate(() => document.fonts.ready);
+  await expect(page.locator("main h1")).toBeVisible();
+  await expect(page).toHaveScreenshot("nocturne-home-desktop.png");
 });
 
 test("motion reveals content during scrolling and does not block navigation", async ({ page }) => {

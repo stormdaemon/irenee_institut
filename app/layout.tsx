@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./apostolos.css";
 import "./imagery.css";
+import "./nocturne.css";
+import { ApostolosMotion } from "@/components/ApostolosMotion";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { DeferredClientChrome } from "@/components/DeferredClientChrome";
@@ -54,6 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Header />
         </div>
         <DeferredClientChrome />
+        <ApostolosMotion />
         <main id="main-content" tabIndex={-1}>{children}</main>
         <Footer />
       </body>

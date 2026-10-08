@@ -18,17 +18,18 @@ export default async function Home() {
       <div className="apostolos-wrap apostolos-sanctuary-content">
         <span className="apostolos-label">INSTITUT APOSTOLOS SAINT IRÉNÉE</span>
         <div className="apostolos-ornament" aria-hidden="true">✦</div>
-        <h1>La foi pour horizon.<br />L’intelligence<br /><em>pour chemin.</em></h1>
+        <h1><span>La foi.</span><span>Le désir de</span><em>comprendre.</em></h1>
         <p>Entrez dans une tradition vivante. Explorez les Écritures, l’histoire et la raison pour comprendre la foi catholique et apprendre à la transmettre.</p>
         <div className="apostolos-actions"><Link href="/formations" className="apostolos-cta apostolos-cta-gold">Explorer les formations <ArrowUpRight size={19} /></Link><Link href="/a-propos" className="apostolos-text-link">Découvrir l’Institut <ArrowRight size={17} /></Link></div>
       </div>
       <div className="apostolos-sanctuary-caption"><span>ÉCRITURE · TRADITION · RAISON</span><span>Un héritage à comprendre. Une parole à porter.</span></div>
     </section>
     <div className="apostolos-foundations apostolos-wrap"><div><strong>{courses.length}</strong><span>cours pour approfondir</span></div><div><strong>{moduleCount}</strong><span>modules à explorer</span></div><div><strong>Un chemin</strong><span>à votre rythme, où que vous soyez</span></div></div>
-    <section className="apostolos-conviction apostolos-wrap">
+    <section className="apostolos-conviction apostolos-wrap" data-reveal>
       <div className="apostolos-conviction-image"><Image src="/images/apostolos/tradition.png" alt="Lumière des vitraux sur la pierre sculptée d’une église" fill sizes="(max-width:800px) 100vw, 40vw" /><span>UNE TRADITION VIVANTE</span></div>
       <div><span className="apostolos-label">L’ESPRIT APOSTOLOS</span><h2>Des racines profondes.<br /><em>Un regard ouvert.</em></h2><p className="apostolos-lead">La foi ne demande pas de renoncer à comprendre.</p><p>L’Écriture, la tradition chrétienne, la philosophie et l’histoire se rencontrent dans un parcours structuré. Nous prenons le temps de lire, de questionner et de relier les idées, pour former une parole précise et charitable.</p><Link href="/a-propos" className="apostolos-text-link">Notre démarche <ArrowUpRight size={18} /></Link></div>
     </section>
+    <div className="apostolos-motion-ribbon" aria-hidden="true"><span className="apostolos-motion-word">CROIRE. COMPRENDRE. TRANSMETTRE.</span></div>
     <section className="apostolos-section apostolos-wrap">
       <div className="apostolos-section-head"><div><span className="apostolos-label">LES PORTES DU SAVOIR</span><h2>Chaque question ouvre<br /><em>un nouvel horizon.</em></h2></div><Link href="/formations" className="apostolos-text-link">Tous les cours <ArrowUpRight size={18} /></Link></div>
       <div className="apostolos-course-grid">{courses.filter((_, index) => [0, 1, 5].includes(index)).map((course, i) => {

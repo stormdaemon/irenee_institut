@@ -68,6 +68,18 @@ jobs:
         env:
           E2E_SKIP_BUILD: "true"
         run: bun run test:e2e --project=chromium --retries=0
+      - name: Generate reviewable dark identity reference candidates
+        if: failure() && steps.browser-tests.outcome == 'failure'
+        env:
+          E2E_SKIP_BUILD: "true"
+        run: bun run test:e2e --project=chromium --retries=0 --update-snapshots=all e2e/course-experience.visual.spec.ts e2e/apostolos-motion.spec.ts
+      - name: Upload dark identity reference candidates for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apostolos-nocturne-reference-candidates
+          path: e2e/__screenshots__
+          retention-days: 7
       - if: github.event_name == 'schedule'
         run: bunx playwright install --with-deps webkit
       - if: github.event_name == 'schedule'

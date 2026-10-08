@@ -74,18 +74,21 @@ function getDocumentStyleNonce() {
 }
 
 const moduleFrameThemeCss = `
-  html { background: #fffaf0; }
+  @font-face { font-family: Manrope; src: url('/fonts/manrope-variable.ttf') format('truetype'); font-weight: 200 800; font-display: swap; }
+  @font-face { font-family: Sora; src: url('/fonts/sora-variable.ttf') format('truetype'); font-weight: 100 800; font-display: swap; }
+
+  html { background: #121622; }
   body {
-    color: #172033;
-    background: #fffaf0;
-    font-family: Charter, "Bitstream Charter", "Iowan Old Style", Georgia, serif;
+    color: #d9deeb;
+    background: #121622;
+    font-family: Manrope, Arial, sans-serif;
     font-size: 18px;
     line-height: 1.76;
     padding: 38px clamp(26px, 6vw, 72px) 54px;
   }
   .module-content,
   .module-content *,
-  body > * { color: #172033 !important; }
+  body > * { color: #d9deeb !important; }
   .module-content {
     display: flow-root;
     width: 100%;
@@ -96,17 +99,17 @@ const moduleFrameThemeCss = `
   .module-content h3,
   .module-content h4,
   h1, h2, h3, h4 {
-    color: #071d49 !important;
-    font-family: Georgia, "Times New Roman", serif;
+    color: #e8e6f7 !important;
+    font-family: Sora, Arial, sans-serif;
     line-height: 1.18;
     overflow-wrap: anywhere;
   }
   p, li, blockquote, td, th, span, strong, em {
-    color: #172033 !important;
+    color: #d9deeb !important;
   }
   .module-content a,
   .module-content a * {
-    color: #7a1717 !important;
+    color: #c4afff !important;
     font-weight: 800 !important;
     text-decoration: underline !important;
     text-decoration-thickness: .09em !important;
@@ -127,21 +130,21 @@ const moduleFrameThemeCss = `
     box-shadow: inset -14px 0 12px -12px rgba(7,29,73,.35);
   }
   table::-webkit-scrollbar { height: 6px; }
-  table::-webkit-scrollbar-thumb { background: #b88a3a; border-radius: 3px; }
+  table::-webkit-scrollbar-thumb { background: #a893ff; border-radius: 3px; }
   th, td {
     min-width: clamp(96px, 26vw, 160px);
     padding: 12px 14px;
-    border: 1px solid #d9cba9;
+    border: 1px solid #434b65;
     overflow-wrap: anywhere;
     vertical-align: top;
   }
-  .module-content ul.styled-list li::before { color: #7a1717 !important; }
+  .module-content ul.styled-list li::before { color: #c4afff !important; }
   .module-content :is(.definition-box, .quote-box, .biblical-quote, .note-box, .warning-box, .success-box, .example-box) {
     margin: 1.45rem 0;
     padding: 16px 18px;
-    color: #172033 !important;
-    background: #fff3d8 !important;
-    border-color: #b88a3a !important;
+    color: #d9deeb !important;
+    background: #211d32 !important;
+    border-color: #a893ff !important;
   }
   .module-content :is(.definition-box, .quote-box, .biblical-quote, .note-box, .warning-box, .success-box, .example-box)
     :is(h2, h3, h4, p, li, strong, em, span) {
@@ -149,32 +152,32 @@ const moduleFrameThemeCss = `
   }
   .module-content .comparison-table,
   .module-content .comparison-table tbody,
-  .module-content .comparison-table td { color: #182235 !important; }
+  .module-content .comparison-table td { color: #d9deeb !important; }
   .module-content .comparison-table thead,
-  .module-content .comparison-table th { color: #ffffff !important; background: #071d49 !important; }
+  .module-content .comparison-table th { color: #ffffff !important; background: #242a3d !important; }
   .module-content .course-callout,
   .module-content .course-block,
   .module-content .course-quote {
     margin: 1.7rem 0;
     padding: 18px 20px;
-    color: #172033 !important;
+    color: #d9deeb !important;
     border-radius: 12px;
   }
   .module-content .course-callout {
     border-left: 5px solid #2f67a7;
-    background: #eef5fc;
+    background: #19263a;
   }
   .module-content .course-callout-warning {
     border-left-color: #b7791f;
-    background: #fff4d8;
+    background: #332718;
   }
   .module-content .course-block {
-    border: 1px solid #dfd3ba;
-    background: #fffdf8;
+    border: 1px solid #434b65;
+    background: #1b2031;
   }
   .module-content .course-quote {
-    border-left: 5px solid #7a1717;
-    background: #f7f1e8;
+    border-left: 5px solid #c4afff;
+    background: #211d32;
     font-size: 1.08em;
     font-style: italic;
   }
@@ -217,9 +220,9 @@ const moduleFrameThemeCss = `
     }
     .module-responsive-table tbody tr {
       margin: 0 0 18px !important;
-      border: 1px solid #d9c28f !important;
+      border: 1px solid #66547f !important;
       border-radius: 10px !important;
-      background: #fffdf7 !important;
+      background: #151a28 !important;
       overflow: hidden !important;
     }
     .module-responsive-table td {
@@ -229,7 +232,7 @@ const moduleFrameThemeCss = `
       align-items: start !important;
       padding: 11px 10px !important;
       border: 0 !important;
-      border-top: 1px solid #eadbb7 !important;
+      border-top: 1px solid #434b65 !important;
       background: transparent !important;
       overflow-wrap: anywhere !important;
       word-break: break-word !important;
@@ -241,7 +244,7 @@ const moduleFrameThemeCss = `
       content: attr(data-label);
       display: block;
       margin: 0;
-      color: #071d49;
+      color: #e8e6f7;
       font-weight: 800;
       font-style: normal;
     }
@@ -331,7 +334,7 @@ function ModuleHtmlContent({ html, preferences, title }: { html: string; prefere
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' https: data:; media-src 'self' https:; style-src 'unsafe-inline'; font-src 'none'; form-action 'none'" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' https: data:; media-src 'self' https:; style-src 'unsafe-inline'; font-src 'self'; form-action 'none'" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style nonce="${styleNonce}">html,body{margin:0;padding:0}body{overflow-wrap:anywhere}table{max-width:100%}</style>
     <style nonce="${styleNonce}">${moduleFrameThemeCss}</style>

@@ -6921,7 +6921,7 @@ label {
 .admin-shell .rich-editor .rich-canvas,
 .admin-shell .rich-editor .rich-canvas * {
   color: #172033;
-  -webkit-text-fill-color: #172033 !important;
+  -webkit-text-fill-color: var(--editor-text-fill, #172033) !important;
   opacity: 1;
   text-shadow: none;
   filter: none;
