@@ -30,7 +30,7 @@ export default function LibraryPage() {
             </div>
           </div>
         <div className="apostolos-hero-image">
-          <Image src="/images/apostolos/etude.png" alt="Livres ouverts et lumière d’étude" fill sizes="(max-width: 800px) 100vw, 48vw" priority />
+          <Image src="/images/apostolos/vitrail/ecriture.webp" alt="Livres ouverts et lumière d’étude" fill sizes="(max-width: 800px) 100vw, 48vw" priority />
           <span className="apostolos-image-caption">LIRE • COMPRENDRE • TRANSMETTRE</span>
         </div>
       </section>

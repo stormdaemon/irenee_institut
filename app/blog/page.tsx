@@ -19,13 +19,13 @@ export const metadata: Metadata = {
     title: "Le journal Apostolos",
     description,
     siteName,
-    images: [{ url: "/images/apostolos/raison.png", alt: "Le journal de l’Institut Apostolos Saint Irénée" }]
+    images: [{ url: "/images/apostolos/vitrail/philosophie.webp", alt: "Le journal de l’Institut Apostolos Saint Irénée" }]
   },
   twitter: {
     card: "summary_large_image",
     title: "Le journal Apostolos",
     description,
-    images: ["/images/apostolos/raison.png"]
+    images: ["/images/apostolos/vitrail/philosophie.webp"]
   }
 };
 
@@ -49,7 +49,7 @@ export default function BlogPage() {
   return (
     <div className="apostolos-wrap">
       <JsonLd data={listingJsonLd} />
-      <EditorialBanner image="/images/apostolos/raison.png" label="LE JOURNAL">
+      <EditorialBanner image="/images/apostolos/vitrail/journal.webp" label="LE JOURNAL">
         <h1>Les questions ouvrent<br /><em>de nouveaux chemins.</em></h1>
         <p>Des lectures pour aller plus loin. Des repères pour penser par soi-même. Un espace de réflexion au croisement de la foi, de l’histoire et de la raison.</p>
       </EditorialBanner>

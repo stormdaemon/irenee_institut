@@ -1,1 +1,1 @@
-export function Brand(){return <span className="apostolos-brand"><img src="/images/apostolos/ui/emblem.png" width="48" height="48" alt="" aria-hidden="true" /><span><strong>APOSTOLOS</strong><small>INSTITUT SAINT IRÉNÉE</small></span></span>}
+export function Brand(){return <span className="apostolos-brand"><img src="/images/apostolos/vitrail/emblem.webp" width="88" height="88" alt="" aria-hidden="true" /><span><strong>APOSTOLOS</strong><small>Institut Apostolos Saint Irénée</small></span></span>}

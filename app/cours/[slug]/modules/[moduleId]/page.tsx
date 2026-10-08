@@ -75,12 +75,12 @@ function getDocumentStyleNonce() {
 
 const moduleFrameThemeCss = `
   @font-face { font-family: Manrope; src: url('/fonts/manrope-variable.ttf') format('truetype'); font-weight: 200 800; font-display: swap; }
-  @font-face { font-family: Sora; src: url('/fonts/sora-variable.ttf') format('truetype'); font-weight: 100 800; font-display: swap; }
+  @font-face { font-family: "Barlow Condensed"; src: url('/fonts/barlow-condensed-semibold.ttf') format('truetype'); font-weight: 600; font-display: swap; }
 
   html { background: #121622; }
   body {
     color: #d9deeb;
-    background: linear-gradient(#0a1320ed,#0a1320ed), url('/images/apostolos/ui/texture.png') center / 640px;
+    background: linear-gradient(#0a1320ed,#0a1320ed), url('/images/apostolos/vitrail/texture.webp') center / 640px;
     font-family: Manrope, Arial, sans-serif;
     font-size: 18px;
     line-height: 1.76;
@@ -100,7 +100,7 @@ const moduleFrameThemeCss = `
   .module-content h4,
   h1, h2, h3, h4 {
     color: #e8e6f7 !important;
-    font-family: Sora, Arial, sans-serif;
+    font-family: "Barlow Condensed", Arial, sans-serif;
     line-height: 1.18;
     overflow-wrap: anywhere;
   }
@@ -109,7 +109,7 @@ const moduleFrameThemeCss = `
   }
   .module-content a,
   .module-content a * {
-    color: #c4afff !important;
+    color: #c4e3ff !important;
     font-weight: 800 !important;
     text-decoration: underline !important;
     text-decoration-thickness: .09em !important;
@@ -138,7 +138,7 @@ const moduleFrameThemeCss = `
     overflow-wrap: anywhere;
     vertical-align: top;
   }
-  .module-content ul.styled-list li::before { color: #c4afff !important; }
+  .module-content ul.styled-list li::before { color: #c4e3ff !important; }
   .module-content :is(.definition-box, .quote-box, .biblical-quote, .note-box, .warning-box, .success-box, .example-box) {
     margin: 1.45rem 0;
     padding: 16px 18px;
@@ -176,7 +176,7 @@ const moduleFrameThemeCss = `
     background: #1b2031;
   }
   .module-content .course-quote {
-    border-left: 5px solid #c4afff;
+    border-left: 5px solid #c4e3ff;
     background: #211d32;
     font-size: 1.08em;
     font-style: italic;
@@ -184,10 +184,10 @@ const moduleFrameThemeCss = `
   .module-content :is(.course-callout, .course-block, .course-quote) > :first-child { margin-top: 0; }
   .module-content :is(.course-callout, .course-block, .course-quote) > :last-child { margin-bottom: 0; }
   .module-content :is(.definition-box,.quote-box,.biblical-quote,.note-box,.warning-box,.success-box,.example-box,.course-callout,.course-block,.course-quote) {
-    background-image: linear-gradient(#0c1829da,#0c1829da), url('/images/apostolos/ui/texture.png') !important;
+    background-image: linear-gradient(#0c1829da,#0c1829da), url('/images/apostolos/vitrail/texture.webp') !important;
     background-size: auto, 480px !important;
     border: 1px solid transparent !important;
-    border-image: url('/images/apostolos/ui/frame.png') 22% / 12px / 0 stretch !important;
+    border-image: url('/images/apostolos/vitrail/frame.webp') 8% / 8px / 0 stretch !important;
     border-radius: 0;
     padding: 22px 24px;
   }

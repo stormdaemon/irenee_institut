@@ -134,7 +134,7 @@ export default function StudentSpacePage() {
   return (
     <section className="section apostolos-student-space">
       <div className="container">
-        <div className="apostolos-workspace-art"><Image src="/images/apostolos/manuscrits.png" alt="" fill sizes="100vw"/><span>Lire. Comprendre. Grandir.</span></div>
+        <div className="apostolos-workspace-art"><Image src="/images/apostolos/vitrail/ecriture.webp" alt="" fill sizes="100vw"/><span>Lire. Comprendre. Grandir.</span></div>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 20, alignItems: "start", flexWrap: "wrap" }}>
           <div>
             <span className="apostolos-label">MON ESPACE DE FORMATION</span><h1 className="title">Votre chemin d’étude.</h1>

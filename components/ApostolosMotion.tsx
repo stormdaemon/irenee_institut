@@ -12,7 +12,7 @@ export function ApostolosMotion() {
     const animated = new Set<Animation>();
     let observer: IntersectionObserver | undefined;
     let frame = 0;
-    const targets = [...document.querySelectorAll<HTMLElement>("[data-reveal], .apostolos-course-tile, .apostolos-journal-card")];
+    const targets = [...document.querySelectorAll<HTMLElement>("[data-reveal], .apostolos-course-tile, .apostolos-journal-card, .vitrail-domain")];
     const scene = document.querySelector<HTMLElement>(".apostolos-sanctuary");
     const ribbon = document.querySelector<HTMLElement>(".apostolos-motion-word");
     const updateScroll = () => {
@@ -49,9 +49,9 @@ export function ApostolosMotion() {
             target.dataset.motionState = "visible";
             observer?.unobserve(target);
             const animation = target.animate([
-              { opacity: 0.25, transform: "translateY(32px)", filter: "blur(4px)" },
-              { opacity: 1, transform: "translateY(0)", filter: "blur(0)" },
-            ], { duration: 800, easing: "cubic-bezier(.16,1,.3,1)", delay: Number(target.dataset.revealDelay || 0) });
+              { opacity: 0.6 },
+              { opacity: 1 },
+            ], { duration: 650, easing: "cubic-bezier(.16,1,.3,1)", delay: Number(target.dataset.revealDelay || 0) });
             animated.add(animation);
             animation.finished.then(() => animated.delete(animation), () => animated.delete(animation));
           });

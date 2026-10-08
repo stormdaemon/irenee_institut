@@ -37,8 +37,8 @@ const instituteArticles: BlogArticle[] = [
     "category": "Méthode",
     "date": "2026-10-08",
     "readingMinutes": 3,
-    "image": "/images/apostolos/manuscrits.png",
-    "imageAlt": "Illustration du monde d’étude Apostolos",
+    "image": "/images/apostolos/vitrail/ecriture.webp",
+    "imageAlt": "Vitrail bleu et or consacré à la lecture et à la pensée",
     "tags": [
       "Méthode"
     ],
@@ -83,8 +83,8 @@ const instituteArticles: BlogArticle[] = [
     "category": "Pratique",
     "date": "2026-10-08",
     "readingMinutes": 3,
-    "image": "/images/apostolos/raison.png",
-    "imageAlt": "Illustration du monde d’étude Apostolos",
+    "image": "/images/apostolos/vitrail/philosophie.webp",
+    "imageAlt": "Vitrail bleu et or consacré à la lecture et à la pensée",
     "tags": [
       "Pratique"
     ],
@@ -129,8 +129,8 @@ const instituteArticles: BlogArticle[] = [
     "category": "Vie étudiante",
     "date": "2026-10-08",
     "readingMinutes": 3,
-    "image": "/images/apostolos/manuscrits.png",
-    "imageAlt": "Illustration du monde d’étude Apostolos",
+    "image": "/images/apostolos/vitrail/ecriture.webp",
+    "imageAlt": "Vitrail bleu et or consacré à la lecture et à la pensée",
     "tags": [
       "Vie étudiante"
     ],
@@ -175,8 +175,8 @@ const instituteArticles: BlogArticle[] = [
     "category": "Dialogue",
     "date": "2026-10-08",
     "readingMinutes": 3,
-    "image": "/images/apostolos/raison.png",
-    "imageAlt": "Illustration du monde d’étude Apostolos",
+    "image": "/images/apostolos/vitrail/philosophie.webp",
+    "imageAlt": "Vitrail bleu et or consacré à la lecture et à la pensée",
     "tags": [
       "Dialogue"
     ],
@@ -221,8 +221,8 @@ const instituteArticles: BlogArticle[] = [
     "category": "Sources",
     "date": "2026-10-08",
     "readingMinutes": 3,
-    "image": "/images/apostolos/manuscrits.png",
-    "imageAlt": "Illustration du monde d’étude Apostolos",
+    "image": "/images/apostolos/vitrail/ecriture.webp",
+    "imageAlt": "Vitrail bleu et or consacré à la lecture et à la pensée",
     "tags": [
       "Sources"
     ],
@@ -267,8 +267,8 @@ const instituteArticles: BlogArticle[] = [
     "category": "L’Institut",
     "date": "2026-10-08",
     "readingMinutes": 3,
-    "image": "/images/apostolos/raison.png",
-    "imageAlt": "Illustration du monde d’étude Apostolos",
+    "image": "/images/apostolos/vitrail/philosophie.webp",
+    "imageAlt": "Vitrail bleu et or consacré à la lecture et à la pensée",
     "tags": [
       "L’Institut"
     ],

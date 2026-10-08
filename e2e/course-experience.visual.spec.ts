@@ -504,7 +504,7 @@ for (const viewport of viewports) {
       await expect(progressCopy.locator("strong")).toHaveText("0 sur 2");
       await expect(progressCopy.locator("strong")).toHaveCSS("color", "rgb(211, 200, 255)");
       await expect(page.locator(".course-progress-summary > small")).toHaveCSS("color", "rgb(176, 185, 208)");
-      await expect(page.locator(".course-progress-dial strong")).toHaveCSS("font-family", /Sora/);
+      await expect(page.locator(".course-progress-dial strong")).toHaveCSS("font-family", /Barlow Condensed/);
       await waitForStableUi(page);
       await assertNoHorizontalOverflow(page);
       await assertAccessibleMain(page, testInfo);

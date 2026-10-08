@@ -31,11 +31,12 @@ function avatarSrc(profile: Profile | null) {
 
 type UserMenuProps = {
   onNavigate?: () => void;
+  loggedOutLabel?: string;
 };
 
 const annualPassSignupHref = cleanAnnualPassSignupPath;
 
-export function UserMenu({ onNavigate }: UserMenuProps) {
+export function UserMenu({ onNavigate, loggedOutLabel = "Se connecter" }: UserMenuProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [open, setOpen] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
@@ -108,7 +109,7 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
   if (!profile) {
     return (
       <>
-        <Link href={loginHref} className="btn btn-outline" prefetch={false} onClick={onNavigate}>Se connecter</Link>
+        <Link href={loginHref} className="btn btn-outline" prefetch={false} onClick={onNavigate}>{loggedOutLabel}</Link>
 
       </>
     );

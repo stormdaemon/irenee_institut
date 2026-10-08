@@ -25,20 +25,6 @@ type TeamMember = {
 const staticTeamMembers: TeamMember[] = [
   {
     achievements: [
-      "Module parcours biblique",
-      "Accompagnement biblique du cursus",
-      "Lecture théologique et pastorale des Écritures"
-    ],
-    description:
-      "En plus de sa mission d'accompagnateur théologique, Frère Jean Emmanuel intervient comme bibliste pour accompagner le module de parcours biblique et aider les étudiants à entrer dans l'intelligence des Écritures.",
-    image: "/images/frere-jean-emmanuel-de-ena.png",
-    imagePosition: "50% 50%",
-    name: "Frère Jean Emmanuel",
-    tags: ["Bible", "Écritures", "Parcours biblique", "Exégèse"],
-    title: "Module parcours biblique"
-  },
-  {
-    achievements: [
       "Module convaincre, argumenter et rhétorique",
       "Pratique de l'argumentation publique",
       "Approche juridique et méthodique du débat"
@@ -177,14 +163,7 @@ export default async function FormateursPage() {
               <h3>Théo Lafont</h3>
               <p className="muted">Direction de l’Institut Apostolos Saint Irénée.</p>
             </article>
-            <article className="card about-director-card">
-              <div className="about-director-photo">
-                <Image src="/images/frere-jean-emmanuel-de-ena.png" alt="Frère Jean Emmanuel" fill sizes="150px" style={{ objectFit: "cover", objectPosition: "50% 50%" }} />
-              </div>
-              <span className="badge">Accompagnateur théologique</span>
-              <h3>Frère Jean Emmanuel</h3>
-              <p className="muted">Accompagne l'exigence académique et spirituelle du parcours d'apologétique.</p>
-            </article>
+
           </div>
         </div>
       </section>

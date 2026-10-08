@@ -6,14 +6,14 @@ test.use({ storageState: { cookies: [], origins: [] } });
 test("illustrated identity uses real image assets for the emblem, controls and borders", async ({ page }) => {
   await page.goto("/");
   const emblem = page.locator(".apostolos-header .apostolos-brand img");
-  await expect(emblem).toHaveAttribute("src", /apostolos\/ui\/emblem/);
+  await expect(emblem).toHaveAttribute("src", /apostolos\/vitrail\/emblem/);
   await expect(emblem).toBeVisible();
-  const control = page.locator(".apostolos-sanctuary .apostolos-cta").first();
-  await expect(control).toHaveCSS("background-image", /apostolos\/ui\/button/);
-  const frame = page.locator(".apostolos-conviction-image");
-  await expect(frame).toHaveCSS("border-image-source", /apostolos\/ui\/frame/);
-  await expect(control.locator("svg").first()).toHaveCSS("background-image", /apostolos\/ui\/icons/);
-  await expect(page.locator("body")).toHaveCSS("background-image", /apostolos\/ui\/texture/);
+  const control = page.locator(".vitrail-hero .vitrail-button").first();
+  await expect(control).toHaveCSS("background-image", /apostolos\/vitrail\/button/);
+  await page.goto("/formations");
+  const frame = page.locator(".apostolos-editorial-banner");
+  await expect(frame).toHaveCSS("border-image-source", /apostolos\/vitrail\/frame/);
+  await expect(page.locator("body")).toHaveCSS("background-image", /apostolos\/vitrail\/texture/);
 });
 
 test("the shared interface is dark, contemporary and readable on public pages", async ({ page }) => {
@@ -27,7 +27,7 @@ test("the shared interface is dark, contemporary and readable on public pages", 
     });
     expect(theme.brightness).toBeLessThan(40);
     expect(theme.font).toContain("Manrope");
-    expect(theme.heading).toContain("Sora");
+    expect(theme.heading).toContain(path === "/" ? "Bebas Neue" : "Barlow Condensed");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(391);
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
     expect(results.violations).toEqual([]);
@@ -47,12 +47,12 @@ test("motion reveals content during scrolling and does not block navigation", as
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-motion", "enabled");
-  const card = page.locator(".apostolos-conviction");
+  const card = page.locator(".vitrail-domain").first();
   await card.scrollIntoViewIfNeeded();
   await expect(card).toHaveAttribute("data-motion-state", "visible");
   await expect(card).toHaveCSS("opacity", "1");
-  await card.getByRole("link", { name: "Notre démarche" }).click();
-  await expect(page).toHaveURL(/\/a-propos$/);
+  await card.click();
+  await expect(page).toHaveURL(/\/formations/);
   await expect(page.locator("main h1")).toBeVisible();
 });
 
