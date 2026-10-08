@@ -159,3 +159,4 @@ input:-webkit-autofill,textarea:-webkit-autofill{-webkit-text-fill-color:#eef0fa
  html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}
  .apostolos-sanctuary>img{transform:scale(1.13);will-change:auto}.apostolos-motion-word{transform:none}.apostolos-scroll-progress{display:none}
 }
+@media(max-width:360px){.course-studio-mobile-switch select,.course-program-mobile-switch select{height:44px;min-height:44px;padding-block:6px}}
