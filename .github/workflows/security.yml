@@ -64,12 +64,14 @@ jobs:
       - run: bun run build
       - run: bunx playwright install --with-deps chromium
       - name: Course experience visual QA (Chromium)
+        env:
+          E2E_SKIP_BUILD: "true"
         run: bun run test:e2e --project=chromium --retries=0
       - name: Generate reviewable Apostolos visual reference candidates
         if: failure()
         env:
           E2E_SKIP_BUILD: "true"
-        run: bun run test:e2e --project=chromium --retries=0 --update-snapshots e2e/course-experience.visual.spec.ts
+        run: bun run test:e2e --project=chromium --retries=0 --update-snapshots=all e2e/course-experience.visual.spec.ts
       - name: Upload visual reference candidates for review
         if: always()
         uses: actions/upload-artifact@v4

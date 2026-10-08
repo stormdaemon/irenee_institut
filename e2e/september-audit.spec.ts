@@ -1,6 +1,6 @@
 import { siteUrl } from "../lib/seo";
 import { expect, test } from "@playwright/test";
-import { getUpcomingVisioSessions } from "../lib/live-sessions";
+
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -9,20 +9,12 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/");
     const agenda = page.locator("#agenda");
-    const nextSession = getUpcomingVisioSessions()[0];
+
     await expect(agenda.getByRole("heading", { name: "Prochaines rencontres en visioconférence" })).toBeVisible();
     await expect(agenda.getByText(/99 € conseillés, participation libre/)).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
-    if (nextSession) {
-      await expect(agenda.locator(".visio-spotlight h3")).toHaveText(nextSession.title);
-      await expect(agenda.getByRole("link", { name: "Participer", exact: true }).first()).toHaveAttribute("href", `/direct/${nextSession.liveSessionId}`);
-      await agenda.locator(".visio-spotlight").scrollIntoViewIfNeeded();
-      await expect(agenda.locator(".visio-spotlight img")).toBeVisible();
-      await expect.poll(() => agenda.locator(".visio-spotlight img").evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
-      await agenda.locator(".visio-spotlight").screenshot({ path: testInfo.outputPath(`agenda-${width}.png`) });
-    } else {
-      await expect(agenda.getByText(/Les prochaines dates seront annoncées ici/)).toBeVisible();
-    }
+    await expect(agenda.getByText(/Les prochaines dates seront annoncées ici/)).toBeVisible();
+    await expect(agenda.getByRole("link", { name: "Participer", exact: true })).toHaveCount(0);
     await page.goto("/inscription");
     for (const name of ["Prénom", "Nom", "Téléphone", "Email", "Confirmer le mot de passe"]) {
       await expect(page.getByLabel(name, { exact: true })).toBeVisible();

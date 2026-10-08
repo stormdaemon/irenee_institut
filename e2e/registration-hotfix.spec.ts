@@ -36,6 +36,10 @@ test.describe("registration access hotfix", () => {
       });
     });
 
+    await page.route("**/api/auth/user", route => route.fulfill({ json: {
+      user: { id: "browser-signup-user", email: "nouveau.compte@example.test" },
+      session: { user: { id: "browser-signup-user", email: "nouveau.compte@example.test" }, expires_at: 2000000000, token_type: "cookie" }
+    } }));
     await page.goto("/inscription?next=%2Fformations%3Fcheckout%3Dannual-pass");
     await expect(page.getByLabel(/^Mot de passe/)).toBeVisible();
     await expect(page.getByLabel("Confirmer le mot de passe", { exact: true })).toBeVisible();

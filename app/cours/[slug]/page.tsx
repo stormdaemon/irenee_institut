@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { courseArtwork } from "@/lib/course-art";
 import {
   AlertTriangle,
   ArrowRight,
@@ -187,6 +189,7 @@ export default function CoursePage() {
       <div className="container course-dashboard-container">
         <Link className="course-back-link" href={isStaffPreview ? "/admin/courses" : "/espace-etudiant"}>← {isStaffPreview ? "Retour au studio" : "Mes formations"}</Link>
 
+        <div className="apostolos-workspace-art apostolos-course-panorama"><Image src={courseArtwork(course.slug).src} alt={courseArtwork(course.slug).alt} fill sizes="100vw"/></div>
         <header className="course-dashboard-hero">
           <div className="course-dashboard-copy">
             <span className="course-eyebrow">{isStaffPreview ? "Prévisualisation équipe" : `Bonjour ${firstName} · votre parcours`}</span>

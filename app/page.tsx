@@ -1,5 +1,5 @@
 import { UpcomingSessions } from "@/components/UpcomingSessions";
-import { getUpcomingVisioSessions } from "@/lib/live-sessions";
+import { getPublicAgenda } from "@/lib/public-agenda";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, ArrowRight } from "lucide-react";
@@ -9,7 +9,7 @@ import { blogArticles } from "@/lib/blog";
 export const dynamic = "force-dynamic";
 export const metadata = { title: { absolute: "Institut Apostolos Saint Irénée — Comprendre pour transmettre" } };
 export default async function Home() {
-  const courses = await getCourses();
+  const [courses, agenda] = await Promise.all([getCourses(), getPublicAgenda()]);
   const moduleCount = courses.reduce((n, c) => n + Number(c.nb_modules || 0), 0);
   return <div className="apostolos-home apostolos-illustrated">
     <section className="apostolos-sanctuary">
@@ -39,6 +39,6 @@ export default async function Home() {
     <section className="apostolos-interlude"><Image src="/images/apostolos/raison.png" alt="Le ciel étoilé et les instruments d’un cabinet d’étude" fill sizes="100vw" /><div className="apostolos-interlude-copy"><span className="apostolos-label">LA FOI ET LA RAISON EN DIALOGUE</span><h2>S’émerveiller.<br />Questionner.<br /><em>Approfondir.</em></h2><p>Les grandes questions méritent plus qu’une réponse rapide. Donnons-leur un lieu, des sources et du temps.</p><Link href="/formations" className="apostolos-cta apostolos-cta-gold">Entrer dans le programme <ArrowUpRight size={18} /></Link></div></section>
     <section className="apostolos-method apostolos-wrap apostolos-illustrated-method"><div className="apostolos-method-image"><Image src="/images/apostolos/manuscrits.png" alt="Un livre enluminé, une plume et des feuilles d’olivier dans la lumière d’un scriptorium" fill sizes="(max-width:800px) 100vw, 50vw" /></div><div className="apostolos-method-copy"><span className="apostolos-label">UNE MÉTHODE, UN CHEMIN</span><h2>Apprendre vraiment.<br /><em>Un pas après l’autre.</em></h2>{[["01", "Entrer dans une question", "Des cours organisés pour poser les fondements avant les approfondissements."], ["02", "Prendre le temps d’étudier", "Des modules de lecture et des ressources à retrouver dans votre espace."], ["03", "Faire vivre ce que l’on apprend", "Une progression personnelle pour relier le savoir à la réflexion et au dialogue."]].map(([n, title, text]) => <div className="apostolos-step" key={n}><span>{n}</span><div><h3>{title}</h3><p>{text}</p></div></div>)}<Link href="/formations" className="apostolos-text-link">Trouver mon point de départ <ArrowUpRight size={18} /></Link></div></section>
     <section className="apostolos-section apostolos-wrap"><div className="apostolos-section-head"><div><span className="apostolos-label">LE JOURNAL APOSTOLOS</span><h2>La réflexion<br /><em>se prolonge ici.</em></h2></div><Link href="/blog" className="apostolos-text-link">Ouvrir le journal <ArrowUpRight size={18} /></Link></div><div className="apostolos-journal-grid">{blogArticles.slice(0, 3).map((article, i) => <article className="apostolos-journal-card" key={article.slug}><Link href={`/blog/${article.slug}`}><div className="apostolos-journal-image"><Image src={["/images/apostolos/manuscrits.png", "/images/apostolos/raison.png", "/images/apostolos/tradition.png"][i]} alt="" fill sizes="(max-width:520px) 100vw, 33vw" /></div><span className="apostolos-label">{article.category} · {article.readingMinutes} MIN</span><h2>{article.title}</h2><p>{article.description}</p><span className="apostolos-text-link">Lire l’article <ArrowUpRight size={17} /></span></Link></article>)}</div></section>
-    <UpcomingSessions sessions={getUpcomingVisioSessions()} />
+    <UpcomingSessions sessions={agenda.sessions} unavailable={agenda.unavailable} />
   </div>;
 }

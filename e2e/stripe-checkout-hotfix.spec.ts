@@ -36,7 +36,7 @@ for (const width of [1440, 390]) {
               } };
             };
           ` }));
-          await page.route("**/checkout-confirmed-test", route => route.fulfill({ contentType: "text/html", body: '<html lang="fr"><title>Confirmation simulée</title><h1>Paiement simulé confirmé</h1></html>' }));
+          await page.route("**/checkout-confirmed-test", route => route.fulfill({ contentType: "text/html; charset=utf-8", body: '<html lang="fr"><title>Confirmation simulée</title><h1>Paiement simulé confirmé</h1></html>' }));
           await page.goto(flow.page);
           await page.getByRole("button", { name: flow.open }).click();
           const dialog = page.getByRole("dialog");

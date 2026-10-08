@@ -16,3 +16,24 @@
 
 .apostolos-header-inner>a:first-child{min-height:44px;display:flex;align-items:center;flex-shrink:0}.apostolos-back{min-height:44px}.apostolos-admin-nav a{min-height:44px}.apostolos-editorial-banner+.apostolos-catalog-layout{padding-top:38px}body .course-syllabus-title-row small,body .course-locked-copy,body .course-studio-page dt{color:#56604f}
 @media(max-width:360px){.apostolos-header-inner{padding-inline:12px;gap:8px}.apostolos-header .apostolos-brand{gap:7px}.apostolos-header .apostolos-brand strong{font-size:17px;letter-spacing:.07em}.apostolos-header .apostolos-brand small{font-size:6px;letter-spacing:.09em}.apostolos-header-actions{gap:2px}.apostolos-header .apostolos-brand svg{width:25px}.apostolos-header-actions .btn{padding-inline:8px}}
+
+.auth-shell{background:linear-gradient(#10231ce3,#10231ca6),url('/images/apostolos/sanctuaire.png') center/cover fixed}.auth-shell .auth-intro .title{color:#fff4dc}.auth-shell .auth-intro .subtitle{color:#e9e2cc}.auth-shell .auth-icon{color:#e8c985;border-color:#d9b97480;background:#132b21a8;box-shadow:none}.auth-shell .auth-card{box-shadow:0 25px 70px #07120e60;border-color:#d6c392}.apostolos-course-panorama{height:225px;margin-top:20px}.apostolos-course-panorama img{object-position:center 45%}
+@media(max-width:520px){.auth-shell{background-attachment:scroll}.apostolos-course-panorama{height:170px}}
+
+@media(max-width:700px){
+ .course-program-editor>.module-editor-summary{display:none}
+ .course-studio-steps{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:3px;padding:6px}
+ .course-studio-step{justify-content:center;min-height:44px;padding:5px 2px!important;text-align:center}
+ .course-studio-step .course-list-title{font-size:10px;line-height:1.2}
+ .course-program-panel>.module-editor-head{flex-direction:row;align-items:center;gap:10px;margin-bottom:10px}
+ .course-program-panel>.module-editor-head>.btn{width:auto;flex:0 0 140px;padding:8px 10px;font-size:11px}
+ .course-program-panel>.module-editor-head h3{font-size:15px;margin:0}
+}
+@media(max-width:360px){
+ .apostolos-admin-nav{padding:4px 8px}
+ .course-studio-panel{padding:8px!important}
+ .course-studio-mobile-switch{padding:8px!important}
+ .course-program-mobile-switch{margin-bottom:5px}
+ .course-program-editor .module-editor-body{padding:8px}
+ .course-program-editor .module-editor-body>.grid-2:first-child>p{margin-top:0}
+}
