@@ -14,7 +14,7 @@ body em,.apostolos-sanctuary h1 em,.apostolos-interlude h2 em,.apostolos-editori
 .apostolos-cta:focus-visible,.btn:focus-visible{outline-color:#f1d89a;outline-offset:5px}
 .apostolos-cta{min-height:64px;padding-inline:30px;gap:16px}.apostolos-header .apostolos-cta{min-height:58px;padding-inline:27px}
 .btn-outline{filter:saturate(.7)}.btn:disabled{filter:grayscale(.65);opacity:.6}
-.auth-submit.btn-primary,.course-studio-page .btn-primary,.course-studio-page .course-studio-step.active{background:#071220 var(--illustrated-button) center/100% 145% no-repeat;color:#fff1c7;border-color:transparent}
+.auth-submit.btn-primary,.course-studio-page .btn.btn-primary,.course-studio-page .course-studio-step.active{background:#071220 var(--illustrated-button) center/100% 145% no-repeat;color:#fff1c7;border-color:transparent}
 .course-studio-step.active :is(.course-list-title,.muted){color:#fff1c7}
 .apostolos-text-link{color:#f2d795;border-color:#897044}.apostolos-text-link:hover{color:#fff4d4;border-color:#edce8e}
 .user-trigger{padding-inline:14px}.avatar{background:#172638 url('/images/apostolos/ui/texture.png') center/150px;color:#f5df9e;border:1px solid #b88f4b;box-shadow:inset 0 0 8px #0008}
