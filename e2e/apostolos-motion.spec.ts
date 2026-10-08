@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+test.use({ storageState: { cookies: [], origins: [] } });
+
 test("the shared interface is dark, contemporary and readable on public pages", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   for (const path of ["/", "/formations", "/blog", "/auth/login"]) {
@@ -32,12 +34,12 @@ test("motion reveals content during scrolling and does not block navigation", as
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-motion", "enabled");
-  const card = page.locator(".apostolos-course-tile").first();
+  const card = page.locator(".apostolos-conviction");
   await card.scrollIntoViewIfNeeded();
   await expect(card).toHaveAttribute("data-motion-state", "visible");
   await expect(card).toHaveCSS("opacity", "1");
-  await card.click();
-  await expect(page).toHaveURL(/\/formations#cours-/);
+  await card.getByRole("link", { name: "Notre démarche" }).click();
+  await expect(page).toHaveURL(/\/a-propos$/);
   await expect(page.locator("main h1")).toBeVisible();
 });
 

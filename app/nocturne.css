@@ -93,7 +93,16 @@ input:-webkit-autofill,textarea:-webkit-autofill{-webkit-text-fill-color:#eef0fa
 /* Learning and administration use the same dark surface hierarchy. */
 .course-reader-page,.course-studio-page{
  --learning-bg:#090b12;--learning-surface:#121622;--learning-paper:#121622;--learning-ink:#eef0f8;--learning-muted:#b0b9d0;--learning-line:#343b50;--learning-accent:#ff977a;--learning-navy:#b7a7ff;
+ --studio-bg:#090b12;--studio-surface:#121622;--studio-paper:#121622;--studio-ink:#eef0f8;--studio-muted:#b0b9d0;--studio-line:#343b50;--studio-navy:#b7a7ff;--studio-gold:#ff977a;
 }
+.admin-shell,.course-studio-page{--admin-bg:#090b12;--admin-surface:#121622;--admin-surface-2:#1b2031;--admin-text:#eef0f8;--admin-copy:#c4cbdd;--admin-muted:#b0b9d0;--admin-line:#343b50;--admin-gold:#b7a7ff;--admin-red:#ffacb7}
+.course-studio-page .module-editor-body,.course-quiz-builder .course-quiz-question{background:#121622;color:#eef0f8;border-color:#434b65}
+.course-studio-mobile-save{background:#171426;border-color:#65547f;color:#e5dbfa}.course-studio-mobile-save>span{color:#e5dbfa}
+.course-quiz-correct-choice,.course-quiz-score,.course-section-heading>span,.course-details-card summary{color:#d3c8ff}
+.course-back-link,.module-session-back,.module-session-back>span,.module-session-progress>span{color:#c7cce0}
+.course-editor-state>span{color:#d1c0fc}.course-program-editor .module-editor-heading :is(span,strong),.course-program-editor .module-editor-toggle :is(span,strong){color:#ece8fa}
+.module-editor-summary strong{color:#ece8fa}.course-editor-state{color:#d1c0fc}
+.module-mobile-plan,.module-mobile-plan>summary{background:#151a28;color:#e2d8fa;border-color:#47516a}.module-mobile-plan-label,.module-mobile-plan-label-long,.module-mobile-plan summary>small,.module-mobile-plan .module-plan-copy>small{color:#c7cce0}
 .course-studio-page :is(.course-studio-editor,.course-studio-library,.course-list-item,.course-studio-commandbar,.module-editor,.soft-card,.rich-editor,.rich-toolbar,.course-quiz-builder,.course-publication-action){background:#121622;color:#eff0fa;border-color:#343b50;box-shadow:none}
 .course-studio-page :is(h1,h2,h3,h4,label,.title){color:#eff0fa}.course-studio-page :is(p,li,small,.muted){color:#b5bdd1}
 .course-studio-page :is(.input,input,select,textarea,.rich-source){background:#0b0f19;color:#eff0fa;border-color:#47516a}
