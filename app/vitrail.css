@@ -188,3 +188,10 @@ body .auth-shell .btn.btn-primary,body .auth-shell .btn.btn-outline{background:#
 .course-quiz-card .course-quiz-question{box-shadow:none}
 @media(max-width:360px){body:has(.course-studio-page) .apostolos-header-inner{height:64px}}
 @media(max-width:800px){.apostolos-admin-nav{background:linear-gradient(#04101dde,#04101dde),url('/images/apostolos/vitrail/journal.webp') center/cover}}
+.apostolos-library-hero .apostolos-hero-copy p{color:#cbd8e5}
+@media(max-width:800px){
+ body .admin-shell .course-program-panel>.module-editor-head{grid-template-columns:minmax(0,1fr) auto}
+ body .admin-shell .course-program-panel>.module-editor-head .btn{width:auto;min-width:44px;min-height:44px;height:44px;padding:10px;gap:5px;font-size:11px;white-space:nowrap;color:#f7f9ff}
+ body .admin-shell .course-program-panel>.module-editor-head .btn svg{width:14px;height:14px;color:#e7f4ff}
+}
+@media(max-width:650px){body .page-hero h1{font-size:clamp(38px,12vw,52px)!important;word-break:normal;overflow-wrap:normal}}
