@@ -874,6 +874,8 @@ test.describe("critical mobile workspace states", () => {
     const fallback = page.locator(".module-video-unavailable");
     await expect(page.getByRole("heading", { name: "Vidéo temporairement indisponible" })).toBeVisible();
     await expect(page.frameLocator("iframe[title^='Contenu du module']").getByText("Une lecture confortable")).toBeVisible();
+    await fallback.scrollIntoViewIfNeeded();
+    await expect(fallback).toHaveCSS("background-color", "rgb(40, 33, 53)");
     await assertAccessibleMain(page, testInfo);
     await expect(fallback).toHaveScreenshot("module-reader-video-fallback-mobile.png");
     assertNoRuntimeErrors(page);
