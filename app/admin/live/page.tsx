@@ -109,26 +109,26 @@ export default function AdminLivePage() {
         <form method="post" className="card" style={{ padding: 30, marginTop: 24 }} onSubmit={submit}>
           <h2 className="font-display" style={{ color: "var(--navy)", marginTop: 0 }}>Nouvelle séance</h2>
           <p>
-            <label>Titre</label>
-            <input className="input" value={form.titre} onChange={event => update("titre", event.target.value)} placeholder="Séance hebdomadaire d'apologétique" required />
+            <label htmlFor="live-title">Titre</label>
+            <input className="input" id="live-title" value={form.titre} onChange={event => update("titre", event.target.value)} placeholder="Séance hebdomadaire d'apologétique" required />
           </p>
           <p>
-            <label>Description</label>
-            <textarea className="input" rows={3} value={form.description} onChange={event => update("description", event.target.value)} placeholder="Thème de la séance, intervenant, points abordés..." />
+            <label htmlFor="live-description">Description</label>
+            <textarea className="input" rows={3} id="live-description" value={form.description} onChange={event => update("description", event.target.value)} placeholder="Thème de la séance, intervenant, points abordés..." />
           </p>
           <div className="grid-2">
             <p>
-              <label>Début</label>
-              <input className="input" type="datetime-local" value={form.starts_at} onChange={event => update("starts_at", event.target.value)} required />
+              <label htmlFor="live-start">Début</label>
+              <input className="input" type="datetime-local" id="live-start" value={form.starts_at} onChange={event => update("starts_at", event.target.value)} required />
             </p>
             <p>
-              <label>Fin (optionnel)</label>
-              <input className="input" type="datetime-local" value={form.ends_at} onChange={event => update("ends_at", event.target.value)} />
+              <label htmlFor="live-end">Fin (optionnel)</label>
+              <input className="input" type="datetime-local" id="live-end" value={form.ends_at} onChange={event => update("ends_at", event.target.value)} />
             </p>
           </div>
           <p>
-            <label>Cours associé (optionnel)</label>
-            <select className="input" value={form.course_id} onChange={event => update("course_id", event.target.value)}>
+            <label htmlFor="live-course">Cours associé (optionnel)</label>
+            <select className="input" id="live-course" value={form.course_id} onChange={event => update("course_id", event.target.value)}>
               <option value="">Ouverte à tous les étudiants (pass annuel)</option>
               {courses.map(course => (
                 <option key={course.id} value={course.id}>{course.titre}</option>

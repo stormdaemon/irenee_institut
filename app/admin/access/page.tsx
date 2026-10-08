@@ -40,7 +40,7 @@ export default async function AdminAccessPage() {
             <h2 className="font-display">Cours attribués</h2>
             <span className="badge">Ancienne version</span>
           </div>
-          <div className="card table-wrap">
+          <div className="card table-wrap" tabIndex={0} role="region" aria-label="Cours attribués">
             <table className="data-table admin-access-table">
               <thead>
                 <tr><th>Étudiant</th><th>Cours inscrits</th><th>Pass annuel</th><th>Dernière attribution</th></tr>
@@ -91,7 +91,7 @@ export default async function AdminAccessPage() {
             <h2 className="font-display">Pass annuel</h2>
             <span className="badge">{audit.stats.activeAnnualPasses} actif{audit.stats.activeAnnualPasses > 1 ? "s" : ""}</span>
           </div>
-          <div className="card table-wrap">
+          <div className="card table-wrap" tabIndex={0} role="region" aria-label="Pass annuels">
             <table className="data-table admin-access-table">
               <thead>
                 <tr><th>Étudiant</th><th>Commande</th><th>Montant</th><th>Statut</th><th>Début</th><th>Expiration</th></tr>

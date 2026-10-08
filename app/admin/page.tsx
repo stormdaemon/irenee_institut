@@ -86,7 +86,7 @@ export default async function AdminPage() {
           {isDirector ? (
           <section>
             <h2 className="font-display" style={{ color: "var(--navy)" }}>Activité plateforme</h2>
-            <div className="card table-wrap">
+            <div className="card table-wrap" tabIndex={0} role="region" aria-label="Activité de la plateforme">
               <table className="data-table">
                 <thead><tr><th>Utilisateur</th><th>Rôle</th><th>Inscription</th></tr></thead>
                 <tbody>

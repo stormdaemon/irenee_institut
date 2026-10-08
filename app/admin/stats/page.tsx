@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { BarChart3, BookOpen, ClipboardList, Users } from "lucide-react";
+import { BookOpen, ClipboardList, Users } from "lucide-react";
 import { getCourses, getHomework, getProfiles } from "@/lib/server-data";
 
 export const dynamic = "force-dynamic";
@@ -7,10 +7,10 @@ export const dynamic = "force-dynamic";
 export default async function AdminStatsPage() {
   const [courses, profiles, homework] = await Promise.all([getCourses("admin"), getProfiles(), getHomework()]);
   const blocks: [LucideIcon, string, string | number][] = [
-    [BookOpen, "Cours publiés", courses.filter(course => course.statut === "publie").length || courses.length],
+    [BookOpen, "Cours publiés", courses.filter(course => course.statut === "publie").length],
     [Users, "Utilisateurs", profiles.length],
     [ClipboardList, "Devoirs", homework.length],
-    [BarChart3, "Progression moyenne", "40%"]
+    [BookOpen, "Modules", courses.reduce((sum, course) => sum + Number(course.nb_modules || 0), 0)]
   ];
 
   return (

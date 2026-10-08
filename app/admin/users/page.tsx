@@ -167,7 +167,7 @@ export default function AdminUsersPage() {
         <p className="muted">
           {filtered.length} utilisateur{filtered.length > 1 ? "s" : ""} trouvé{filtered.length > 1 ? "s" : ""} · {passCount} avec pass annuel actif
         </p>
-        <div className="card table-wrap">
+        <div className="card table-wrap" tabIndex={0} role="region" aria-label="Utilisateurs">
           <table className="data-table">
             <thead>
               <tr><th>Utilisateur</th><th>Email</th><th>Téléphone</th><th>Pass annuel</th><th>Rôle</th><th>Inscription</th><th>Actions</th></tr>
@@ -184,7 +184,7 @@ export default function AdminUsersPage() {
                       : <span className="muted">Non inscrit</span>}
                   </td>
                   <td>
-                    <select className="input" value={user.role} onChange={event => updateRole(user.id, event.target.value as Role)}>
+                    <select className="input" aria-label={`Rôle de ${user.prenom} ${user.nom}`} value={user.role} onChange={event => updateRole(user.id, event.target.value as Role)}>
                       <option value="etudiant">Étudiant</option>
                       <option value="formateur">Formateur</option>
                       <option value="directeur">Directeur</option>

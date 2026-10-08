@@ -184,3 +184,7 @@ body .auth-shell .btn.btn-primary,body .auth-shell .btn.btn-outline{background:#
 .vitrail-button>span,.vitrail-round-arrow{font-size:19px}
 @media(min-width:801px){.vitrail-return{padding-left:22%}.apostolos-nav a{font-size:14px}}
 .vitrail-home .visio-section{background:linear-gradient(#040b13ed,#040b13ed),url('/images/apostolos/vitrail/journal.webp') center/cover;border-top:1px solid #8c744f}
+
+.course-quiz-card .course-quiz-question{box-shadow:none}
+@media(max-width:360px){body:has(.course-studio-page) .apostolos-header-inner{height:64px}}
+@media(max-width:800px){.apostolos-admin-nav{background:linear-gradient(#04101dde,#04101dde),url('/images/apostolos/vitrail/journal.webp') center/cover}}
