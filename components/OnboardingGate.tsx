@@ -251,16 +251,8 @@ export function OnboardingGate() {
     setActive(current => Math.min(slides.length - 1, current + 1));
   }
 
-  if (status === "hidden") return null;
-
-  if (status === "checking") {
-    return (
-      <div className="onboarding-veil onboarding-veil-loading" role="status" aria-live="polite">
-        <Loader2 className="action-spin" size={34} aria-hidden="true" />
-        <p>Préparation de votre accueil...</p>
-      </div>
-    );
-  }
+  // A background welcome lookup must not cover controls between pointer down and up.
+  if (status !== "visible") return null;
 
   return (
     <section

@@ -1,0 +1,86 @@
+/* The illustrated skin uses generated raster artwork; semantic controls remain native. */
+:root{--illustrated-texture:url('/images/apostolos/ui/texture.png');--illustrated-frame:url('/images/apostolos/ui/frame.png');--illustrated-button:url('/images/apostolos/ui/button.png');--illustrated-icons:url('/images/apostolos/ui/icons.png');--accent:#e8c77d;--gold:#e8c77d}
+body{background-image:linear-gradient(#060c18b8,#060c18b8),var(--illustrated-texture);background-size:auto,640px;color:#eee9df}
+.apostolos-illustrated,.admin-shell,.apostolos-student-space{background:transparent}
+.apostolos-brand img{width:48px;height:48px;object-fit:contain;flex:none;filter:drop-shadow(0 2px 8px #0009)}
+.apostolos-brand strong{color:#f7e8bb;letter-spacing:.025em;font-weight:650}.apostolos-brand small{color:#c8bc9e}
+.apostolos-header,.apostolos-footer,.apostolos-admin-nav,.apostolos-mobile-nav{background-image:linear-gradient(#050b17bb,#050b17bb),var(--illustrated-texture);background-size:auto,500px;border-color:#8e713c}
+.apostolos-header{backdrop-filter:blur(15px)}
+.apostolos-nav a{color:#ece0c5}.apostolos-nav a:hover,.apostolos-nav a[aria-current=page]{color:#ffe4a6;border-color:#bf9145}
+.apostolos-label,.hero-eyebrow,.course-eyebrow,.apostolos-sanctuary .apostolos-label,.apostolos-footer .apostolos-label{color:#e7c98e}
+body em,.apostolos-sanctuary h1 em,.apostolos-interlude h2 em,.apostolos-editorial-banner h1 em{color:#ecc879}
+.apostolos-cta,.btn,.apostolos-header .btn,.user-trigger,.course-studio-step,.course-studio-step.is-active,.course-studio-step[aria-current=step]{background-color:transparent;background-image:var(--illustrated-button);background-position:center;background-size:100% 145%;background-repeat:no-repeat;border-color:transparent;border-radius:0;color:#fff1c7;box-shadow:none;text-shadow:0 1px 3px #000;font-weight:750}
+.apostolos-cta:hover,.btn:hover,.apostolos-header .btn:hover,.btn-outline:hover,.btn-primary:hover,.btn-gold:hover{background-color:transparent;background-image:var(--illustrated-button);color:#fff9e9;border-color:transparent;filter:brightness(1.2) drop-shadow(0 4px 9px #b98a3433);box-shadow:none}
+.apostolos-cta:focus-visible,.btn:focus-visible{outline-color:#f1d89a;outline-offset:5px}
+.apostolos-cta{min-height:64px;padding-inline:30px;gap:16px}.apostolos-header .apostolos-cta{min-height:58px;padding-inline:27px}
+.btn-outline{filter:saturate(.7)}.btn:disabled{filter:grayscale(.65);opacity:.6}
+.apostolos-text-link{color:#f2d795;border-color:#897044}.apostolos-text-link:hover{color:#fff4d4;border-color:#edce8e}
+.user-trigger{padding-inline:14px}.avatar{background:#172638 url('/images/apostolos/ui/texture.png') center/150px;color:#f5df9e;border:1px solid #b88f4b;box-shadow:inset 0 0 8px #0008}
+.apostolos-menu-toggle{background-image:var(--illustrated-texture);border:1px solid #806234;border-radius:50%}
+.apostolos-sanctuary{background:#060b13}.apostolos-sanctuary>img{filter:saturate(.95) contrast(1.1)}
+.apostolos-sanctuary-shade{background:linear-gradient(90deg,#030913f2 0%,#040b14bf 37%,#040b1420 77%),linear-gradient(0deg,#060b13 0%,transparent 44%)}
+.apostolos-sanctuary-content{position:relative;padding-top:64px}
+.apostolos-sanctuary .apostolos-label:before{background:#e8c77d;box-shadow:0 0 16px #e8c77d}
+.apostolos-ornament{display:block;position:absolute;right:5%;top:110px;width:clamp(130px,15vw,205px);height:auto;filter:drop-shadow(0 15px 30px #000b);pointer-events:none}
+.apostolos-ornament img{width:100%;height:auto}.apostolos-sanctuary h1{font-size:clamp(56px,6vw,90px);font-weight:550;letter-spacing:-.045em;text-shadow:0 3px 30px #0008}
+.apostolos-sanctuary p{color:#e4ded2}.apostolos-sanctuary-caption{color:#c4b99e}
+.apostolos-foundations{border-image:var(--illustrated-frame) 22% / 0 0 14px / 0 stretch}.apostolos-foundations strong{color:#edd599}.apostolos-foundations span{color:#c7c1b4}
+:is(.apostolos-conviction-image,.apostolos-method-image,.apostolos-interlude,.apostolos-editorial-banner,.apostolos-workspace-art,.apostolos-journal-image){border:1px solid transparent;border-image:var(--illustrated-frame) 22% / 26px / 3px stretch;border-radius:0;box-shadow:0 16px 45px #0008;overflow:visible}
+.apostolos-conviction-image{transform:none}.apostolos-conviction-image:after,.apostolos-workspace-art:after{display:none}
+.apostolos-conviction-image img,.apostolos-method-image img,.apostolos-interlude>img,.apostolos-editorial-banner>img{border-radius:0;filter:saturate(.95)}
+.apostolos-conviction-image>span{z-index:1}.apostolos-interlude:after{background:linear-gradient(90deg,#050b1000,#06101ab8 52%,#06101af2)}
+.apostolos-course-tile,.apostolos-catalog-row,.apostolos-catalog-row.apostolos-catalog-illustrated,.apostolos-journal-card,.soft-card,.auth-card,.form-card,.stat-card,.admin-card,.panel,.modal-card,.course-hero,.course-program,.course-objectives,.course-requirements,.module-course-plan,.reader-preferences,.module-content-frame,.module-reader-card,.course-studio-panel,.module-editor,.course-quiz-card,.course-resource-card,.course-plan-card,.course-empty-state,.course-sidebar-card,.course-study-card{background-color:#0c1521;background-image:linear-gradient(#09111fd4,#09111fd4),var(--illustrated-texture);background-size:auto,480px;border:1px solid transparent;border-image:var(--illustrated-frame) 22% / 16px / 0 stretch;border-radius:0;box-shadow:0 8px 25px #0005}
+.apostolos-course-tile{overflow:hidden}.apostolos-painted-art{margin:13px 13px 0;height:254px}.apostolos-painted-art:after{background:linear-gradient(0deg,#0b1420dd,transparent 65%)}.apostolos-course-body{padding:26px}
+.apostolos-journal-card{padding:15px}.apostolos-journal-card .apostolos-journal-image{border-image-width:12px;border-image-outset:0}.apostolos-journal-card .apostolos-label{display:block;margin-top:15px}
+.apostolos-motion-ribbon{background:#07101bcc var(--illustrated-texture) center/640px;border:1px solid transparent;border-image:var(--illustrated-frame) 22% / 10px 0 / 0 stretch}
+.apostolos-motion-word{color:#e6c785;opacity:.85;text-shadow:0 2px 2px #000,0 0 24px #bb924725}
+.apostolos-step>span,.apostolos-art-number,.apostolos-art-label{color:#f3db9c}.apostolos-step{border-color:#705b36}
+.apostolos-step>span{background:var(--illustrated-icons) 0 0/400%;width:54px;height:54px;min-width:54px;display:grid;place-items:center;color:transparent}
+.apostolos-step:nth-of-type(2)>span{background-position:33.333% 0}.apostolos-step:nth-of-type(3)>span{background-position:66.666% 0}
+.apostolos-hero-copy>p,.apostolos-catalog-row p,.apostolos-catalog-row li,.apostolos-conviction p,.apostolos-course-body p,.apostolos-journal-card p{color:#c9c7c0}
+.apostolos-admin-nav a{color:#ede0bf}.apostolos-admin-nav a.active,.apostolos-admin-nav a[aria-current=page]{background:var(--illustrated-button) center/100% 145% no-repeat;color:#fff1c7;border-color:transparent}
+.course-studio-panel{border-image-width:10px}.course-studio-step{background-size:100% 165%}.course-studio-step.is-active{filter:brightness(1.35)}
+.module-course-plan{padding:14px 10px 12px}.module-course-plan h2{color:#f3e7cb}.module-plan-course-title{color:#e7c98e}
+.module-plan-item{border:1px solid transparent;border-image:var(--illustrated-frame) 22% / 8px / 0 stretch;border-radius:0;background:#0a1422c9 var(--illustrated-texture) center/360px;box-shadow:inset 0 0 25px #0006}
+.module-plan-item.is-active,.module-plan-item[aria-current=page]{background-color:#20334b;filter:brightness(1.12);box-shadow:inset 0 0 20px #9a742a30}
+.module-plan-item.is-active :is(strong,span),.module-plan-item[aria-current=page] :is(strong,span){color:#fff0c6}
+.module-plan-number,.module-plan-marker{background:var(--illustrated-icons) 0 0/400%;border:0;color:transparent;min-width:30px;min-height:30px}
+.module-session-bar,.module-session-progress{background-color:#07101b;background-image:var(--illustrated-texture);background-size:500px;border-color:#8f7240}
+.module-session-progress-track,.module-plan-progress{background:#142235 var(--illustrated-texture) center/300px;border:1px solid #8d7040;box-shadow:inset 0 1px 4px #0009;height:8px}
+.module-session-progress-track>span,.module-plan-progress>span{background:#c59d51 url('/images/apostolos/ui/button.png') center/100% 450%;box-shadow:0 0 9px #d8a33e80}
+.module-content-frame{padding:10px;border-image-width:18px}.module-content-frame iframe{background:#0a1320}
+.reader-preferences{border-image-width:10px}.module-mobile-plan{border:1px solid transparent;border-image:var(--illustrated-frame) 22% / 12px / 0 stretch;background:var(--illustrated-texture) center/450px;border-radius:0}
+.module-preview-notice,.module-video-unavailable{border:1px solid transparent;border-image:var(--illustrated-frame) 22% / 10px / 0 stretch;background-image:linear-gradient(#111b2dde,#111b2dde),var(--illustrated-texture);background-size:auto,400px;border-radius:0}
+.rich-canvas{background-image:linear-gradient(#101724eb,#101724eb),var(--illustrated-texture);background-size:auto,600px}
+svg.lucide{background-image:var(--illustrated-icons);background-size:400% 400%;background-position:0 0;background-repeat:no-repeat;overflow:visible;filter:drop-shadow(0 1px 2px #0008)}
+svg.lucide>*{opacity:0}
+svg:is(.lucide-user,.lucide-users,.lucide-user-round,.lucide-graduation-cap){background-position:33.333% 0}
+svg:is(.lucide-cross,.lucide-church,.lucide-heart,.lucide-sparkles){background-position:66.666% 0}
+svg:is(.lucide-pencil,.lucide-pencil-line,.lucide-pen,.lucide-file-text,.lucide-file-pen){background-position:100% 0}
+svg:is(.lucide-arrow-right,.lucide-arrow-up-right,.lucide-external-link,.lucide-chevron-right){background-position:0 33.333%}
+svg:is(.lucide-arrow-left,.lucide-chevron-left){background-position:33.333% 33.333%}
+svg:is(.lucide-check,.lucide-check-check,.lucide-circle-check,.lucide-circle-check-big,.lucide-shield-check){background-position:66.666% 33.333%}
+svg:is(.lucide-x,.lucide-trash,.lucide-trash-2,.lucide-circle-x){background-position:100% 33.333%}
+svg:is(.lucide-lock,.lucide-lock-keyhole,.lucide-shield){background-position:0 66.666%}
+svg:is(.lucide-settings,.lucide-settings-2,.lucide-sliders-horizontal,.lucide-loader-circle){background-position:33.333% 66.666%}
+svg:is(.lucide-mail,.lucide-send,.lucide-message-circle){background-position:66.666% 66.666%}
+svg:is(.lucide-search,.lucide-eye,.lucide-eye-off){background-position:100% 66.666%}
+svg.lucide-plus{background-position:0 100%}svg:is(.lucide-play,.lucide-video,.lucide-film){background-position:33.333% 100%}
+svg:is(.lucide-menu,.lucide-list,.lucide-list-ordered,.lucide-panel-left){background-position:66.666% 100%}
+svg:is(.lucide-chevron-down,.lucide-download,.lucide-arrow-down){background-position:100% 100%}
+/* Editor glyphs stay legible on top of their illustrated medallion. */
+.editor-toolbar svg.lucide,.rich-toolbar svg.lucide{background-image:var(--illustrated-icons);background-position:100% 0}
+.editor-toolbar svg.lucide>*,.rich-toolbar svg.lucide>*{opacity:1;stroke:#fff3d1;stroke-width:1.6}
+.apostolos-cta svg,.btn svg{min-width:20px;min-height:20px}
+@media(prefers-reduced-motion:no-preference){
+ .apostolos-ornament{animation:apostolos-emblem-float 8s ease-in-out infinite}
+ .apostolos-sanctuary>img{animation:apostolos-cathedral-breathe 18s ease-in-out infinite alternate}
+ .apostolos-brand img{transition:filter .45s,transform .45s}.apostolos-brand:hover img{transform:rotate(-5deg) scale(1.08);filter:drop-shadow(0 0 12px #cfa04470)}
+ .apostolos-course-tile:hover,.apostolos-journal-card:hover{transform:translateY(-7px);filter:brightness(1.08)}
+}
+@keyframes apostolos-emblem-float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-13px) rotate(2deg)}}
+@keyframes apostolos-cathedral-breathe{from{scale:1;filter:saturate(.85) brightness(.92)}to{scale:1.035;filter:saturate(1.1) brightness(1.07)}}
+@media(max-width:800px){.apostolos-brand img{width:42px;height:42px}.apostolos-ornament{right:3%;top:35px;width:100px;opacity:.85}.apostolos-sanctuary h1{max-width:560px}.apostolos-sanctuary-shade{background:linear-gradient(90deg,#040b16f0,#040b1688),linear-gradient(0deg,#060b13,transparent 70%)}.apostolos-interlude:after{background:linear-gradient(0deg,#06101af2 7%,#06101ac9 50%,#06101a15)}}
+@media(max-width:520px){.apostolos-ornament{position:relative;top:auto;right:auto;width:84px;margin:20px 0 -8px}.apostolos-sanctuary-content{padding-top:32px}.apostolos-sanctuary h1{font-size:clamp(36px,10vw,52px);margin-top:22px}.apostolos-sanctuary{min-height:820px}.apostolos-sanctuary p{margin-top:19px}.apostolos-sanctuary .apostolos-label{font-size:7px}.apostolos-cta{min-height:62px;padding-inline:25px}.apostolos-course-body{padding:23px}.apostolos-painted-art{height:245px}.apostolos-journal-card{padding:12px}.module-course-plan{padding:10px 6px}.module-content-frame{padding:5px;border-image-width:12px}.course-studio-panel{border-image-width:6px}.apostolos-conviction-image,.apostolos-method-image,.apostolos-interlude{border-image-width:20px}}
+@media(max-width:360px){.apostolos-brand img{width:34px;height:40px}.apostolos-brand{gap:6px}.apostolos-header .apostolos-brand strong{font-size:17px}.course-program-mobile-actions .btn{background-size:100% 180%}.course-studio-step{background-size:100% 210%}.apostolos-header .user-trigger{padding-inline:9px}.apostolos-sanctuary .apostolos-label{font-size:6px}}
+@media(prefers-reduced-motion:reduce){.apostolos-ornament,.apostolos-sanctuary>img{animation:none;scale:1}}

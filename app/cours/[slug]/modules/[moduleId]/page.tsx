@@ -80,7 +80,7 @@ const moduleFrameThemeCss = `
   html { background: #121622; }
   body {
     color: #d9deeb;
-    background: #121622;
+    background: linear-gradient(#0a1320ed,#0a1320ed), url('/images/apostolos/ui/texture.png') center / 640px;
     font-family: Manrope, Arial, sans-serif;
     font-size: 18px;
     line-height: 1.76;
@@ -183,6 +183,14 @@ const moduleFrameThemeCss = `
   }
   .module-content :is(.course-callout, .course-block, .course-quote) > :first-child { margin-top: 0; }
   .module-content :is(.course-callout, .course-block, .course-quote) > :last-child { margin-bottom: 0; }
+  .module-content :is(.definition-box,.quote-box,.biblical-quote,.note-box,.warning-box,.success-box,.example-box,.course-callout,.course-block,.course-quote) {
+    background-image: linear-gradient(#0c1829da,#0c1829da), url('/images/apostolos/ui/texture.png') !important;
+    background-size: auto, 480px !important;
+    border: 1px solid transparent !important;
+    border-image: url('/images/apostolos/ui/frame.png') 22% / 12px / 0 stretch !important;
+    border-radius: 0;
+    padding: 22px 24px;
+  }
   @media (max-width: 640px) {
     body {
       font-size: 17px;

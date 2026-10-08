@@ -17,7 +17,7 @@ export default async function Home() {
       <div className="apostolos-sanctuary-shade" />
       <div className="apostolos-wrap apostolos-sanctuary-content">
         <span className="apostolos-label">INSTITUT APOSTOLOS SAINT IRÉNÉE</span>
-        <div className="apostolos-ornament" aria-hidden="true">✦</div>
+        <div className="apostolos-ornament" aria-hidden="true"><img src="/images/apostolos/ui/emblem.png" width="140" height="140" alt="" /></div>
         <h1><span>La foi.</span><span>Le désir de</span><em>comprendre.</em></h1>
         <p>Entrez dans une tradition vivante. Explorez les Écritures, l’histoire et la raison pour comprendre la foi catholique et apprendre à la transmettre.</p>
         <div className="apostolos-actions"><Link href="/formations" className="apostolos-cta apostolos-cta-gold">Explorer les formations <ArrowUpRight size={19} /></Link><Link href="/a-propos" className="apostolos-text-link">Découvrir l’Institut <ArrowRight size={17} /></Link></div>

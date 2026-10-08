@@ -3,6 +3,7 @@ import "./globals.css";
 import "./apostolos.css";
 import "./imagery.css";
 import "./nocturne.css";
+import "./illuminated.css";
 import { ApostolosMotion } from "@/components/ApostolosMotion";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
