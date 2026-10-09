@@ -1,5 +1,6 @@
 import { dossierArticles } from "./blog-dossiers";
 import { schoolArticles } from "./blog-school";
+import { historicalArticles } from "./blog-history";
 
 export type BlogSource = {
   id: string;
@@ -313,7 +314,8 @@ const instituteArticles: BlogArticle[] = [
 export const blogArticles: BlogArticle[] = [
   ...instituteArticles,
   ...schoolArticles,
-  ...dossierArticles
+  ...dossierArticles,
+  ...historicalArticles
 ];
 
 export const blogCategories = Array.from(new Set(blogArticles.map(article => article.category)));

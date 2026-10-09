@@ -8,7 +8,8 @@ import {getOptionalPageProfile} from "@/lib/page-auth";
 import {BuyCourseButton} from "@/components/BuyCourseButton";
 import {Suspense} from "react";
 export const dynamic="force-dynamic";
-export const metadata={title:"Les cours — Un parcours pour comprendre",description:"Découvrez les cours et modules de l’Institut Apostolos Saint Irénée."};
+import { publicPageMetadata } from "@/lib/seo";
+export const metadata=publicPageMetadata("Formation en apologétique catholique | Apostolos Saint Irénée", "Explorez le programme de l’Institut Apostolos Saint Irénée : apologétique, Écritures, foi et raison, histoire du christianisme et philosophie. Cours en ligne par modules.", "/formations");
 export default async function FormationsPage(){
  const [courses,profile]=await Promise.all([getCourses(),getOptionalPageProfile()]);
  const isStaff=profile?.role==="directeur"||profile?.role==="formateur";

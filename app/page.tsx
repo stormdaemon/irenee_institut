@@ -3,8 +3,9 @@ import Link from "next/link";
 import { getCourses } from "@/lib/server-data";
 import { UpcomingSessions } from "@/components/UpcomingSessions";
 import { getPublicAgenda } from "@/lib/public-agenda";
+import { publicPageMetadata } from "@/lib/seo";
 export const dynamic = "force-dynamic";
-export const metadata = { title: { absolute: "Institut Apostolos Saint Irénée — L’Institut est de retour" }, description: "L’Institut est de retour. Théologie, philosophie et apologétique : reprenez le chemin de la formation. Les anciens détenteurs d’un pass annuel peuvent demander sa récupération gratuite." };
+export const metadata = publicPageMetadata("Institut Apostolos Saint Irénée — Apologétique catholique", "L’Institut Saint Irénée devient Apostolos. Formations en apologétique catholique, théologie et philosophie en ligne. Demandez la récupération de votre ancien pass.", "/");
 const domains = [
   { title: "Apologétique", art: "apologetique", subtitle: "Répondre. Dialoguer. Témoigner.", match: /introduction-apologetique/ },
   { title: "Écriture sainte", art: "ecriture", subtitle: "Accueillir. Méditer. Vivre.", match: /bibl|ecriture/ },

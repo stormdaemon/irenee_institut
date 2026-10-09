@@ -104,7 +104,7 @@ export default function InstitutApologetiquePage() {
             className="font-display"
             style={{ fontSize: "clamp(2.7rem, 5vw, 4.45rem)", lineHeight: 1.04, maxWidth: 1040, margin: "0 auto" }}
           >
-            Institut Apostolos Saint Irénée
+            Institut d’Apologétique Apostolos Saint Irénée
           </h1>
           <p style={{ fontSize: "1.3rem", color: "#f0dfc2", maxWidth: 900, margin: "22px auto 0" }}>
             Approfondir la foi, étudier les sources et apprendre à répondre avec intelligence, précision et charité.
@@ -115,6 +115,12 @@ export default function InstitutApologetiquePage() {
       <section className="section">
         <div className="container" style={{ maxWidth: 1040 }}>
           <h2 className="section-title">Qu'est-ce qu'un institut d'apologétique ?</h2>
+          <p className="subtitle">
+            Vous connaissiez l’Institut Saint Irénée ? Il revient sous le nom d’Institut Apostolos Saint Irénée,
+            consacré à la formation en apologétique catholique en ligne. <Link href="/equipe">Théo Lafont en est le directeur.</Link>{" "}
+            Les anciens titulaires d’un pass annuel peuvent <Link href="/recuperer-mon-pass">demander sa récupération gratuite</Link>,
+            après vérification de leur ancien accès.
+          </p>
           <p className="subtitle">
             Un institut d'apologétique donne une méthode pour présenter les raisons de croire sans réduire la foi à
             une collection de formules. Il apprend à distinguer les questions historiques, bibliques, philosophiques
@@ -210,6 +216,7 @@ export default function InstitutApologetiquePage() {
               ["École d'Apologétique en ligne", "Comprendre la méthode d'apprentissage à distance.", "/ecole-apologetique-en-ligne"],
               ["Programme d'apologétique", "Voir la progression et les cours disponibles.", "/programme-apologetique"],
               ["Ressources d'apologétique", "Explorer les parcours de lecture et les sources.", "/ressources-apologetique"]
+              ,["Apologétique pour étudiants", "Un plan d’étude compatible avec la vie universitaire.", "/apologetique-pour-etudiants"]
             ].map(([title, description, href]) => (
               <article className="soft-card" key={href} style={{ padding: 24 }}>
                 <h3 style={{ marginTop: 0 }}>{title}</h3>
