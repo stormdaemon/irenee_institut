@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AlertTriangle, CheckCircle2, KeyRound, Loader2, Lock } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { safeInternalPath } from "@/lib/request-security";
-import { createBrowserClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/lib/browser-auth";
 
 type ResetStatus = "loading" | "ready" | "submitting" | "success" | "error";
 
@@ -76,9 +76,9 @@ export default function PasswordResetPage() {
 
     const loginEmail = typeof body?.loginEmail === "string" ? body.loginEmail : "";
     if (loginEmail) {
-      const supabase = createBrowserClient();
-      const login = supabase
-        ? await supabase.auth.signInWithPassword({ email: loginEmail, password })
+      const context = createBrowserClient();
+      const login = context
+        ? await context.auth.signInWithPassword({ email: loginEmail, password })
         : { data: null, error: { message: "Service de connexion indisponible." } };
       if (!login.error && login.data?.session) {
         codeRef.current = "";

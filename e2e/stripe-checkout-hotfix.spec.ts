@@ -1,126 +1,90 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-type CheckoutFlow = {
-  checkoutUrl: string;
-  endpoint: string;
-  openButton: RegExp;
-  pagePath: string;
-  product: "annual-pass" | "library-membership";
-};
-
-const flows: CheckoutFlow[] = [
-  {
-    checkoutUrl: "https://checkout.stripe.com/c/pay/cs_test_e2e_annual_pass",
-    endpoint: "/api/payments/checkout",
-    openButton: /Obtenir le pass annuel/i,
-    pagePath: "/formations",
-    product: "annual-pass"
-  },
-  {
-    checkoutUrl: "https://checkout.stripe.com/c/pay/cs_test_e2e_library",
-    endpoint: "/api/payments/library/checkout",
-    openButton: /Adh[eé]rer pour 15/i,
-    pagePath: "/bibliotheque-apologetique",
-    product: "library-membership"
-  }
-];
-
-async function exerciseHostedCheckout(page: Page, flow: CheckoutFlow) {
-  const user = {
-    email: "student.checkout@example.test",
-    id: "browser-checkout-student"
-  };
-  let checkoutCalls = 0;
-
-  await page.route("**/api/auth/user", async route => {
-    await route.fulfill({
-      body: JSON.stringify({
-        session: {
-          expires_at: Math.floor(Date.now() / 1000) + 3600,
-          token_type: "cookie",
-          user
-        },
-        user
-      }),
-      contentType: "application/json",
-      status: 200
+test.describe("checkout remains usable during background onboarding lookup", () => {
+  test.use({ storageState: { cookies: [], origins: [] }, viewport: { width: 390, height: 900 } });
+  test("a pending welcome lookup cannot intercept the library checkout click", async ({ page }) => {
+    const user = { email: "student.checkout@example.test", id: "browser-checkout-student" };
+    await page.route("**/api/auth/user", route => route.fulfill({ json: { user, session: { user, expires_at: 2000000000, token_type: "cookie" } } }));
+    let lookupStarted = false;
+    let releaseLookup!: () => void;
+    const pending = new Promise<void>(resolve => { releaseLookup = resolve; });
+    await page.route("**/api/onboarding/status", async route => {
+      lookupStarted = true;
+      await pending;
+      await route.fulfill({ json: { ok: true, needsOnboarding: false } });
     });
-  });
-
-  await page.route(`**${flow.endpoint}`, async route => {
-    checkoutCalls += 1;
-    expect(route.request().method()).toBe("POST");
-
-    const rawBody = route.request().postData();
-    const body = rawBody ? JSON.parse(rawBody) as Record<string, unknown> : {};
-    if (flow.product === "annual-pass") {
-      expect(body).toEqual({ amount: "99", bookRequested: false, bookTitle: "" });
-    } else {
-      expect(body).toEqual({});
+    try {
+      await page.goto("/bibliotheque-apologetique");
+      await expect.poll(() => lookupStarted).toBe(true);
+      await page.getByRole("button", { name: /Adh[eé]rer pour 15/i }).click({ timeout: 3000 });
+      await expect(page.getByRole("dialog")).toBeInViewport();
+    } finally {
+      releaseLookup();
     }
-
-    await route.fulfill({
-      body: JSON.stringify({
-        checkoutUrl: flow.checkoutUrl,
-        ok: true,
-        provider: "stripe",
-        sessionId: flow.product === "annual-pass" ? "cs_test_e2e_annual_pass" : "cs_test_e2e_library"
-      }),
-      contentType: "application/json",
-      status: 200
-    });
   });
+});
 
-  await page.route("https://checkout.stripe.com/**", async route => {
-    await route.fulfill({
-      body: "<!doctype html><html lang=\"fr\"><title>Stripe Checkout simulé</title><body>Checkout simulé</body></html>",
-      contentType: "text/html; charset=utf-8",
-      status: 200
-    });
+const flows = [
+  { product: "annual-pass", page: "/formations", endpoint: "/api/payments/checkout", open: /Obtenir le pass annuel/i },
+  { product: "library", page: "/bibliotheque-apologetique", endpoint: "/api/payments/library/checkout", open: /Adh[eé]rer pour 15/i }
+];
+for (const width of [1440, 390]) {
+  test.describe(`Stripe custom Checkout at ${width}px`, () => {
+    test.use({ storageState: { cookies: [], origins: [] }, viewport: { width, height: 900 } });
+    for (const flow of flows) {
+      for (const outcome of ["confirmed", "declined", "unavailable"] as const) {
+        test(`${flow.product}: ${outcome} preserves a usable payment flow`, async ({ page }) => {
+          let calls = 0;
+          const user = { email: "student.checkout@example.test", id: "browser-checkout-student" };
+          await page.route("**/api/auth/user", route => route.fulfill({ json: { user, session: { user, expires_at: 2000000000, token_type: "cookie" } } }));
+          await page.route(`**${flow.endpoint}`, async route => {
+            calls++;
+            expect(route.request().method()).toBe("POST");
+            expect(route.request().postDataJSON()).toEqual(flow.product === "annual-pass" ? { amount: "99", bookRequested: false, bookTitle: "" } : {});
+            await route.fulfill({ status: outcome === "unavailable" ? 503 : 200, json: outcome === "unavailable"
+              ? { ok: false, error: "Le paiement est momentanément indisponible." }
+              : { ok: true, provider: "stripe", clientSecret: "cs_test_browser123_secret_simulated123", publishableKey: "pk_test_simulated123" } });
+          });
+          // Simulates the public SDK boundary; no provider account or real card is contacted.
+          await page.route("https://js.stripe.com/basil/stripe.js", route => route.fulfill({ contentType: "application/javascript", body: `
+            window.Stripe = function(key) {
+              if (key !== 'pk_test_simulated123') throw new Error('Unexpected publishable key');
+              return { initCheckout: async function(options) {
+                if (await options.fetchClientSecret() !== 'cs_test_browser123_secret_simulated123') throw new Error('Unexpected session');
+                return { createPaymentElement: function() { return {
+                  mount: function(target) { target.innerHTML = '<div role="group" aria-label="Champs Stripe simulés">Formulaire sécurisé simulé</div>'; },
+                  destroy: function() {}
+                }; }, confirm: async function() {
+                  ${outcome === "declined" ? "return { type: 'error', error: { message: 'Carte refusée pour ce test.' } };" : "window.location.assign('/checkout-confirmed-test'); return {};"}
+                } };
+              } };
+            };
+          ` }));
+          await page.route("**/checkout-confirmed-test", route => route.fulfill({ contentType: "text/html; charset=utf-8", body: '<html lang="fr"><title>Confirmation simulée</title><h1>Paiement simulé confirmé</h1></html>' }));
+          await page.goto(flow.page);
+          await page.getByRole("button", { name: flow.open }).click();
+          const dialog = page.getByRole("dialog");
+          await expect(dialog).toBeInViewport();
+          expect(calls).toBe(0);
+          await dialog.getByRole("button", { name: "Continuer vers le paiement" }).click();
+          if (outcome === "unavailable") {
+            await expect(dialog.getByRole("alert")).toHaveText("Le paiement est momentanément indisponible.");
+            await expect(dialog.getByRole("button", { name: "Continuer vers le paiement" })).toBeEnabled();
+          } else {
+            await expect(dialog.getByRole("group", { name: "Champs Stripe simulés" })).toBeVisible();
+            const pay = dialog.getByRole("button", { name: /^Payer/ });
+            await expect(pay).toBeEnabled();
+            await pay.click();
+            if (outcome === "declined") {
+              await expect(dialog.getByRole("alert")).toHaveText("Carte refusée pour ce test.");
+              await expect(pay).toBeEnabled();
+            } else {
+              await expect(page).toHaveTitle("Confirmation simulée");
+            }
+          }
+          expect(calls).toBe(1);
+        });
+      }
+    }
   });
-
-  await page.goto(flow.pagePath);
-  await page.getByRole("button", { name: flow.openButton }).click();
-
-  const dialog = page.getByRole("dialog");
-  await expect(dialog).toBeVisible();
-  await expect(dialog).toBeInViewport();
-  await expect(dialog.getByRole("button", { name: /Continuer vers Stripe/i })).toBeVisible();
-  expect(checkoutCalls).toBe(0);
-
-  await dialog.getByRole("button", { name: /Continuer vers Stripe/i }).click();
-  await page.waitForURL(flow.checkoutUrl);
-
-  expect(checkoutCalls).toBe(1);
-  expect(new URL(page.url()).protocol).toBe("https:");
-  expect(new URL(page.url()).hostname).toBe("checkout.stripe.com");
-  await expect(page).toHaveTitle("Stripe Checkout simulé");
 }
-
-test.describe("Stripe checkout hotfix on desktop", () => {
-  test.use({
-    storageState: { cookies: [], origins: [] },
-    viewport: { height: 900, width: 1440 }
-  });
-
-  for (const flow of flows) {
-    test(`${flow.product}: modal -> POST API -> hosted Stripe navigation`, async ({ page }) => {
-      await exerciseHostedCheckout(page, flow);
-    });
-  }
-});
-
-test.describe("Stripe checkout hotfix on mobile", () => {
-  test.use({
-    hasTouch: true,
-    isMobile: true,
-    storageState: { cookies: [], origins: [] },
-    viewport: { height: 844, width: 390 }
-  });
-
-  for (const flow of flows) {
-    test(`${flow.product}: modal -> POST API -> hosted Stripe navigation`, async ({ page }) => {
-      await exerciseHostedCheckout(page, flow);
-    });
-  }
-});

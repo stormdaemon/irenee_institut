@@ -1,0 +1,11 @@
+[Unit]
+Description=Apostolos PostgreSQL and avatar backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/apostolos/backup.sh
+Nice=10
+IOSchedulingClass=idle
+UMask=0077

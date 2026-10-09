@@ -33,7 +33,7 @@ const sourceCatalog: Record<string, BlogSource> = {
   },
   ireneeFormations: {
     id: "ireneeFormations",
-    label: "Institut Saint Irénée - Formations",
+    label: "Institut Apostolos Saint Irénée - Formations",
     url: "/formations"
   }
 };

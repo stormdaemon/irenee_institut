@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import test from "node:test";
+import { test } from "bun:test";
 import { POST as createAnnualPassCheckout } from "@/app/api/payments/checkout/route";
 import { POST as createLibraryCheckout } from "@/app/api/payments/library/checkout/route";
 import { isAllowedStripeCheckoutUrl } from "./stripe-checkout-url";
@@ -169,5 +169,5 @@ test("Stripe webhooks persist terminal states for expired and failed asynchronou
   assert.equal(stripeCheckoutFailureStatus("checkout.session.completed"), null);
   assert.match(implementation, /stripeCheckoutFailureStatus\(summary\.eventType\)/);
   assert.match(implementation, /const\s+failureUpdate\s*=[\s\S]{0,320}\{\s*status:\s*["']expired["'][\s\S]{0,220}:\s*\{\s*status:\s*["']failed["']/);
-  assert.match(implementation, /from\(["']paypal_orders["']\)[\s\S]*?\.update\(failureUpdate\)/);
+  assert.match(implementation, /pgUpdate\("paypal_orders", failureUpdate/);
 });

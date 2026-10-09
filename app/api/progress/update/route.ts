@@ -1,3 +1,4 @@
+import { pgInsert, pgRead, pgUpdate } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { issueLearningDocument } from "@/lib/education";
@@ -48,29 +49,11 @@ export async function POST(request: Request) {
   const { courseId, moduleId } = command;
   const now = new Date().toISOString();
   const [profileResult, courseResult, moduleResult, enrollmentResult, annualPassResult] = await Promise.all([
-    auth.supabase.from("profiles").select("role").eq("id", auth.user.id).maybeSingle(),
-    auth.supabase.from("courses").select("id,titre,statut").eq("id", courseId).eq("statut", "publie").maybeSingle(),
-    auth.supabase
-      .from("course_modules")
-      .select("id,titre,course_id,type_contenu,ordre,quiz")
-      .eq("id", moduleId)
-      .eq("course_id", courseId)
-      .maybeSingle(),
-    auth.supabase
-      .from("course_enrollments")
-      .select("id,statut,access_source,access_expires_at")
-      .eq("etudiant_id", auth.user.id)
-      .eq("course_id", courseId)
-      .eq("statut", "en_cours")
-      .maybeSingle(),
-    auth.supabase
-      .from("annual_access_passes")
-      .select("id")
-      .eq("user_id", auth.user.id)
-      .eq("status", "active")
-      .gt("expires_at", now)
-      .limit(1)
-      .maybeSingle()
+    pgRead("select t.\"role\" from public.\"profiles\" t where t.\"id\" = $1", [auth.user.id], "optional"),
+    pgRead("select t.\"id\", t.\"titre\", t.\"statut\" from public.\"courses\" t where t.\"id\" = $1 and t.\"statut\" = $2", [courseId, "publie"], "optional"),
+    pgRead("select t.\"id\", t.\"titre\", t.\"course_id\", t.\"type_contenu\", t.\"ordre\", t.\"quiz\" from public.\"course_modules\" t where t.\"id\" = $1 and t.\"course_id\" = $2", [moduleId, courseId], "optional"),
+    pgRead("select t.\"id\", t.\"statut\", t.\"access_source\", t.\"access_expires_at\" from public.\"course_enrollments\" t where t.\"etudiant_id\" = $1 and t.\"course_id\" = $2 and t.\"statut\" = $3", [auth.user.id, courseId, "en_cours"], "optional"),
+    pgRead("select t.\"id\" from public.\"annual_access_passes\" t where t.\"user_id\" = $1 and t.\"status\" = $2 and t.\"expires_at\" > $3 limit $4", [auth.user.id, "active", now, 1], "optional")
   ]);
 
   const accessError = profileResult.error || courseResult.error || moduleResult.error || enrollmentResult.error || annualPassResult.error;
@@ -110,12 +93,8 @@ export async function POST(request: Request) {
   }
 
   const [courseModulesResult, progressRowsResult] = await Promise.all([
-    auth.supabase.from("course_modules").select("id,ordre").eq("course_id", courseId).order("ordre", { ascending: true }),
-    auth.supabase
-      .from("module_progress")
-      .select("id,module_id,complete,date_debut,progression,statut")
-      .eq("course_id", courseId)
-      .eq("etudiant_id", auth.user.id)
+    pgRead("select t.\"id\", t.\"ordre\" from public.\"course_modules\" t where t.\"course_id\" = $1 order by t.\"ordre\" asc", [courseId], "many"),
+    pgRead("select t.\"id\", t.\"module_id\", t.\"complete\", t.\"date_debut\", t.\"progression\", t.\"statut\" from public.\"module_progress\" t where t.\"course_id\" = $1 and t.\"etudiant_id\" = $2", [courseId, auth.user.id], "many")
   ]);
   if (courseModulesResult.error || progressRowsResult.error) {
     return NextResponse.json({ ok: false, error: "La progression est momentanément indisponible." }, { status: 500 });
@@ -135,15 +114,7 @@ export async function POST(request: Request) {
   if (isStart) {
     if (currentProgress) {
       if (currentProgress.complete !== true && !currentProgress.date_debut) {
-        const { data: repairedStart, error: repairError } = await auth.supabase
-          .from("module_progress")
-          .update({ date_debut: now, statut: "en_cours", updated_at: now })
-          .eq("id", currentProgress.id)
-          .eq("etudiant_id", auth.user.id)
-          .eq("module_id", moduleId)
-          .eq("complete", false)
-          .select("id,module_id,complete,date_debut,progression,statut")
-          .single();
+        const { data: repairedStart, error: repairError } = await pgUpdate("module_progress", { date_debut: now, statut: "en_cours", updated_at: now }, "t.\"id\" = $1 and t.\"etudiant_id\" = $2 and t.\"module_id\" = $3 and t.\"complete\" = $4", [currentProgress.id, auth.user.id, moduleId, false], { returning: "one", columns: "id,module_id,complete,date_debut,progression,statut" });
         if (repairError || !repairedStart) {
           return NextResponse.json({ ok: false, error: "Le début de lecture n'a pas pu être réinitialisé." }, { status: 500 });
         }
@@ -163,19 +134,10 @@ export async function POST(request: Request) {
       statut: "en_cours",
       updated_at: now
     };
-    const { data: started, error: startError } = await auth.supabase
-      .from("module_progress")
-      .insert(startPayload)
-      .select()
-      .single();
+    const { data: started, error: startError } = await pgInsert("module_progress", startPayload, { returning: "one" });
     if (startError) {
       // A concurrent tab may have inserted the unique user/module row first.
-      const { data: concurrent } = await auth.supabase
-        .from("module_progress")
-        .select("id,module_id,complete,date_debut,progression,statut")
-        .eq("etudiant_id", auth.user.id)
-        .eq("module_id", moduleId)
-        .maybeSingle();
+      const { data: concurrent } = await pgRead("select t.\"id\", t.\"module_id\", t.\"complete\", t.\"date_debut\", t.\"progression\", t.\"statut\" from public.\"module_progress\" t where t.\"etudiant_id\" = $1 and t.\"module_id\" = $2", [auth.user.id, moduleId], "optional");
       if (concurrent) return NextResponse.json({ ok: true, data: concurrent }, { headers: { "Cache-Control": "private, no-store" } });
       return NextResponse.json({ ok: false, error: "Le début de lecture n'a pas pu être enregistré." }, { status: 500 });
     }
@@ -223,10 +185,7 @@ export async function POST(request: Request) {
     }
     quizScore = quizResult.score;
     if (!quizResult.passed) {
-      await auth.supabase
-        .from("module_progress")
-        .update({ score_quiz: quizScore, updated_at: now })
-        .eq("id", currentProgress?.id);
+      await pgUpdate("module_progress", { score_quiz: quizScore, updated_at: now }, "t.\"id\" = $1", [currentProgress?.id], { returning: "none" });
       return NextResponse.json({
         ok: false,
         error: `Score ${quizScore} %. Il faut obtenir au moins 80 % pour valider ce quiz.`,
@@ -251,23 +210,16 @@ export async function POST(request: Request) {
     updated_at: now
   };
 
-  const { data, error } = await auth.supabase
-    .from("module_progress")
-    .update(payload)
-    .eq("id", currentProgress?.id)
-    .select()
-    .single();
+  const { data, error } = await pgUpdate("module_progress", payload, "t.\"id\" = $1", [currentProgress?.id], { returning: "one" });
   if (error) {
     return NextResponse.json({ ok: false, error: "Votre progression n'a pas pu être enregistrée." }, { status: 500 });
   }
 
   const documents = [];
   const warnings = [];
-  // The early preview return above is the primary guard. Keep document
-  // issuance independently scoped to students as defense in depth.
-  if (!isStaff) {
+  // Staff requests already returned before any progress mutation.
     try {
-      documents.push(await issueLearningDocument(auth.supabase, {
+      documents.push(await issueLearningDocument(auth.context, {
         courseId,
         courseTitle: String(courseResult.data.titre || "Cours d'apologétique"),
         documentKind: "module_parchment",
@@ -279,7 +231,7 @@ export async function POST(request: Request) {
       const courseModuleIds = orderedModuleIds;
       const completedIds = new Set([...completedModuleIds, moduleId]);
       if (courseModuleIds.length > 0 && courseModuleIds.every(id => completedIds.has(id))) {
-        documents.push(await issueLearningDocument(auth.supabase, {
+        documents.push(await issueLearningDocument(auth.context, {
           courseId,
           courseTitle: String(courseResult.data.titre || "Cours d'apologétique"),
           documentKind: "course_parchment",
@@ -289,7 +241,6 @@ export async function POST(request: Request) {
     } catch (documentError) {
       warnings.push(documentError instanceof Error ? documentError.message : "Le parchemin n'a pas pu être préparé.");
     }
-  }
 
   return NextResponse.json({ ok: true, data, documents, warnings });
 }

@@ -1,64 +1,7 @@
 "use client";
-
 import Link from "next/link";
-import { Mail, MapPin, Phone } from "lucide-react";
-import { usePathname } from "next/navigation";
-
-export function Footer() {
-  const pathname = usePathname();
-  const isCourseWorkspace = pathname === "/cours"
-    || pathname.startsWith("/cours/")
-    || pathname === "/admin/courses"
-    || pathname.startsWith("/admin/courses/");
-
-  if (isCourseWorkspace) return null;
-
-  return (
-    <footer className="footer">
-      <div className="container">
-        <div className="footer-mark" aria-hidden="true">✝</div>
-        <div className="footer-grid">
-          <div>
-            <h3>Institut Saint Irénée</h3>
-            <p>Rendre compte de la crédibilité de la foi catholique auprès des jeunes générations.</p>
-            <p>Une initiative de l'association <strong>Parole et Partage</strong><br />SIREN : 841 890 692</p>
-          </div>
-          <div>
-            <h3>Formation</h3>
-            <p><Link href="/formations">Nos formations</Link></p>
-            <p><Link href="/programme-apologetique">Programme d'apologétique</Link></p>
-            <p><Link href="/choisir-formation-apologetique">Choisir sa formation</Link></p>
-            <p><Link href="/ecole-apologetique-en-ligne">École en ligne</Link></p>
-            <p><Link href="/blog">Blog apologétique</Link></p>
-            <p><Link href="/ressources-apologetique">Ressources</Link></p>
-            <p><Link href="/bibliotheque-apologetique">Bibliothèque</Link></p>
-            <p><Link href="/equipe">Notre équipe</Link></p>
-            <p><Link href="/formations">Tarifs</Link></p>
-            <p><Link href="/espace-etudiant">Espace étudiant</Link></p>
-          </div>
-          <div>
-            <h3>Institut</h3>
-            <p><Link href="/institut-apologetique">Institut d'apologétique</Link></p>
-            <p><Link href="/a-propos">À propos</Link></p>
-            <p><Link href="/contact">Contact</Link></p>
-            <p><Link href="/contact#faq">FAQ</Link></p>
-          </div>
-          <div>
-            <h3>Contact</h3>
-            <p><Mail size={16} /> oeuvrecatholiquefrance@gmail.com</p>
-            <p><Phone size={16} /> 01.71.68.15.38</p>
-            <p><MapPin size={16} /> 1 rue de Stockholm, 75008 Paris</p>
-          </div>
-        </div>
-        <div className="footer-bottom">
-          <span>© 2026 Parole et Partage - Institut Saint Irénée. Tous droits réservés.</span>
-          <span className="footer-links">
-            <Link href="/mentions-legales">Mentions légales</Link>
-            <Link href="/politique-confidentialite">Politique de confidentialité</Link>
-            <Link href="/cgv">CGV</Link>
-          </span>
-        </div>
-      </div>
-    </footer>
-  );
+import {usePathname} from "next/navigation";
+import {Brand} from "./Brand";
+export function Footer(){const path=usePathname();if(path.startsWith("/admin")||path.startsWith("/cours/"))return null;
+ return <footer className="apostolos-footer"><div className="apostolos-wrap"><div className="apostolos-footer-grid"><div><Brand/><p>Comprendre la foi.<br/>Cultiver l’intelligence.<br/>Transmettre avec justesse.</p></div><nav aria-label="Formation"><span className="apostolos-label">APPRENDRE</span><Link href="/formations">Tous les cours</Link><Link href="/espace-etudiant">Mon espace de formation</Link><Link href="/bibliotheque-apologetique">La bibliothèque</Link></nav><nav aria-label="Institut"><span className="apostolos-label">DÉCOUVRIR</span><Link href="/a-propos">Notre démarche</Link><Link href="/equipe">L’équipe</Link><Link href="/blog">Le journal</Link><Link href="/contact">Nous contacter</Link></nav></div><div className="apostolos-footer-bottom"><span>© {new Date().getFullYear()} Institut Apostolos Saint Irénée</span><nav aria-label="Informations légales"><Link href="/mentions-legales">Mentions légales</Link><Link href="/politique-confidentialite">Confidentialité</Link><Link href="/cgv">CGV</Link></nav></div></div></footer>;
 }

@@ -123,7 +123,7 @@ test.describe("real staff course entrypoint", () => {
   test("authenticated director gets a direct reader entrypoint on the public Formations page", async ({ page }) => {
     await page.goto("/formations");
 
-    const courseCard = page.locator(".course-included-card").filter({ hasText: courseTitle });
+    const courseCard = page.locator(".apostolos-catalog-row").filter({ hasText: courseTitle });
     await expect(courseCard).toBeVisible();
     await expect(
       courseCard.locator(`a[href="/cours/${courseSlug}"]`),

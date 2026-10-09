@@ -1,6 +1,7 @@
+import { siteUrl } from "@/lib/seo";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-const SITE_URL = "https://irenee-institut.org";
+const SITE_URL = siteUrl;
 
 function optoutKey() {
   const secret = String(process.env.LOCAL_AUTH_JWT_SECRET || "").trim();

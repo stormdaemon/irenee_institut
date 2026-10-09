@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { after, before, test } from "node:test";
+import { afterAll as after, beforeAll as before, test } from "bun:test";
 import { query } from "./db";
 
 const userId = randomUUID();

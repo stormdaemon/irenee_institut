@@ -1,7 +1,9 @@
 import Image from "next/image";
 import type { Metadata } from "next";
-import { ExternalLink, Mail } from "lucide-react";
+import { ExternalLink, Mail, UserRound } from "lucide-react";
 import { formatDbAvatar, getTrainers } from "@/lib/server-data";
+import { JsonLd } from "@/components/JsonLd";
+import { siteName, siteUrl } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -21,20 +23,6 @@ type TeamMember = {
 };
 
 const staticTeamMembers: TeamMember[] = [
-  {
-    achievements: [
-      "Module parcours biblique",
-      "Accompagnement biblique du cursus",
-      "Lecture théologique et pastorale des Écritures"
-    ],
-    description:
-      "En plus de sa mission d'accompagnateur théologique, Frère Jean Emmanuel intervient comme bibliste pour accompagner le module de parcours biblique et aider les étudiants à entrer dans l'intelligence des Écritures.",
-    image: "/images/frere-jean-emmanuel-de-ena.png",
-    imagePosition: "50% 50%",
-    name: "Frère Jean Emmanuel",
-    tags: ["Bible", "Écritures", "Parcours biblique", "Exégèse"],
-    title: "Module parcours biblique"
-  },
   {
     achievements: [
       "Module convaincre, argumenter et rhétorique",
@@ -124,26 +112,44 @@ const staticTeamMembers: TeamMember[] = [
 ];
 
 export const metadata: Metadata = {
-  title: "Équipe de l'Institut d'Apologétique Saint Irénée",
+  title: "L’équipe de l’Institut Apostolos Saint Irénée",
   description:
-    "Découvrez la direction et les formateurs de l'Institut d'Apologétique Saint Irénée au service d'une transmission catholique rigoureuse et accessible.",
+    "Découvrez la direction et les formateurs de l'Institut Apostolos Saint Irénée au service d'une transmission catholique rigoureuse et accessible.",
   alternates: {
     canonical: "/equipe"
+  },
+  openGraph: {
+    type: "website",
+    url: "/equipe",
+    title: "L’équipe de l’Institut Apostolos Saint Irénée",
+    description: "Découvrez la direction et les formateurs de l'Institut Apostolos Saint Irénée au service d'une transmission catholique rigoureuse et accessible.",
+    siteName,
+    images: [{ url: "/images/apostolos/theo-lafont-directeur.png", alt: "Théo Lafont, directeur de l’Institut Apostolos Saint Irénée" }]
   }
 };
 
 export default async function FormateursPage() {
   const trainers = await getTrainers();
-  const samuelPhotoUrl = "https://bilan-previsionnel.fr/wp-content/uploads/2020/11/Bilan-Previsionnel-presentation-portrait-img-1.jpg";
+  const teamJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    name: "L’équipe de l’Institut Apostolos Saint Irénée",
+    url: `${siteUrl}/equipe`,
+    mainEntity: {
+      "@type": "Person",
+      name: "Théo Lafont",
+      jobTitle: "Directeur",
+      image: `${siteUrl}/images/apostolos/theo-lafont-directeur.png`,
+      worksFor: { "@type": "EducationalOrganization", name: siteName, url: siteUrl }
+    }
+  };
   return (
     <>
-      <section className="page-hero">
-        <div className="container">
-          <h1 className="font-display" style={{ fontSize: "4rem", margin: 0 }}>Notre équipe</h1>
-          <p style={{ fontSize: "1.3rem", color: "#dce6f6", maxWidth: 760 }}>
-            Une direction engagée et des experts passionnés, alliant rigueur académique et pédagogie accessible.
-          </p>
-        </div>
+      <JsonLd data={teamJsonLd} />
+      <section className="apostolos-wrap apostolos-catalog-head">
+        <span className="apostolos-label">Les visages de la transmission</span>
+        <h1>Une école.<br /><em>Des voix, des savoirs.</em></h1>
+        <p>Théologie, philosophie, histoire : des approches complémentaires pour étudier la foi avec méthode et approfondir chaque question.</p>
       </section>
       <section className="section about-direction-section">
         <div className="container center">
@@ -151,24 +157,17 @@ export default async function FormateursPage() {
           <div className="about-directors">
             <article className="card about-director-card">
               <div className="about-director-photo">
-                <Image src={samuelPhotoUrl} alt="Samuel Armanios" fill sizes="150px" style={{ objectFit: "cover", objectPosition: "52% 14%", transform: "scale(1.62)" }} />
+                <Image src="/images/apostolos/theo-lafont-directeur.png" alt="Théo Lafont" fill sizes="(max-width: 520px) 220px, 260px" style={{ objectFit: "cover", objectPosition: "center top" }} />
               </div>
               <span className="badge">Directeur</span>
-              <h3>Samuel Armanios</h3>
-              <p className="muted">Diplômé en théologie à l'Université de la Sainte-Croix.</p>
+              <h3>Théo Lafont</h3>
+              <p className="muted">Direction de l’Institut Apostolos Saint Irénée.</p>
             </article>
-            <article className="card about-director-card">
-              <div className="about-director-photo">
-                <Image src="/images/frere-jean-emmanuel-de-ena.png" alt="Frère Jean Emmanuel" fill sizes="150px" style={{ objectFit: "cover", objectPosition: "50% 50%" }} />
-              </div>
-              <span className="badge">Accompagnateur théologique</span>
-              <h3>Frère Jean Emmanuel</h3>
-              <p className="muted">Accompagne l'exigence académique et spirituelle du parcours d'apologétique.</p>
-            </article>
+
           </div>
         </div>
       </section>
-      <section className="section" style={{ background: "white" }}>
+      <section className="section apostolos-team-section">
         <div className="container center">
           <h2 className="section-title">Formateurs et directeurs d'études</h2>
           <p className="subtitle" style={{ maxWidth: 850, margin: "0 auto 60px" }}>
@@ -179,16 +178,16 @@ export default async function FormateursPage() {
             {trainers.map(trainer => (
               <article className="card team-member-card" key={trainer.id} style={{ padding: 28 }}>
                 <div style={{ display: "flex", gap: 22, alignItems: "center" }}>
-                  <Image
-                    src={formatDbAvatar(trainer) || "/images/guillaume-maspero.jpg"}
+                  {formatDbAvatar(trainer) ? <Image
+                    src={formatDbAvatar(trainer)!}
                     alt={`${trainer.prenom} ${trainer.nom}`}
                     width={96}
                     height={96}
                     style={{ borderRadius: "50%", objectFit: "cover" }}
-                  />
+                  /> : <span className="apostolos-person-placeholder" aria-hidden="true"><UserRound size={32} /></span>}
                   <div>
                     <h2 className="font-display" style={{ color: "var(--navy)", margin: 0 }}>{trainer.prenom} {trainer.nom}</h2>
-                    <strong style={{ color: "#b28a0d" }}>{trainer.profession || "Formateur"}</strong>
+                    <strong style={{ color: "var(--terracotta)" }}>{trainer.profession || "Formateur"}</strong>
                     <p><Mail size={18} color="var(--navy)" /> {trainer.email}</p>
                   </div>
                 </div>
@@ -213,7 +212,7 @@ export default async function FormateursPage() {
                   />
                   <div>
                     <h2 className="font-display" style={{ color: "var(--navy)", margin: 0 }}>{member.name}</h2>
-                    <strong style={{ color: "#b28a0d" }}>{member.title}</strong>
+                    <strong style={{ color: "var(--terracotta)" }}>{member.title}</strong>
                     {member.email && <p><Mail size={18} color="var(--navy)" /> {member.email}</p>}
                   </div>
                 </div>

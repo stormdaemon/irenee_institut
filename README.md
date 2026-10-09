@@ -1,51 +1,44 @@
-# Institut Saint Irénée
+# Institut Apostolos Saint Irénée
 
-Application de production Next.js, hébergée sur VPS avec PostgreSQL local,
-authentification par cookie HttpOnly et sessions révocables, paiements Stripe
-et salles Daily privées. La couche `lib/supabase.ts` est une façade historique
-du backend PostgreSQL, pas une connexion au service Supabase.
+Plateforme de formation catholique : cours et modules, espace étudiant, administration, paiements **Stripe uniquement** et visioconférence Daily. L’application utilise directement PostgreSQL avec `pg`, des requêtes paramétrées, une authentification locale par cookie HttpOnly et des sessions révocables. Aucun client Supabase ne participe aux requêtes de production.
 
-## Stack
+## Développement
 
-- Bun `1.3.13`
-- Next.js `16.2.11`
-- React `19.2.6`
-- PostgreSQL (`pg`) et migrations SQL dans `supabase/migrations`
-- TypeScript `6.0.3`
+Bun 1.3.14, Next.js 16.2.11, React 19.2.6, TypeScript 6.0.3.
 
-## Commandes
-
-```bash
-bun install
-bun run dev -- --hostname 127.0.0.1 --port 3001
+```sh
+bun install --frozen-lockfile
+# Copier .env.example vers .env.local et renseigner une base de développement.
+bun run dev
+bun run lint
 bun run build
 ```
 
-## Reconstruit
+`database/schema.sql` initialise une base PostgreSQL vide. `database/migrations` contient les migrations natives ; `database/schema-columns.json` est la photographie des colonnes réellement interrogées. Le dossier `supabase` reste une archive historique, pas le chemin de migration actif. Ne jamais réinitialiser une base contenant des données.
 
-- Pages publiques : accueil, formations, formateurs, à propos, contact/FAQ.
-- Auth : inscription et connexion PostgreSQL, cookie HttpOnly, révocation des sessions.
-- LMS : espace étudiant, détail cours, détail module, quiz/progression.
-- Cursus annuel : pass de 365 jours, accès aux cours publiés, examen final et certificat nominatif.
-- Documents pédagogiques : parchemins de module et de cours enregistrés dans PostgreSQL.
-- Admin : dashboard, cours, utilisateurs, devoirs, paiements, paramètres, stats, pages légales.
-- API routes : courses, users, homework, payments, profile avatar, progress, settings, inscription.
-- Assets récupérés : logos, formateurs, partenaires.
-- Schéma historique : `supabase/schema.sql`, complété par les migrations de `supabase/migrations`.
+## Tests
 
-## Emails pédagogiques
+```sh
+# Base isolée obligatoire, dont le nom contient security_test.
+TEST_DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/apostolos_security_test bun run test:api
+```
 
-Les parchemins et certificats sont placés dans `learning_documents` avec le statut `queued`.
-Le worker Google Apps Script prêt à configurer se trouve dans `scripts/google-apps-script-learning-documents.gs`.
-Il récupère la file via `/api/automation/learning-documents`, envoie les pièces jointes avec Gmail, puis confirme la délivrance.
+La suite exécute les tests des services et les tests happy/sad path des routes dans des processus isolés. Chaque fichier `app/**/route.ts` est instrumenté par Istanbul. Le contrôle échoue si une route manque ou si une ligne, branche, fonction ou instruction n’est pas couverte à 100 %. Les rapports sont produits dans `coverage/api-summary.json` et `coverage/api-coverage.json`. La couverture des handlers n’est pas une garantie d’absence de défaut dans toutes les intégrations externes ; des tests PostgreSQL réels et des vérifications HTTPS/browser la complètent.
 
-## Vérification et exploitation
+Les tests de navigation existants se trouvent dans `e2e`. Ils utilisent uniquement une base locale isolée. Les références visuelles doivent être revues lors d’une modification graphique.
 
-`bun run lint` vérifie TypeScript. `bun run test:unit` exige une base isolée
-dont le nom contient `security_test` ; ne jamais utiliser les données de production.
-`bun audit` contrôle les dépendances verrouillées. Le build utilise le moteur
-Turbopack par défaut (`bun run build`).
+## Contenus et données
 
-La production est `/srv/irenee-current`, un lien vers une release immuable.
-Les secrets restent dans `/etc/irenee/production.env`. Voir `ops/README.md`
-pour les sauvegardes, permissions du cache, vérifications et retour arrière.
+La restauration autorisée comporte 10 cours et 50 modules récupérables de la source historique. Les anciens élèves, inscriptions et paiements n’ont pas été importés. Ces contenus ne sont pas présentés comme un export de la dernière base inaccessible.
+
+`bun run content:import CHEMIN_DU_DOSSIER` lit les fichiers `legacy-courses.json` et `legacy-course_modules.json` de ce dossier (chacun avec une propriété `rows`) et importe seulement les données pédagogiques validées, en transaction et sans écraser les identifiants déjà présents. `scripts/bootstrap-administrator.ts` crée le premier directeur depuis un fichier privé et refuse une seconde initialisation.
+
+## Production OVH
+
+Voir `ops/apostolos/README.md`. Docker sépare l’application et PostgreSQL. Le serveur web termine HTTPS ; le port applicatif reste lié à `127.0.0.1`. Les secrets ne sont jamais inclus dans Git ni dans les images.
+
+Les paramètres Stripe/Daily sont chiffrés en AES-256-GCM en base avec une clé indépendante. L’administration masque ces valeurs lors de la lecture. Le secret webhook Stripe doit correspondre au nouveau domaine ; les anciens endpoints d’autres déploiements sont conservés.
+
+## Messagerie
+
+Les emails de contact, récupération de mot de passe et automatisations nécessitent le déploiement Google Apps Script configuré par `GOOGLE_APPS_SCRIPT_URL` et `GOOGLE_APPS_SCRIPT_MAIL_SECRET`. Une configuration absente ne doit pas être présentée comme un envoi réussi. Aucun secret ne doit être copié dans le dépôt ou dans des logs.

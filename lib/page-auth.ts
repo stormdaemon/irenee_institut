@@ -1,6 +1,8 @@
+import { hasDatabaseEnv } from "@/lib/db";
+import { pgRead } from "@/lib/postgres";
 import { cookies } from "next/headers";
 import { SECURE_SESSION_COOKIE_NAME, SESSION_COOKIE_NAME, verifyAccessToken } from "@/lib/local-auth";
-import { createServerClient, hasSupabaseEnv } from "@/lib/supabase";
+import { createServerContext } from "@/lib/postgres";
 import type { Profile } from "@/lib/types";
 
 /**
@@ -9,7 +11,7 @@ import type { Profile } from "@/lib/types";
  * treated like anonymous visits.
  */
 export async function getOptionalPageProfile(): Promise<Profile | null> {
-  if (!hasSupabaseEnv()) return null;
+  if (!hasDatabaseEnv()) return null;
 
   const cookieStore = await cookies();
   const token = cookieStore.get(SECURE_SESSION_COOKIE_NAME)?.value
@@ -20,13 +22,9 @@ export async function getOptionalPageProfile(): Promise<Profile | null> {
   const { user } = await verifyAccessToken(token);
   if (!user) return null;
 
-  const supabase = createServerClient();
-  if (!supabase) return null;
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle();
+  const context = createServerContext();
+  if (!context) return null;
+  const { data, error } = await pgRead("select t.* from public.\"profiles\" t where t.\"id\" = $1", [user.id], "optional");
 
   return error ? null : data as Profile | null;
 }

@@ -1,0 +1,197 @@
+/* Approved option 02. Artwork is separate from semantic text and controls. */
+@font-face{font-family:"Bebas Neue";src:url('/fonts/bebas-neue.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:"Barlow Condensed";src:url('/fonts/barlow-condensed-semibold.ttf') format('truetype');font-weight:600;font-display:swap}
+:root{--paper:#030609;--surface:#08111a;--surface-raised:#0c1a28;--ink:#f1f2f4;--muted:#bdc7d2;--line:#384b5d;--navy:#b5d9f9;--navy-2:#d0e6fa;--gold:#d3b071;--accent:#d3b071;--forest:#91bfae;--terracotta:#deb580;--violet:#a8cbe9;--font-display:"Barlow Condensed",Arial,sans-serif;--glass:url('/images/apostolos/vitrail/button.webp');--glass-frame:url('/images/apostolos/vitrail/frame.webp');--glass-texture:url('/images/apostolos/vitrail/texture.webp')}
+html,body{background-color:var(--paper)}
+body{background-image:linear-gradient(#030609c9,#030609c9),var(--glass-texture);background-size:auto,850px;font-family:Manrope,Arial,sans-serif;color:var(--ink)}
+body :is(h1,h2,h3,h4,.font-display){font-family:var(--font-display);letter-spacing:.015em;font-weight:600}
+body em{color:#d5b778}
+::selection{background:#225685;color:#fff}
+:is(a,button,input,select,textarea,summary):focus-visible{outline:3px solid #c9e9ff;outline-offset:5px}
+.apostolos-header{background:#040a11f5;border-color:#33495b;backdrop-filter:none}
+.apostolos-header-inner{height:96px;gap:24px;padding-inline:4.9%;max-width:1800px;margin:auto}
+.apostolos-brand{gap:18px;align-items:center}.apostolos-brand img{width:72px;height:72px;object-fit:contain;flex:none}
+.apostolos-header .apostolos-brand strong,.apostolos-brand strong{font-family:Manrope,Arial,sans-serif;letter-spacing:.18em;font-weight:750;font-size:27px;line-height:1.1;color:#f5f6f8}
+.apostolos-brand small{font-family:Manrope,Arial,sans-serif;letter-spacing:.09em;font-size:9px;color:#d9dee4;text-transform:none;margin-top:8px;white-space:nowrap}
+.apostolos-nav{gap:25px}.apostolos-nav a{font-size:13px;font-weight:600;color:#e9edf2}.apostolos-nav a:hover,.apostolos-nav a[aria-current=page]{color:white;border-color:#d3b071}
+.apostolos-header-actions{gap:14px}.apostolos-header-actions>.apostolos-cta{display:none}
+.apostolos-back{color:#c1dbf0}
+.apostolos-menu-toggle{border:1px solid #587187;background:#081522 var(--glass-texture) center/300px;color:white}
+.apostolos-mobile-nav{background:#07121d var(--glass-texture) center/500px;border-color:#806d4e}.apostolos-mobile-nav a{color:#f0f3f7}
+body:has(.vitrail-home) .site-chrome{position:absolute;top:0;left:0;right:0;z-index:80}
+body:has(.vitrail-home) .apostolos-header{position:relative;background:transparent;border:0}
+body:has(.vitrail-home) .apostolos-header-inner{height:clamp(90px,8.8vw,135px)}
+body:has(.vitrail-home) .apostolos-brand img{width:clamp(64px,7.6vw,110px);height:clamp(64px,7.6vw,110px)}
+body:has(.vitrail-home) .apostolos-brand strong{font-size:clamp(25px,2.45vw,36px)}
+body:has(.vitrail-home) .apostolos-brand small{font-size:clamp(8px,.9vw,12px)}
+body:has(.vitrail-home) .apostolos-header .btn-outline{background:transparent;border:0;border-image:none;padding:10px 0;font-size:14px;min-height:44px;color:#eef3f8}
+.apostolos-scroll-progress{background:linear-gradient(90deg,#70b7eb,#d3b071)}
+/* One stable box: no transform or animated geometry on pointer hover. */
+.vitrail-button,body .btn,body .apostolos-cta,body .course-module-action,body .module-plan-overview-link{
+ position:relative;display:inline-flex;align-items:center;justify-content:center;gap:18px;box-sizing:border-box;min-height:48px;padding:12px 22px;
+ background:#061727 var(--glass) center/100% 100% no-repeat;color:#f7f9ff;border:0;border-radius:4px;
+ font:650 14px/1.4 Manrope,Arial,sans-serif;letter-spacing:0;text-decoration:none;white-space:normal;box-shadow:none;text-shadow:0 1px 3px #000;
+ transform:none;filter:none;transition:box-shadow .22s ease,color .22s ease;
+}
+body :is(.btn,.apostolos-cta,.vitrail-button):is(:hover,:active){background-color:#061727;background-image:var(--glass);color:#fff;box-shadow:0 0 18px #379bec40;transform:none;filter:none;border-color:transparent}
+.vitrail-button:after{content:"";position:absolute;inset:3px;border-radius:3px;box-shadow:inset 0 0 16px #7ecbff60;opacity:0;pointer-events:none;transition:opacity .25s}
+.vitrail-button:hover:after{opacity:1}.vitrail-button>span{font:22px/1 Arial,sans-serif}
+.vitrail-button-secondary{background-color:#030a12;background-image:linear-gradient(#030a1280,#030a1280),var(--glass);font-weight:550}
+body :is(.btn,.apostolos-cta,.apostolos-text-link):hover svg{transform:none}
+body .btn:disabled{opacity:.55;filter:none;box-shadow:none;cursor:not-allowed}
+body .icon-button,body .toolbar-button{min-width:36px;min-height:36px;padding:7px;background:#081b2d var(--glass) center/100% 100%;border:0;border-radius:3px;color:#eaf2fb;transform:none}
+body :is(.btn,.apostolos-cta,.icon-button,.toolbar-button) svg{flex:none}
+.apostolos-text-link{color:#c4e1f7;border-color:#8c744f}.apostolos-text-link:hover{color:white;border-color:#d3b071}
+body .user-trigger{background:#0b1622 var(--glass-texture) center/400px;border:1px solid #567088;border-radius:5px;color:#eff4f9;padding:8px 12px;transform:none}
+.avatar{background:#0b2136;color:#d8ecff;border:1px solid #6e8fab}
+.apostolos-label,.hero-eyebrow,.course-eyebrow{color:#d8b777}
+.vitrail-home{max-width:1800px;margin:auto;background:#020508}
+.vitrail-hero{position:relative;isolation:isolate;min-height:640px;height:65.2vw;max-height:1173px;overflow:hidden}
+.vitrail-hero>.vitrail-hero-image{object-fit:cover;object-position:center;z-index:-2}
+.vitrail-hero-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#0003,transparent 63%);pointer-events:none}
+.vitrail-hero-content{padding-top:17.7%;padding-left:4.9%;width:55%;position:relative}
+.vitrail-hero .vitrail-eyebrow{font:650 clamp(11px,1.22vw,20px)/1.4 Manrope,sans-serif;letter-spacing:.25em;text-transform:uppercase;color:#e5c584;margin:0 0 18px}
+.vitrail-hero h1{font-family:"Bebas Neue",Impact,sans-serif;font-weight:400;font-size:clamp(68px,7.4vw,133px);line-height:.99;letter-spacing:-.01em;text-transform:uppercase;color:#f0f1f3;margin:0 0 15px;white-space:nowrap}
+.vitrail-hero .vitrail-intro{font:450 clamp(15px,1.86vw,33px)/1.35 Manrope,sans-serif;letter-spacing:-.02em;color:#e6e9ed;margin:0}
+.vitrail-actions{display:flex;gap:18px;margin-top:28px;align-items:center}
+.vitrail-actions .vitrail-button{font-size:clamp(12px,1.28vw,20px);min-height:clamp(48px,4.4vw,72px);padding:14px 22px;gap:16px;white-space:nowrap}
+.vitrail-motto{margin-top:clamp(32px,3.4vw,64px);font-size:clamp(9px,.85vw,14px);line-height:1.65;letter-spacing:.19em;text-transform:uppercase;color:#c9d0d8}.vitrail-motto>span{display:block;color:#dbb875;font-size:22px;margin-bottom:14px}
+.vitrail-column-quote{position:absolute;top:43%;right:4%;font:600 clamp(12px,1.2vw,20px)/1.8 "Barlow Condensed",sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#d6b77e}.vitrail-column-quote span{display:block;font-size:36px}
+.vitrail-return{position:relative;display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:124px;height:12.2vw;max-height:220px;padding:16px 7% 16px 20%;background:#04101c url('/images/apostolos/vitrail/return-band.webp') center/100% 100% no-repeat;box-sizing:border-box}
+.vitrail-return h2{font:600 clamp(23px,3vw,50px)/1.1 "Barlow Condensed",sans-serif;color:#f1dcc0;margin:0 0 10px;letter-spacing:.01em}
+.vitrail-return p{font-size:clamp(14px,1.85vw,30px);letter-spacing:.02em;color:#c6d8e7;margin:0}
+.vitrail-return .vitrail-button{flex:none;font-size:clamp(12px,1.25vw,20px);padding:16px 24px;min-height:52px}
+.vitrail-domains{padding:2.2% 4.9% 3%;background:linear-gradient(#020507cf,#020507ed),url('/images/apostolos/vitrail/hero.webp') center bottom/cover}
+.vitrail-section-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.vitrail-section-heading h2{font:600 clamp(32px,4.5vw,72px)/1.2 "Barlow Condensed",sans-serif;letter-spacing:.05em;margin:0;color:#edeef2}
+.vitrail-section-heading>p{color:#b7bec9;font-size:clamp(9px,.85vw,14px);letter-spacing:.22em;text-transform:uppercase;margin-right:8%;line-height:1.8}
+.vitrail-domain-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.vitrail-domain{position:relative;isolation:isolate;display:block;aspect-ratio:1.14;overflow:hidden;color:white;border:1px solid #aa8648;text-decoration:none;background:#03080d}
+.vitrail-domain>img{object-fit:cover;z-index:-2;transition:filter .35s ease}
+.vitrail-domain:after{content:"";position:absolute;inset:40% 0 0;z-index:-1;background:linear-gradient(transparent,#020509 86%)}
+.vitrail-domain-copy{position:absolute;bottom:14px;left:20px;right:48px}.vitrail-domain h3{font:600 clamp(23px,2.7vw,44px)/1.1 "Barlow Condensed",sans-serif;letter-spacing:.04em;color:#f2f3f6;margin:0 0 10px}
+.vitrail-domain-copy p{color:#dae0e6;font-size:clamp(8px,.85vw,14px);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;margin:0}
+.vitrail-round-arrow{position:absolute;right:14px;bottom:30px;width:34px;height:34px;border:1px solid #c3b28e;border-radius:50%;display:grid;place-items:center;color:#e4e9ee;font:22px Arial}
+.vitrail-domain:hover>img{filter:brightness(1.12)}.vitrail-domain:hover .vitrail-round-arrow{box-shadow:0 0 18px #9bd3ff50}
+.vitrail-journal{display:flex;position:relative;min-height:190px;height:17.5vw;max-height:315px;align-items:flex-start;justify-content:space-between;padding:2.7% 5%;box-sizing:border-box;color:white;text-decoration:none;background:#030b11 url('/images/apostolos/vitrail/journal.webp') center/100% 100% no-repeat}
+.vitrail-journal h2{font:600 clamp(30px,4.2vw,66px)/1.2 "Barlow Condensed",sans-serif;letter-spacing:.05em;color:#f0f1f5;margin:0 0 14px}.vitrail-journal h2 span{color:#d5b475;font-size:.65em;margin-left:15px}
+.vitrail-journal p{font-size:clamp(9px,.85vw,14px);line-height:1.7;letter-spacing:.16em;text-transform:uppercase;color:#ccd1d9;margin:0}
+.vitrail-journal-topics{position:absolute;top:30%;left:66.5%}.vitrail-journal-values{position:absolute;top:24%;right:4.8%;color:#d8b778!important}
+.vitrail-recovery-copy{max-width:850px;margin:auto}.vitrail-recovery-copy .muted{font-size:14px;margin-top:25px}
+/* Shared material system, including all existing reading and management routes. */
+.section,.admin-shell,.course-reader-page,.course-studio-page,.auth-page{background:transparent}
+.page-hero,.hero-band,.apostolos-catalog-head{background:linear-gradient(90deg,#03090ff2,#03090f85),url('/images/apostolos/vitrail/hero.webp') center 38%/cover;color:#f3f5f8;border-bottom:1px solid #8c744f}
+.apostolos-catalog-head{padding:55px 5%;margin-top:25px}
+:is(.card,.soft-card,.auth-card,.stat-card,.admin-card,.panel,.modal-card,.course-syllabus,.course-aside-card,.course-study-card,.course-complete-card,.module-plan-sidebar,.reader-preferences,.module-reading-card,.module-preview-complete,.course-resource-card,.course-studio-editor,.course-studio-library,.course-studio-commandbar,.course-quiz-builder,.course-publication-action,.apostolos-catalog-row.apostolos-catalog-illustrated,.apostolos-journal-card,.apostolos-article-next){
+ background-color:#08121d;background-image:linear-gradient(#050d17dc,#050d17dc),var(--glass-texture);background-size:auto,650px;border:1px solid transparent;border-image:var(--glass-frame) 8% / 9px / 0 stretch;border-radius:0;box-shadow:0 8px 25px #0004
+}
+:is(.apostolos-editorial-banner,.apostolos-journal-image,.apostolos-article-image,.apostolos-workspace-art,.about-director-photo){border:1px solid transparent;border-image:var(--glass-frame) 8% / 10px / 0 stretch;border-radius:0;overflow:hidden}
+.apostolos-editorial-banner:after{background:linear-gradient(90deg,#02080fed,#02080fba 52%,#02080f30)}
+.apostolos-editorial-banner h1{font-family:var(--font-display);font-size:clamp(40px,4.7vw,76px);letter-spacing:.01em}
+.apostolos-editorial-banner h1 em{color:#e0c38b}.apostolos-editorial-banner :is(p,.apostolos-label){color:#d1dde8}
+.apostolos-workspace-art{height:220px}.apostolos-workspace-art:after{display:none}.apostolos-workspace-art span{font-family:var(--font-display);font-size:32px}
+.apostolos-catalog-art,.apostolos-journal-image{border-radius:0}.apostolos-catalog-row h2{font-size:32px}
+.apostolos-journal-card{padding:14px}.apostolos-journal-card h2{font-size:29px;letter-spacing:.01em}.apostolos-journal-card .apostolos-label{display:block;margin-top:14px}
+.apostolos-journal-card:hover img{transform:none;filter:brightness(1.1)}
+.apostolos-article-body{background:linear-gradient(#050c14eb,#050c14eb),var(--glass-texture);padding:32px;border:1px solid transparent;border-image:var(--glass-frame) 8% / 10px / 0 stretch}
+.apostolos-article-body h2{font-size:36px}.apostolos-article-body a{color:#c6e6ff}
+.about-direction-section,.apostolos-team-section{background:transparent}
+.about-directors{grid-template-columns:minmax(0,560px);justify-content:center}.about-director-card{padding:30px}
+.about-director-photo{position:relative;width:min(100%,260px);height:330px;margin:0 auto 24px}.about-director-photo img{border-radius:0}
+body .auth-shell .auth-card{background:linear-gradient(#060e18ec,#060e18ec),var(--glass-texture);border:1px solid transparent;border-image:var(--glass-frame) 8% / 14px / 0 stretch;border-radius:0}
+body:has(.auth-shell){background:linear-gradient(#02080f88,#02080fcc),url('/images/apostolos/vitrail/hero.webp') center top/cover fixed}
+.auth-shell .auth-icon{background:#0a2236;border:1px solid #7e9cb1;color:#e4c585;border-radius:4px}
+.admin-shell,.course-studio-page{--admin-bg:#050b12;--admin-surface:#091421;--admin-surface-2:#102234;--admin-text:#eff4fa;--admin-copy:#ccd8e6;--admin-muted:#b7c8d7;--admin-line:#3b5266;--admin-gold:#e1c28c}
+.apostolos-admin-nav{background:#06111d var(--glass-texture) center/cover;border-color:#806d4e;top:96px;height:calc(100vh - 96px)}
+.apostolos-admin-nav:before{content:"";display:block;height:125px;margin:0 6px 14px;background:url('/images/apostolos/vitrail/ecriture.webp') center 30%/cover;border:1px solid #8c744f}
+.apostolos-admin-nav>.apostolos-label{color:#d8bf91}.apostolos-admin-nav a{border-radius:3px;color:#dbe5f0}
+.apostolos-admin-nav a:hover,.apostolos-admin-nav a[aria-current=page]{background:#0c2a43 var(--glass) center/100% 100%;color:#fff}
+.apostolos-admin-content a:not(.btn){color:#c9e5f9}
+.admin-grid>.card:before{content:"";display:block;height:125px;margin:-17px -17px 18px;background:url('/images/apostolos/vitrail/apologetique.webp') center 32%/cover;border-bottom:1px solid #967a46}
+.admin-grid>.card:nth-child(3n+2):before{background-image:url('/images/apostolos/vitrail/ecriture.webp')}.admin-grid>.card:nth-child(3n):before{background-image:url('/images/apostolos/vitrail/philosophie.webp')}
+.admin-shell .admin-grid h3{font:600 27px/1.2 var(--font-display)}.admin-shell .kpi{background:linear-gradient(#06111dea,#06111dea),var(--glass-texture);border-color:#4e6274;border-radius:4px}
+body .course-studio-page :is(.btn.btn-primary,.btn.btn-outline,.icon-button,.toolbar-button){background:#071a2b var(--glass) center/100% 100% no-repeat;color:#f4f8ff;border:0;filter:none;transform:none}
+.course-studio-page .rich-canvas{background:#09131f;color:#e2e9f1;caret-color:#b9e0ff}
+.course-studio-page .course-list-item{background:#091522;border-color:#425a6f;border-radius:3px}
+.course-studio-page .course-studio-step.active{background:#0e2c43;color:#fff;border-color:#82bce6}
+.course-studio-step.active :is(.course-list-title,.muted){color:#e0f0ff}
+.course-dashboard-hero{background:linear-gradient(90deg,#040b13f5,#061321cf),url('/images/apostolos/vitrail/ecriture.webp') center 35%/cover;border:1px solid transparent;border-image:var(--glass-frame) 8% / 12px / 0 stretch;border-radius:0}
+.module-plan-sidebar{background:linear-gradient(#071321dc,#071321ec),url('/images/apostolos/vitrail/ecriture.webp') center/cover}
+.module-course-plan li>a,.module-course-plan li>span{border-radius:3px;background:#07121fe8;border-color:#3c5972}
+.module-course-plan li.is-active>a{background:#163851;color:#fff;border-color:#8bbddd}.module-course-plan li.is-active :is(strong,small,.module-plan-current){color:#e0efff}
+.module-plan-sidebar-head,.module-session-bar{background:#071522 var(--glass-texture) center/600px;border-color:#8c744f}
+.module-reading-card{padding:10px;overflow:hidden}.module-html-frame{background:#08121d;border-radius:0}
+.module-plan-number{background:#092137;border-color:#557796;color:#dceaf5}
+.module-session-progress-track>span,.module-plan-progress>span{background:#729bc0}
+.apostolos-footer{background:#040b12 var(--glass-texture) center/850px;border-top:1px solid #8c744f}
+.apostolos-footer .apostolos-brand img{width:62px;height:62px}.apostolos-footer .apostolos-brand strong{font-size:24px}
+@media(prefers-reduced-motion:no-preference){.vitrail-hero-shade{animation:vitrail-light 14s ease-in-out infinite alternate}@keyframes vitrail-light{from{opacity:.5}to{opacity:1}}}
+@media(prefers-reduced-motion:reduce){.vitrail-home *{animation:none!important;transition:none!important}}
+@media(min-width:1800px){.vitrail-hero-content{padding-top:318px}.vitrail-return{height:220px}.vitrail-journal{height:315px}}
+@media(max-width:1150px) and (min-width:801px){.apostolos-nav{gap:15px}.apostolos-header-inner{gap:16px}.apostolos-header .apostolos-brand strong{font-size:24px}.apostolos-header .apostolos-brand img{width:65px;height:65px}.apostolos-brand{gap:12px}.apostolos-header .apostolos-brand small{font-size:8px}.apostolos-nav a{font-size:12px}.vitrail-actions{gap:16px}.vitrail-actions .vitrail-button{padding-inline:18px}}
+@media(max-width:800px){
+ .apostolos-header-inner{height:80px;padding-inline:18px;gap:12px}.apostolos-header-inner>a:first-child{min-width:0}.apostolos-header-inner>.apostolos-back{display:none}
+ .apostolos-header .apostolos-brand img,body:has(.vitrail-home) .apostolos-brand img{width:48px;height:48px}
+ .apostolos-header .apostolos-brand strong,body:has(.vitrail-home) .apostolos-brand strong{font-size:20px;letter-spacing:.1em}
+ .apostolos-header .apostolos-brand small,body:has(.vitrail-home) .apostolos-brand small{font-size:7px;letter-spacing:0;white-space:normal}
+ .apostolos-brand{gap:9px}.apostolos-header-actions{flex:none;gap:10px}.apostolos-header .user-trigger{padding:6px 8px}
+ .apostolos-header .btn-outline{font-size:11px;padding:9px 11px;min-height:44px}
+ body:has(.vitrail-home) .apostolos-header-inner{height:88px}
+ .vitrail-hero{height:800px;min-height:0}.vitrail-hero>.vitrail-hero-image{object-position:60% center}
+ .vitrail-hero-shade{background:linear-gradient(90deg,#020609be,#02060945),linear-gradient(0deg,#02060990,transparent)}
+ .vitrail-hero-content{padding:190px 6% 50px;width:100%;box-sizing:border-box}
+ .vitrail-hero h1{font-size:clamp(54px,9vw,74px);white-space:normal;line-height:1.03;max-width:550px}
+ .vitrail-hero .vitrail-eyebrow{font-size:12px;letter-spacing:.2em}.vitrail-hero .vitrail-intro{font-size:18px;max-width:420px}
+ .vitrail-actions{flex-wrap:wrap}.vitrail-actions .vitrail-button{font-size:13px;min-height:50px}
+ .vitrail-motto{font-size:10px;margin-top:45px}.vitrail-column-quote{display:none}
+ .vitrail-return{height:auto;max-height:none;min-height:150px;padding:28px 6% 28px 24%;flex-wrap:wrap;background-size:auto 100%;background-position:left center}
+ .vitrail-return h2{font-size:30px}.vitrail-return p{font-size:16px}.vitrail-return .vitrail-button{font-size:13px;min-height:48px}
+ .vitrail-domains{padding:35px 6%}.vitrail-section-heading h2{font-size:38px}.vitrail-section-heading>p{font-size:8px;margin-right:0}
+ .vitrail-domain-grid{gap:12px}.vitrail-domain{aspect-ratio:.8}.vitrail-domain-copy{left:12px;right:10px;bottom:50px}.vitrail-domain h3{font-size:25px}.vitrail-domain-copy p{white-space:normal;font-size:9px}.vitrail-round-arrow{right:12px;bottom:10px;width:28px;height:28px;font-size:18px}
+ .vitrail-journal{height:235px;padding:28px 6%;background-size:auto 100%;background-position:center}.vitrail-journal h2{font-size:38px}.vitrail-journal p{font-size:9px}.vitrail-journal-topics,.vitrail-journal-values{display:none}
+ .apostolos-admin-nav{height:auto;position:static;top:auto}.apostolos-admin-nav:before{display:none}
+ .apostolos-workspace-art{height:180px}.about-director-photo{height:330px}
+}
+@media(max-width:650px){
+ .vitrail-domain-grid{grid-template-columns:1fr}.vitrail-domain{aspect-ratio:1.08}.vitrail-domain h3{font-size:36px}.vitrail-domain-copy{bottom:22px;left:22px;right:55px}.vitrail-domain-copy p{font-size:10px}.vitrail-round-arrow{bottom:34px;right:18px;width:34px;height:34px}
+ .vitrail-section-heading>p{display:none}.vitrail-return{padding:110px 24px 26px;background-image:linear-gradient(0deg,#04101ce8 55%,#04101c00),url('/images/apostolos/vitrail/return-band.webp');background-size:auto,auto 165px;background-position:center,left top;background-repeat:no-repeat}.vitrail-return h2{font-size:31px}
+ .apostolos-article-body{padding:25px 20px}.apostolos-workspace-art{height:155px}
+}
+@media(max-width:390px){
+ .apostolos-header-inner{padding-inline:10px;gap:8px}.apostolos-header .apostolos-brand img,body:has(.vitrail-home) .apostolos-brand img{width:36px;height:36px}
+ .apostolos-header .apostolos-brand strong,body:has(.vitrail-home) .apostolos-brand strong{font-size:17px}.apostolos-header .apostolos-brand small{font-size:6px}
+ .apostolos-header-actions{gap:6px}.apostolos-header .btn-outline{font-size:10px;padding:8px}.apostolos-brand{gap:6px}
+ .vitrail-hero{height:760px}.vitrail-hero-content{padding-top:170px}.vitrail-hero h1{font-size:55px}.vitrail-hero .vitrail-intro{font-size:16px}.desktop-break{display:none}
+ .vitrail-actions{gap:12px;flex-direction:column;align-items:flex-start}.vitrail-actions .vitrail-button{min-width:225px}
+ .vitrail-motto{margin-top:30px}.vitrail-domain-copy p{font-size:9px}.vitrail-return h2{font-size:28px}
+ .course-program-mobile-actions .btn{font-size:11px;padding:9px;min-height:44px}
+}
+
+/* Auth and editor surfaces must not inherit the former accent treatment. */
+body .auth-shell .btn.btn-primary,body .auth-shell .btn.btn-outline{background:#061727 var(--glass) center/100% 100% no-repeat;color:#f7f9ff;border:0;transform:none}
+.auth-shell .auth-link{color:#d5eaff}
+.course-studio-page :is(.course-studio-editor,.course-studio-sidebar,.course-program-panel,.soft-card,.module-editor,.course-quiz-builder){background:linear-gradient(#06111deb,#06111deb),var(--glass-texture);border-color:#41596e}
+.course-studio-page .course-list-item.active{background:#13324b;border-color:#759dbd}
+.course-studio-page .toolbar-button.active{background-color:#183e5c;box-shadow:inset 0 0 0 2px #a0ccec;color:white}
+.module-course-plan li>a:hover{background:#15334b;border-color:#8bbddd;color:white}
+.reader-font-controls button.active,.reader-font-controls button:hover,.reader-measure-toggle[aria-pressed=true]{background:#b4d7ef;color:#06121c;border-color:#b4d7ef}
+.course-quiz-card .course-quiz-option:has(input:checked){background:#15314b;border-color:#a1c7e4;box-shadow:0 0 0 3px #81b6dd18}
+
+@font-face{font-family:"Barlow Condensed";src:url('/fonts/barlow-condensed-regular.ttf') format('truetype');font-weight:400;font-display:swap}
+.vitrail-section-heading h2,.vitrail-journal h2,.vitrail-domain h3{font-weight:400}
+.vitrail-hero h1{margin-bottom:0}
+.vitrail-actions .vitrail-button{padding-inline:18px}.vitrail-actions .vitrail-button-secondary{padding-inline:22px}
+.vitrail-button>span,.vitrail-round-arrow{font-size:19px}
+@media(min-width:801px){.vitrail-return{padding-left:22%}.apostolos-nav a{font-size:14px}}
+.vitrail-home .visio-section{background:linear-gradient(#040b13ed,#040b13ed),url('/images/apostolos/vitrail/journal.webp') center/cover;border-top:1px solid #8c744f}
+
+.course-quiz-card .course-quiz-question{box-shadow:none}
+@media(max-width:360px){body:has(.course-studio-page) .apostolos-header-inner{height:64px}}
+@media(max-width:800px){.apostolos-admin-nav{background:linear-gradient(#04101dde,#04101dde),url('/images/apostolos/vitrail/journal.webp') center/cover}}
+.apostolos-library-hero .apostolos-hero-copy p{color:#cbd8e5}
+@media(max-width:800px){
+ body .admin-shell .course-program-panel>.module-editor-head{grid-template-columns:minmax(0,1fr) auto}
+ body .admin-shell .course-program-panel>.module-editor-head .btn{width:auto;min-width:44px;min-height:44px;height:44px;padding:10px;gap:5px;font-size:11px;white-space:nowrap;color:#f7f9ff}
+ body .admin-shell .course-program-panel>.module-editor-head .btn svg{width:14px;height:14px;color:#e7f4ff}
+}
+@media(max-width:650px){body .page-hero h1{font-size:clamp(38px,12vw,52px)!important;word-break:normal;overflow-wrap:normal}}

@@ -1,0 +1,15 @@
+import {beforeEach,expect,mock,test} from "bun:test";
+let settings:any, failure="",persisted:any,called=false;
+mock.module("@/lib/settings",()=>({getSystemSettings:async()=>settings}));
+mock.module("@/lib/rate-limit",()=>({checkRateLimit:async()=>({allowed:true})}));
+mock.module("@/lib/postgres",()=>({pgRead:async(sql:string)=>({data:sql.includes('profiles')?{id:'student',email:'student@example.test',role:'etudiant'}:null,error:null}),pgInsert:async(_table:string,value:any)=>{persisted=value;return {error:failure==='database'?{}:null}}}));
+mock.module("@/lib/stripe",()=>({STRIPE_CURRENCY:'EUR',getStripeConfig:(s:any)=>({secretKey:s.stripeSecretKey,publishableKey:s.stripePublishableKey}),normalizeStripeBookTitle:(s:any)=>String(s||''),parseStripeAmountToCents:(v:any)=>Math.round(Number(v)*100),createStripeCheckoutSession:async()=>{called=true;if(failure==='provider')throw Error('provider secret');return {id:'cs_test_123',client_secret:failure==='invalid'?'bad':'cs_test_123_secret_abcdefghij',status:'open'}}}));
+mock.module("@/lib/paypal",()=>({getPayPalConfig:()=>({clientId:'id',clientSecret:'secret',webhookId:'hook'}),createPayPalOrder:async()=>{throw Error('PayPal must never be contacted')}}));
+const {createCheckoutForUser}=await import('@/lib/stripe-checkout-service');
+const run=(productType:'annual_pass'|'library_membership'='annual_pass')=>createCheckoutForUser({body:productType==='annual_pass'?{amount:'99'}:{},productType,requestId:'request',context:{} as never,user:{id:'student',email:'student@example.test',user_metadata:{}}});
+beforeEach(()=>{settings={paymentProvider:'paypal',stripeSecretKey:'stripe-secret',stripePublishableKey:'stripe-public'};failure='';persisted=null;called=false});
+test('legacy payment-provider values cannot switch checkout away from Stripe',async()=>{expect(await run()).toMatchObject({provider:'stripe',sessionId:'cs_test_123'});expect(persisted).toMatchObject({provider:'stripe',amount_total:9900,product_type:'annual_pass'})});
+test('library checkout uses Stripe and the fixed membership amount',async()=>{await run('library_membership');expect(persisted).toMatchObject({provider:'stripe',amount_total:1500,product_type:'library_membership'})});
+test('missing Stripe keys fail closed without provider contact',async()=>{for(const key of ['stripeSecretKey','stripePublishableKey']){const value=settings[key];settings[key]='';await expect(run()).rejects.toMatchObject({code:'STRIPE_CONFIG',status:503});expect(called).toBe(false);settings[key]=value}});
+test('provider errors and malformed session secrets are rejected before persistence',async()=>{for(const kind of ['provider','invalid']){failure=kind;await expect(run()).rejects.toMatchObject({code:'STRIPE_API',status:502});expect(persisted).toBeNull()}});
+test('database failure never returns checkout credentials',async()=>{failure='database';await expect(run()).rejects.toMatchObject({code:'ORDER_PERSISTENCE',status:503})});

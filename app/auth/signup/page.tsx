@@ -6,7 +6,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { translateAuthError, type AuthErrorCopy } from "@/lib/auth-errors";
 import { safeInternalPath } from "@/lib/request-security";
 import { annualPassCheckoutPath, cleanAnnualPassSignupPath } from "@/lib/routes";
-import { createBrowserClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/lib/browser-auth";
 
 type FieldErrors = Partial<Record<"prenom" | "nom" | "telephone" | "email" | "password" | "passwordConfirm", string>>;
 
@@ -83,8 +83,8 @@ export default function SignupPage() {
     setNotice(null);
     setStatus("submitting");
 
-    const supabase = createBrowserClient();
-    if (!supabase) {
+    const context = createBrowserClient();
+    if (!context) {
       setStatus("error");
       setNotice({
         title: "Inscription indisponible",
@@ -94,9 +94,9 @@ export default function SignupPage() {
       return;
     }
 
-    await supabase.auth.signOut();
+    await context.auth.signOut();
 
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await context.auth.signUp({
       email,
       password,
       passwordConfirmation: passwordConfirm,

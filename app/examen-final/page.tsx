@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AlertTriangle, Award, CheckCircle2, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { LearningDocumentButton } from "@/components/LearningDocumentButton";
-import { createBrowserClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/lib/browser-auth";
 
 type Question = {
   id: string;
@@ -32,8 +32,8 @@ export default function FinalExamPage() {
   }, []);
 
   async function request(path: string, init?: RequestInit) {
-    const supabase = createBrowserClient();
-    const { data } = await supabase?.auth.getSession() || { data: { session: null } };
+    const context = createBrowserClient();
+    const { data } = await context?.auth.getSession() || { data: { session: null } };
     if (!data.session) throw new Error("Connectez-vous pour accéder à l'examen final.");
     return fetch(path, {
       ...init,

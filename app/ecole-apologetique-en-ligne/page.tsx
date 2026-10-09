@@ -25,13 +25,13 @@ const questions = [
 export const metadata: Metadata = {
   title: "École d'Apologétique en ligne",
   description:
-    "Découvrez l'École d'Apologétique en ligne de l'Institut d'Apologétique Saint Irénée : une école apologétique catholique progressive pour étudier la foi et répondre aux objections.",
+    "Découvrez l'École d'Apologétique en ligne de l'Institut Apostolos Saint Irénée : une école apologétique catholique progressive pour étudier la foi et répondre aux objections.",
   keywords: ["école d'apologétique", "école apologétique", "école apologétique catholique", "formation apologétique en ligne"],
   alternates: {
     canonical: "/ecole-apologetique-en-ligne"
   },
   openGraph: {
-    title: "École d'Apologétique en ligne | Institut Saint Irénée",
+    title: "École d'Apologétique en ligne | Institut Apostolos Saint Irénée",
     description:
       "Une formation catholique progressive et accessible à distance pour comprendre, répondre et transmettre.",
     url: "/ecole-apologetique-en-ligne"
@@ -102,7 +102,7 @@ export default function EcoleApologetiqueEnLignePage() {
             morale ne relèvent pas toutes du même raisonnement.
           </p>
           <p className="subtitle">
-            L'Institut Saint Irénée propose un parcours accessible en ligne. Cette modalité convient à ceux qui veulent
+            L'Institut Apostolos Saint Irénée propose un parcours accessible en ligne. Cette modalité convient à ceux qui veulent
             progresser régulièrement depuis leur lieu de vie, reprendre un module important et relier l'étude à
             leurs conversations réelles : en famille, en paroisse, au travail ou sur internet.
           </p>

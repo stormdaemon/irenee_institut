@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { ActionNotice } from "@/components/ActionNotice";
 import { AvatarUploader } from "@/components/AvatarUploader";
 import { authenticatedFetch } from "@/lib/authenticated-fetch";
-import { createBrowserClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/lib/browser-auth";
 
 function avatarSrc(profile: Profile | null) {
   const src = profile?.avatar_public_id || profile?.avatar_url || "";
@@ -35,8 +35,8 @@ export default function SettingsPage() {
     let mounted = true;
 
     async function loadProfile() {
-      const supabase = createBrowserClient();
-      if (!supabase) {
+      const context = createBrowserClient();
+      if (!context) {
         if (mounted) {
           setProfile(null);
           setLoaded(true);
@@ -44,7 +44,7 @@ export default function SettingsPage() {
         return;
       }
 
-      const { data } = await supabase.auth.getSession();
+      const { data } = await context.auth.getSession();
       if (!data.session) {
         if (mounted) {
           setProfile(null);

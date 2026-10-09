@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
   const auth = await authenticateRequest(request);
   if (!auth.ok) return auth.response;
-  const { supabase, user } = auth;
+  const { context, user } = auth;
 
   let limit: Awaited<ReturnType<typeof checkRateLimit>>;
   try {
@@ -94,14 +94,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const order = await findStripeOrder({ sessionId, supabase, userId: user.id });
+    const order = await findStripeOrder({ sessionId, context, userId: user.id });
     if (!order) return privateJson({ ok: false, status: "unknown" }, 404);
 
     const product = normalizeStripeProductType(order.product_type);
     if (isReversedStripeOrderStatus(order.status)) {
       return privateJson({ ok: true, product, status: "unpaid" });
     }
-    const settings = await getSystemSettings(supabase);
+    const settings = await getSystemSettings(context);
     const stripeSession = await retrieveStripeObject({
       config: getStripeConfig(settings),
       url: `/v1/checkout/sessions/${encodeURIComponent(sessionId)}`
@@ -125,14 +125,14 @@ export async function POST(request: Request) {
       eventName: "stripe_checkout_reconciled",
       order,
       summary,
-      supabase
+      context
     });
     if (!settlement.ok) {
       console.error("stripe_reconcile_rejected", { stage: settlement.reason });
       return privateJson({ ok: false, status: "unknown" }, 409);
     }
 
-    const active = await hasActiveStripeEntitlement({ order: settlement.order, supabase });
+    const active = await hasActiveStripeEntitlement({ order: settlement.order, context });
     return privateJson({
       ok: true,
       product: settlement.productType,

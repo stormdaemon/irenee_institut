@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "bun:test";
 import { HomeworkInputError, parseHomeworkForm, parseHomeworkReview } from "./homework-admin";
 
 const courseId = "00000000-0000-4000-8000-000000000101";

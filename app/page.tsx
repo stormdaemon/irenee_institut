@@ -1,286 +1,53 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { Metadata } from "next";
-import type { CSSProperties } from "react";
-import { ArrowRight, ExternalLink, PlayCircle } from "lucide-react";
 import { getCourses } from "@/lib/server-data";
-import { siteDescription, siteUrl } from "@/lib/seo";
 import { UpcomingSessions } from "@/components/UpcomingSessions";
-import { getUpcomingVisioSessions } from "@/lib/live-sessions";
-import { JsonLd } from "@/components/JsonLd";
-
+import { getPublicAgenda } from "@/lib/public-agenda";
+import { publicPageMetadata } from "@/lib/seo";
 export const dynamic = "force-dynamic";
-
-const presentationVideoPath = "/videos/presentation-institut-saint-irenee-samy.mp4";
-const presentationVideoUrl = `${siteUrl}${presentationVideoPath}`;
-const presentationVideoJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "VideoObject",
-  name: "Présentation de l'Institut Saint Irénée",
-  description:
-    "Vidéo de présentation de l'Institut d'Apologétique Saint Irénée et de sa formation catholique en ligne.",
-  contentUrl: presentationVideoUrl,
-  embedUrl: `${siteUrl}/#presentation-video`,
-  thumbnailUrl: [`${siteUrl}/images/og-irenee.png`],
-  uploadDate: "2026-07-08",
-  inLanguage: "fr-FR",
-  publisher: {
-    "@id": `${siteUrl}/#organization`
-  }
-};
-
-export const metadata: Metadata = {
-  title: {
-    absolute: "Institut d'Apologétique Saint Irénée"
-  },
-  description: siteDescription,
-  alternates: {
-    canonical: "/"
-  },
-  openGraph: {
-    title: "Institut d'Apologétique Saint Irénée",
-    description: siteDescription,
-    url: "/"
-  }
-};
-
-const features = [
-  {
-    title: "L'EIDM devient l'Institut Saint Irénée",
-    text: "L'élan de l'EIDM se poursuit dans un institut structuré pour former, accompagner et transmettre la foi catholique avec clarté.",
-    image: backgroundImageSet("/images/eidm-institut-saint-irenee.avif", "/images/eidm-institut-saint-irenee.webp"),
-    imagePosition: "50% 42%",
-    icon: "/images/irenee-feature-medallion-teacher.png",
-    iconLeft: "50%",
-    iconPosition: "50% 50%",
-    href: "https://youtu.be/AsclUFsCoAM?is=Vxx2XTJ5DOkgPGh9"
-  },
-  {
-    title: "Bibliothèque d'école apologétique",
-    text: "Une bibliothèque réservée aux étudiants pour demander le livre apologétique de leur choix après une adhésion annuelle de 15 EUR.",
-    image: backgroundImageSet("/images/irenee-feature-1.avif", "/images/irenee-feature-1.webp"),
-    imagePosition: "50% 50%",
-    icon: "/images/irenee-feature-medallion-library.png",
-    iconLeft: "50%",
-    iconPosition: "50% 50%",
-    href: "/bibliotheque-apologetique"
-  },
-  {
-    title: "Formation en visio hebdomadaire",
-    text: "Un soir par semaine, les étudiants retrouvent une séance en visio depuis le site pour travailler, questionner et progresser ensemble.",
-    image: backgroundImageSet("/images/irenee-feature-3.avif", "/images/irenee-feature-3.webp"),
-    imagePosition: "50% 50%",
-    icon: "/images/irenee-feature-medallion-3.png",
-    iconLeft: "50%",
-    iconPosition: "50% 50%",
-    href: "/formations"
-  },
-  {
-    title: "Sessions patristiques en abbaye",
-    text: "Des sessions de 5 jours autour d'un thème différent, des conciles et des Pères de l'Église, pour étudier avec un expert.",
-    image: backgroundImageSet("/images/cloitre-sessions-patristiques.avif", "/images/cloitre-sessions-patristiques.webp"),
-    imagePosition: "50% 50%",
-    icon: "/images/irenee-feature-medallion-abbey.png",
-    iconLeft: "50%",
-    iconPosition: "50% 50%",
-    href: "/contact"
-  }
+export const metadata = publicPageMetadata("Institut Apostolos Saint Irénée — Apologétique catholique", "L’Institut Saint Irénée devient Apostolos. Formations en apologétique catholique, théologie et philosophie en ligne. Demandez la récupération de votre ancien pass.", "/");
+const domains = [
+  { title: "Apologétique", art: "apologetique", subtitle: "Répondre. Dialoguer. Témoigner.", match: /introduction-apologetique/ },
+  { title: "Écriture sainte", art: "ecriture", subtitle: "Accueillir. Méditer. Vivre.", match: /bibl|ecriture/ },
+  { title: "Philosophie", art: "philosophie", subtitle: "Chercher. Discerner. Bâtir.", match: /philosophie|foi-et-raison/ }
 ];
-
-function backgroundImageSet(avif: string, webp: string) {
-  return `image-set(url("${avif}") type("image/avif"), url("${webp}") type("image/webp"))`;
-}
-
-export default async function HomePage() {
-  const courses = await getCourses();
-
-  return (
-    <>
-      <link rel="preload" as="image" href="/images/irenee-hero-cathedral-mobile.avif" type="image/avif" media="(max-width: 700px)" fetchPriority="high" />
-      <link rel="preload" as="image" href="/images/irenee-hero-cathedral.avif" type="image/avif" media="(min-width: 701px)" fetchPriority="high" />
-      <JsonLd data={presentationVideoJsonLd} />
-
-      <section className="hero-band home-hero">
-        <div className="container">
-          <div className="hero-content">
-            <div className="hero-elearning-logo" aria-label="E-learning">
-              <Image src="/images/logo-elearning.png" alt="Logo e-learning" width={220} height={108} priority />
-            </div>
-            <span className="hero-eyebrow">Rentrée académique septembre 2026 · inscriptions ouvertes</span>
-            <h1 className="font-display hero-title">
-              <span className="hero-title-desktop">Institut d'Apologétique<br /><span>Saint Irénée</span></span>
-              <span className="hero-title-mobile">Institut<br />d'Apologétique<br /><span>Saint Irénée</span></span>
-            </h1>
-            <p className="hero-motto">
-              <span className="hero-motto-desktop">Rendre compte de la crédibilité de la foi catholique</span>
-              <span className="hero-motto-mobile">Rendre compte de la crédibilité<br />de la foi catholique</span>
-            </p>
-            <div className="hero-separator" aria-hidden="true" />
-            <p className="hero-lead">
-              Approfondissez votre foi catholique et apprenez à la défendre avec rigueur et bienveillance grâce à nos formations en ligne dispensées par des experts catholiques.
-            </p>
-            <div className="hero-proof-points" aria-label="Points clés de la formation">
-              <span>Première formation francophone en apologétique</span>
-              <span>Formation hebdomadaire en visio sur cette plateforme à partir de septembre 2026</span>
-            </div>
-            <div className="hero-actions">
-              <Link className="btn btn-primary" href="/formations?checkout=annual-pass" prefetch={false}>
-                Obtenir le pass annuel <ArrowRight size={18} />
-              </Link>
-              <Link className="btn btn-outline" href="/programme-apologetique" prefetch={false}>
-                Voir le programme
-              </Link>
-            </div>
-            <details className="hero-video-disclosure" id="presentation-video">
-              <summary className="hero-video-toggle">
-                <PlayCircle size={18} aria-hidden="true" />
-                <span>Voir la vidéo de présentation</span>
-              </summary>
-              <div className="hero-video-panel">
-                <video
-                  controls
-                  preload="none"
-                  playsInline
-                  aria-label="Vidéo de présentation de l'Institut Saint Irénée"
-                >
-                  <source src={presentationVideoPath} type="video/mp4" />
-                  Votre navigateur ne peut pas lire cette vidéo.{" "}
-                  <a href={presentationVideoPath}>Ouvrir la vidéo</a>.
-                </video>
-              </div>
-            </details>
-          </div>
+export default async function Home() {
+  const [courses, agenda] = await Promise.all([getCourses(), getPublicAgenda()]);
+  return <div className="vitrail-home">
+    <section className="vitrail-hero" aria-labelledby="home-title">
+      <Image className="vitrail-hero-image" src="/images/apostolos/vitrail/hero.webp" alt="" fill priority sizes="100vw" />
+      <div className="vitrail-hero-shade" />
+      <div className="vitrail-hero-content">
+        <p className="vitrail-eyebrow">L’Institut est de retour</p>
+        <h1 id="home-title">Une foi vivante.<br />Une pensée libre.</h1>
+        <p className="vitrail-intro">Théologie, philosophie et apologétique :<br className="desktop-break" /> reprenez le chemin de la formation.</p>
+        <div className="vitrail-actions">
+          <Link className="vitrail-button" href="/formations">Explorer les formations <span aria-hidden="true">→</span></Link>
+          <Link className="vitrail-button vitrail-button-secondary" href="/a-propos">Découvrir l’Institut</Link>
         </div>
-      </section>
-
-      <section className="home-feature-section">
-        <div className="container">
-          <div className="home-feature-grid">
-            {features.map((feature) => {
-              const isExternal = feature.href.startsWith("http");
-              return (
-                <article
-                  className="card feature-card"
-                  key={feature.title}
-                  style={{
-                    "--card-image": feature.image,
-                    "--card-image-position": feature.imagePosition,
-                    "--feature-icon-left": feature.iconLeft
-                  } as CSSProperties}
-                >
-                  <span className="feature-icon">
-                    <Image src={feature.icon} alt="" fill sizes="72px" style={{ objectFit: "cover", objectPosition: feature.iconPosition }} />
-                  </span>
-                  <h3>{feature.title}</h3>
-                  <p>{feature.text}</p>
-                  {isExternal ? (
-                    <a className="feature-link" href={feature.href} target="_blank" rel="noreferrer">
-                      En savoir plus <ExternalLink size={14} />
-                    </a>
-                  ) : (
-                    <Link className="feature-link" href={feature.href} prefetch={false}>
-                      En savoir plus <ArrowRight size={14} />
-                    </Link>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-          <div className="quote-banner">
-            <blockquote>
-              "Soyez toujours prêts à rendre compte de l'espérance qui est en vous."
-              <cite>1 Pierre 3,15</cite>
-            </blockquote>
-          </div>
-        </div>
-      </section>
-
-      <UpcomingSessions sessions={getUpcomingVisioSessions()} />
-
-      <section className="section">
-        <div className="container center">
-          <span className="hero-eyebrow">Comprendre, répondre, transmettre</span>
-          <h2 className="section-title">Un institut d'apologétique catholique accessible en ligne</h2>
-          <p className="subtitle" style={{ maxWidth: 930, margin: "0 auto 26px" }}>
-            L'Institut Saint Irénée propose une formation structurée pour apprendre à présenter les raisons de croire,
-            étudier les sources et répondre aux objections contemporaines. L'objectif n'est pas de gagner des
-            querelles, mais de servir la vérité avec précision, patience et charité.
-          </p>
-          <Link className="btn btn-outline" href="/institut-apologetique" prefetch={false}>
-            Découvrir l'Institut d'Apologétique <ArrowRight size={17} />
-          </Link>
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="container center">
-          <h2 className="section-title">Notre mission : former les <span style={{ color: "var(--gold-2)" }}>apologètes de demain</span></h2>
-          <p className="subtitle" style={{ maxWidth: 820, margin: "0 auto 42px" }}>
-            L'Institut Saint Irénée accompagne les jeunes adultes dans l'approfondissement de leur foi catholique et les forme à en rendre compte avec intelligence, précision et charité.
-          </p>
-          <div className="grid-3" style={{ textAlign: "left" }}>
-            {[
-              ["Rigueur doctrinale", "Des contenus enracinés dans l'Écriture, la Tradition apostolique et le Magistère de l'Église."],
-              ["Pédagogie accessible", "Des modules progressifs, conçus pour apprendre à argumenter sans perdre le sens pastoral."],
-              ["Vie spirituelle", "Une formation intellectuelle orientée vers la sainteté, le témoignage et la mission."]
-            ].map(([title, text]) => (
-              <article className="soft-card" key={title} style={{ padding: 30 }}>
-                <h3>{title}</h3>
-                <p className="muted">{text}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="container center">
-          <h2 className="section-title">Nos formations</h2>
-          <p className="subtitle">Un parcours structuré en deux semestres pour une formation complète en apologétique.</p>
-          <div className="grid-2" style={{ marginTop: 40, textAlign: "left" }}>
-            {courses.slice(0, 2).map(course => (
-              <article className="card" key={course.id} style={{ padding: 30 }}>
-                <span className="badge">{course.niveau}</span>
-                <h3 style={{ color: "#fff7e7", fontSize: "1.7rem" }}>{course.titre}</h3>
-                <p className="muted">{course.description}</p>
-                <Link className="btn btn-outline" href="/programme-apologetique" prefetch={false}>Voir le programme <ArrowRight size={16} /></Link>
-              </article>
-            ))}
-            {!courses.length && <p>Aucune formation disponible pour le moment.</p>}
-          </div>
-          <Link href="/formations" className="btn btn-gold" style={{ marginTop: 36 }} prefetch={false}>
-            Découvrir toutes les formations <ArrowRight size={18} />
-          </Link>
-        </div>
-      </section>
-
-      <section className="section home-partners">
-        <div className="container center">
-          <h2 className="section-title">Nos Partenaires</h2>
-          <div className="grid-4" style={{ marginTop: 36 }}>
-            {[
-              ["Heaven Radio", "100% Louange et Adoration", "https://lebaptemecatholique.fr/assets/heavenradio.png", "https://heavenradio.fr/"],
-              ["La Mission Catholique", "Évangélisation et mission", "https://lebaptemecatholique.fr/assets/missioncatho.png", "https://lamissioncatholique.fr/"],
-              ["Ultreia Event", "Événements catholiques", "/images/ultreia.png", "https://ultreiaevent.com/"],
-              ["SOS Chrétiens d'Occident", "Aide aux chrétiens persécutés", "/images/soscatho.png", "https://soschretiensdoccident.fr/"]
-            ].map(([name, desc, src, href]) => (
-              <a className="partner-card soft-card" key={name} href={href} target="_blank" rel="noreferrer">
-                <Image src={src} alt={name} width={180} height={92} style={{ objectFit: "contain", maxWidth: "100%" }} />
-                <h3>{name} <ExternalLink size={18} aria-hidden="true" /></h3>
-                <p className="muted">{desc}</p>
-              </a>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="section hero-band center">
-        <div className="container">
-          <h2 className="font-display" style={{ fontSize: "2.7rem", margin: 0 }}>Prêt à approfondir votre foi ?</h2>
-          <p style={{ color: "#f0dfc2" }}>Rejoignez notre prochaine promotion et découvrez les richesses de l'apologétique catholique.</p>
-          <Link href="/formations?checkout=annual-pass" className="btn btn-gold" prefetch={false}>Obtenir le pass annuel <ArrowRight size={18} /></Link>
-        </div>
-      </section>
-    </>
-  );
+        <p className="vitrail-motto" aria-hidden="true"><span>→</span>S’enraciner<br />Comprendre<br />Dialoguer<br />Transmettre</p>
+      </div>
+      <p className="vitrail-column-quote" aria-hidden="true">Ad<br />Deum<br />per<br />intellectum<span>✧</span></p>
+    </section>
+    <section className="vitrail-return" aria-labelledby="return-title">
+      <div><h2 id="return-title">Vous aviez un pass annuel ?</h2><p>Demandez sa récupération gratuite.</p></div>
+      <Link className="vitrail-button" href="/recuperer-mon-pass">Récupérer mon pass <span aria-hidden="true">→</span></Link>
+    </section>
+    <section className="vitrail-domains" aria-labelledby="domains-title">
+      <div className="vitrail-section-heading"><h2 id="domains-title">Explorer les savoirs</h2><p>Des racines<br />pour demain</p></div>
+      <div className="vitrail-domain-grid">{domains.map(domain => {
+        const course = courses.find(item => domain.match.test(item.slug));
+        return <Link className="vitrail-domain" href={course ? `/formations#cours-${course.id}` : "/formations"} key={domain.art}>
+          <Image src={`/images/apostolos/vitrail/${domain.art}.webp`} alt="" fill sizes="(max-width:650px) 100vw, 33vw" />
+          <div className="vitrail-domain-copy"><h3>{domain.title}</h3><p>{domain.subtitle}</p></div><span className="vitrail-round-arrow" aria-hidden="true">→</span>
+        </Link>;
+      })}</div>
+    </section>
+    <Link className="vitrail-journal" href="/blog" aria-label="Le Journal — découvrir tous les articles">
+      <div><h2>Le Journal <span aria-hidden="true">→</span></h2><p>Penser aujourd’hui<br />à la lumière du Christ</p></div>
+      <p className="vitrail-journal-topics" aria-hidden="true">Articles<br />Réflexions<br />Débats<br />Culture</p>
+      <p className="vitrail-journal-values" aria-hidden="true">Vérité<br />Beauté<br />Bien<br />Ensemble</p>
+    </Link>
+    <UpcomingSessions sessions={agenda.sessions} unavailable={agenda.unavailable} />
+  </div>;
 }

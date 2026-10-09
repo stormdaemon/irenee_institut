@@ -1,5 +1,6 @@
+import { pgInsert, pgRead } from "@/lib/postgres";
 import type { LearningDocument, LearningDocumentKind } from "@/lib/learning-documents";
-import type { createServerClient } from "@/lib/supabase";
+import type { createServerContext } from "@/lib/postgres";
 
 type IssuableDocument = {
   courseId?: string | null;
@@ -20,26 +21,16 @@ function recipientName(profile: { prenom?: string | null; nom?: string | null; e
   return `${profile.prenom || ""} ${profile.nom || ""}`.trim() || String(profile.email || "Étudiant");
 }
 
-export async function issueLearningDocument(supabase: NonNullable<ReturnType<typeof createServerClient>>, input: IssuableDocument) {
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("email, prenom, nom")
-    .eq("id", input.userId)
-    .single();
-  if (profileError) throw new Error(profileError.message);
+export async function issueLearningDocument(context: NonNullable<ReturnType<typeof createServerContext>>, input: IssuableDocument) {
+  const { data: profile, error: profileError } = await pgRead("select t.\"email\", t.\"prenom\", t.\"nom\" from public.\"profiles\" t where t.\"id\" = $1", [input.userId], "one");
+  if (profileError || !profile) throw new Error(profileError?.message || "Profil introuvable.");
 
   const key = documentKey(input);
-  const { data: existing, error: existingError } = await supabase
-    .from("learning_documents")
-    .select("*")
-    .eq("document_key", key)
-    .maybeSingle();
+  const { data: existing, error: existingError } = await pgRead("select t.* from public.\"learning_documents\" t where t.\"document_key\" = $1", [key], "optional");
   if (existingError) throw new Error(existingError.message);
   if (existing) return existing as LearningDocument;
 
-  const { data: document, error: insertError } = await supabase
-    .from("learning_documents")
-    .insert({
+  const { data: document, error: insertError } = await pgInsert("learning_documents", {
       course_id: input.courseId || null,
       course_title: input.courseTitle || null,
       document_key: key,
@@ -48,9 +39,7 @@ export async function issueLearningDocument(supabase: NonNullable<ReturnType<typ
       module_title: input.moduleTitle || null,
       recipient_name: recipientName(profile),
       user_id: input.userId
-    })
-    .select()
-    .single();
+    }, { returning: "one" });
   if (insertError) throw new Error(insertError.message);
 
   return document as LearningDocument;

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash, randomInt, randomUUID } from "node:crypto";
-import { afterEach, beforeEach, test } from "node:test";
+import { afterEach, beforeEach, test } from "bun:test";
 import { POST as completePasswordReset } from "../app/api/auth/password/reset/complete/route";
 import { POST as requestPasswordReset } from "../app/api/auth/password/reset/request/route";
 import { query } from "./db";
@@ -135,7 +135,7 @@ test("password reset request responses do not enumerate accounts and the emailed
   let deliveredToken = "";
   const logged: unknown[][] = [];
   console.error = (...args: unknown[]) => { logged.push(args); };
-  globalThis.fetch = async (_input, init) => {
+  globalThis.fetch = Object.assign(async (_input: URL | RequestInfo, init?: RequestInit) => {
     const payload = JSON.parse(String(init?.body || "{}"));
     const body = String(payload.campaign?.body || "");
     const link = body.match(/https:\/\/[^\s]+/)?.[0] || "";
@@ -143,7 +143,7 @@ test("password reset request responses do not enumerate accounts and the emailed
     assert.doesNotMatch(link, /[?&]code=/);
     deliveredToken = new URL(link).hash.match(/(?:^#|&)code=([^&]+)/)?.[1] || "";
     return Response.json({ ok: false, error: `delivery failed ${deliveredToken}` }, { status: 502 });
-  };
+  }, {preconnect: globalThis.fetch.preconnect});
 
   const existingResponse = await requestPasswordReset(sameOriginRequest(
     "/api/auth/password/reset/request",

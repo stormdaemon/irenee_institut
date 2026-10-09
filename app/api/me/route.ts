@@ -1,3 +1,4 @@
+import { pgInsert, pgRead } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { isActiveCourseEnrollment } from "@/lib/learning-security";
@@ -65,20 +66,16 @@ function profileFromUser(user: { id: string; email?: string | null; user_metadat
 export async function GET(request: Request) {
   const auth = await authenticateRequest(request);
   if (!auth.ok) return auth.response;
-  const { supabase, user } = auth;
+  const { context, user } = auth;
   const fallbackProfile = profileFromUser(user);
-  let { data: profile, error: profileError } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+  let { data: profile, error: profileError } = await pgRead("select t.* from public.\"profiles\" t where t.\"id\" = $1", [user.id], "optional");
 
   if (profileError) {
     return privateJson({ ok: false, error: profileError.message }, 400);
   }
 
   if (!profile) {
-    const { data: createdProfile, error: createProfileError } = await supabase
-      .from("profiles")
-      .upsert({ ...fallbackProfile, updated_at: new Date().toISOString() })
-      .select()
-      .single();
+    const { data: createdProfile, error: createProfileError } = await pgInsert("profiles", { ...fallbackProfile, updated_at: new Date().toISOString() }, { returning: "one", conflict: ["id"] });
 
     if (createProfileError) {
       return privateJson({ ok: false, error: createProfileError.message }, 400);
@@ -87,18 +84,11 @@ export async function GET(request: Request) {
     profile = createdProfile;
   }
 
+  if (!profile) return privateJson({ ok: false, error: "Profil indisponible." }, 503);
   const isStaff = profile.role === "directeur" || profile.role === "formateur";
   const { data: annualPass, error: annualPassError } = isStaff
     ? { data: null, error: null }
-    : await supabase
-      .from("annual_access_passes")
-      .select("id,status,expires_at")
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .gt("expires_at", new Date().toISOString())
-      .order("expires_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    : await pgRead("select t.\"id\", t.\"status\", t.\"expires_at\" from public.\"annual_access_passes\" t where t.\"user_id\" = $1 and t.\"status\" = $2 and t.\"expires_at\" > $3 order by t.\"expires_at\" desc limit $4", [user.id, "active", new Date().toISOString(), 1], "optional");
 
   if (annualPassError) {
     return privateJson({ ok: false, error: annualPassError.message }, 400);
@@ -106,11 +96,7 @@ export async function GET(request: Request) {
 
   const enrollmentResult = isStaff
     ? { data: [], error: null }
-    : await supabase
-      .from("course_enrollments")
-      .select("id,course_id,statut,access_source,access_expires_at")
-      .eq("etudiant_id", user.id)
-      .eq("statut", "en_cours");
+    : await pgRead("select t.\"id\", t.\"course_id\", t.\"statut\", t.\"access_source\", t.\"access_expires_at\" from public.\"course_enrollments\" t where t.\"etudiant_id\" = $1 and t.\"statut\" = $2", [user.id, "en_cours"], "many");
 
   if (enrollmentResult.error) {
     return privateJson({ ok: false, error: enrollmentResult.error.message }, 400);
@@ -125,11 +111,7 @@ export async function GET(request: Request) {
   let courseIds = [...new Set(enrollments.map(item => item.course_id).filter(Boolean))];
 
   if (isStaff || annualPass) {
-    const { data: staffCourseRows, error: staffCourseError } = await supabase
-      .from("courses")
-      .select("id")
-      .eq("statut", "publie")
-      .order("numero", { ascending: true });
+    const { data: staffCourseRows, error: staffCourseError } = await pgRead("select t.\"id\" from public.\"courses\" t where t.\"statut\" = $1 order by t.\"numero\" asc", ["publie"], "many");
 
     if (staffCourseError) {
       return NextResponse.json({ ok: false, error: staffCourseError.message }, { status: 400 });
@@ -141,31 +123,18 @@ export async function GET(request: Request) {
   let progressRows: { module_id: string; course_id?: string | null; progression?: number | null; complete?: boolean | null }[] = [];
 
   if (courseIds.length) {
-    const { data: courseRows, error: courseError } = await supabase
-      .from("courses")
-      .select("id,titre,slug,description,image_url,objectifs,competences,prerequis,semestre,numero,duree,niveau,statut,nb_modules,duree_totale_minutes,duree_totale,prix,prix_reduit")
-      .in("id", courseIds)
-      .eq("statut", "publie")
-      .order("numero", { ascending: true });
+    const { data: courseRows, error: courseError } = await pgRead("select t.\"id\", t.\"titre\", t.\"slug\", t.\"description\", t.\"image_url\", t.\"objectifs\", t.\"competences\", t.\"prerequis\", t.\"semestre\", t.\"numero\", t.\"duree\", t.\"niveau\", t.\"statut\", t.\"nb_modules\", t.\"duree_totale_minutes\", t.\"duree_totale\", t.\"prix\", t.\"prix_reduit\" from public.\"courses\" t where t.\"id\" = any($1) and t.\"statut\" = $2 order by t.\"numero\" asc", [courseIds, "publie"], "many");
     if (courseError) return privateJson({ ok: false, error: courseError.message }, 400);
 
     const accessibleCourseIds = (courseRows || []).map(course => course.id);
     const { data: moduleRows, error: moduleError } = accessibleCourseIds.length
-      ? await supabase
-        .from("course_modules")
-        .select("id,course_id,titre,description,ordre,duree,type_contenu")
-        .in("course_id", accessibleCourseIds)
-        .order("ordre", { ascending: true })
+      ? await pgRead("select t.\"id\", t.\"course_id\", t.\"titre\", t.\"description\", t.\"ordre\", t.\"duree\", t.\"type_contenu\" from public.\"course_modules\" t where t.\"course_id\" = any($1) order by t.\"ordre\" asc", [accessibleCourseIds], "many")
       : { data: [], error: null };
     if (moduleError) return privateJson({ ok: false, error: moduleError.message }, 400);
 
     const accessibleModuleIds = (moduleRows || []).map(module => module.id);
     const { data: progressData, error: progressError } = accessibleModuleIds.length
-      ? await supabase
-        .from("module_progress")
-        .select("module_id,course_id,progression,complete,date_completion,statut")
-        .eq("etudiant_id", user.id)
-        .in("module_id", accessibleModuleIds)
+      ? await pgRead("select t.\"module_id\", t.\"course_id\", t.\"progression\", t.\"complete\", t.\"date_completion\", t.\"statut\" from public.\"module_progress\" t where t.\"etudiant_id\" = $1 and t.\"module_id\" = any($2)", [user.id, accessibleModuleIds], "many")
       : { data: [], error: null };
     if (progressError) return privateJson({ ok: false, error: progressError.message }, 400);
 
@@ -179,7 +148,7 @@ export async function GET(request: Request) {
       modulesByCourse.set(row.course_id || "", list);
     }
 
-    const enrollmentByCourse = new Map((enrollments || []).map(item => [item.course_id, item]));
+    const enrollmentByCourse = new Map(enrollments.map(item => [item.course_id, item]));
     courses = ((courseRows || []) as RawCourse[]).map(course => {
       const modules = modulesByCourse.get(course.id) || [];
       const completedModules = modules.filter(module => progressByModule.get(module.id)?.complete === true).length;
@@ -201,18 +170,16 @@ export async function GET(request: Request) {
     });
   }
 
-  const { data: assignmentRows } = await supabase
-    .from("homework_assignments")
-    .select("*")
-    .eq("etudiant_id", user.id);
+  const { data: assignmentRows } = await pgRead("select t.* from public.\"homework_assignments\" t where t.\"etudiant_id\" = $1", [user.id], "many");
 
-  const homeworkIds = [...new Set((assignmentRows || []).map(item => item.homework_id).filter(Boolean))];
+  const assignments = assignmentRows || [];
+  const homeworkIds = [...new Set(assignments.map(item => item.homework_id).filter(Boolean))];
   let homework: Homework[] = [];
 
   if (homeworkIds.length) {
-    const { data: homeworkRows } = await supabase.from("homework").select("*").in("id", homeworkIds);
+    const { data: homeworkRows } = await pgRead("select t.* from public.\"homework\" t where t.\"id\" = any($1)", [homeworkIds], "many");
     const homeworkById = new Map((homeworkRows || []).map(item => [item.id, item as Homework]));
-    homework = (assignmentRows || [])
+    homework = assignments
       .map(item => homeworkById.get(item.homework_id))
       .filter(Boolean) as Homework[];
   }
@@ -223,32 +190,10 @@ export async function GET(request: Request) {
     { data: libraryMembership, error: libraryMembershipError },
     { data: bookRequests, error: bookRequestsError }
   ] = await Promise.all([
-    supabase
-      .from("learning_documents")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("issued_at", { ascending: false }),
-    supabase
-      .from("final_exam_attempts")
-      .select("score, passed, created_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("library_memberships")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .gt("expires_at", new Date().toISOString())
-      .order("expires_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("book_requests")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("requested_at", { ascending: false })
+    pgRead("select t.* from public.\"learning_documents\" t where t.\"user_id\" = $1 order by t.\"issued_at\" desc", [user.id], "many"),
+    pgRead("select t.\"score\", t.\"passed\", t.\"created_at\" from public.\"final_exam_attempts\" t where t.\"user_id\" = $1 order by t.\"created_at\" desc limit $2", [user.id, 1], "optional"),
+    pgRead("select t.* from public.\"library_memberships\" t where t.\"user_id\" = $1 and t.\"status\" = $2 and t.\"expires_at\" > $3 order by t.\"expires_at\" desc limit $4", [user.id, "active", new Date().toISOString(), 1], "optional"),
+    pgRead("select t.* from public.\"book_requests\" t where t.\"user_id\" = $1 order by t.\"requested_at\" desc", [user.id], "many")
   ]);
 
   if (documentsError) return privateJson({ ok: false, error: documentsError.message }, 400);

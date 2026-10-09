@@ -17,9 +17,14 @@ interceptées dans le navigateur : aucun cours persistant n'est modifié.
 
 Les contrôles incluent Axe WCAG A/AA, l'absence de débordement horizontal, la
 taille minimale des cibles tactiles, la stabilité de hauteur de l'iframe du
-lecteur, un parcours clavier/enregistrement simulé et douze références de
+lecteur, un parcours clavier/enregistrement simulé et quarante références de
 régression plein écran. Les traces, vidéos et rapports d'échec sont écrits dans
 `.playwright-artifacts/`.
+
+`apostolos-motion.spec.ts` vérifie aussi la palette sombre, les polices locales,
+les pages publiques sans session, les apparitions au défilement et les changements
+de préférence `prefers-reduced-motion`. La CI exécute Chromium sans retry ; elle
+compare les références versionnées sans les régénérer automatiquement.
 
 Après une modification visuelle volontaire, régénérer les références puis
 inspecter chaque PNG avant de les conserver :

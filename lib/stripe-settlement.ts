@@ -1,11 +1,12 @@
+import { pgRead } from "@/lib/postgres";
 import {
   isExpectedPaidStripeSession,
   type StripeCheckoutSessionSummary,
   type StripeProductType
 } from "@/lib/stripe";
-import type { createServerClient } from "@/lib/supabase";
+import type { createServerContext } from "@/lib/postgres";
 
-type ServerClient = NonNullable<ReturnType<typeof createServerClient>>;
+type ServerClient = NonNullable<ReturnType<typeof createServerContext>>;
 
 export type StripeReconciliationStatus = "active" | "processing" | "unpaid" | "expired" | "unknown";
 
@@ -52,21 +53,16 @@ export function isReversedStripeOrderStatus(status: unknown) {
 
 export async function findStripeOrder({
   sessionId,
-  supabase,
+  context,
   userId
 }: {
   sessionId: string;
-  supabase: ServerClient;
+  context: ServerClient;
   userId?: string;
 }) {
-  let query = supabase
-    .from("paypal_orders")
-    .select("*")
-    .eq("provider", "stripe")
-    .eq("order_id", sessionId);
-
-  if (userId) query = query.eq("user_id", userId);
-  const { data, error } = await query.maybeSingle();
+  const { data, error } = await pgRead(
+    'select * from public.paypal_orders where provider=$1 and order_id=$2 and ($3::uuid is null or user_id=$3)',
+    ["stripe", sessionId, userId || null], "optional");
   if (error) throw new Error("order_lookup_failed");
   return (data || null) as StripeOrder | null;
 }
@@ -75,15 +71,15 @@ export async function settlePaidStripeSession({
   eventName,
   order: suppliedOrder,
   summary,
-  supabase
+  context
 }: {
   eventName?: string;
   order?: StripeOrder | null;
   summary: StripeCheckoutSessionSummary;
-  supabase: ServerClient;
+  context: ServerClient;
 }) {
   const order = suppliedOrder === undefined
-    ? await findStripeOrder({ sessionId: summary.sessionId, supabase })
+    ? await findStripeOrder({ sessionId: summary.sessionId, context })
     : suppliedOrder;
 
   if (!order) return { ok: false as const, reason: "order_not_found" as const };
@@ -104,20 +100,7 @@ export async function settlePaidStripeSession({
     return { alreadySettled: true as const, data: null, ok: true as const, order, productType };
   }
 
-  const { data, error } = await supabase.rpc("validate_payment", {
-    p_amount_total: summary.amountTotal,
-    p_book_requested: Boolean(order.book_requested),
-    p_book_title: stringFrom(order.book_title),
-    p_capture_id: summary.captureId || summary.sessionId,
-    p_course_id: productType === "legacy_course" ? stringFrom(order.course_id) || null : null,
-    p_currency: summary.currency,
-    p_event_name: summary.eventType || eventName || "stripe_checkout_reconciled",
-    p_order_id: summary.sessionId,
-    p_product_type: productType,
-    p_provider: "stripe",
-    p_raw_payload: null,
-    p_user_id: stringFrom(order.user_id)
-  });
+  const { data, error } = await pgRead("select public.validate_payment($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) as result", ["stripe", summary.sessionId, summary.captureId || summary.sessionId, stringFrom(order.user_id), productType === "legacy_course" ? stringFrom(order.course_id) || null : null, summary.amountTotal, summary.currency, summary.eventType || eventName || "stripe_checkout_reconciled", JSON.stringify({}), Boolean(order.book_requested), stringFrom(order.book_title), productType], "scalar");
 
   if (error) throw new Error("payment_validation_failed");
   return { data, ok: true as const, order, productType };
@@ -125,10 +108,10 @@ export async function settlePaidStripeSession({
 
 export async function hasActiveStripeEntitlement({
   order,
-  supabase
+  context
 }: {
   order: StripeOrder;
-  supabase: ServerClient;
+  context: ServerClient;
 }) {
   const productType = normalizeStripeProductType(order.product_type);
   const orderId = stringFrom(order.order_id);
@@ -138,43 +121,20 @@ export async function hasActiveStripeEntitlement({
   if (!orderId || !userId) return false;
 
   if (productType === "annual_pass") {
-    const { data, error } = await supabase
-      .from("annual_access_passes")
-      .select("id")
-      .eq("provider", "stripe")
-      .eq("provider_order_id", orderId)
-      .eq("user_id", userId)
-      .eq("status", "active")
-      .gt("expires_at", now)
-      .maybeSingle();
+    const { data, error } = await pgRead("select t.\"id\" from public.\"annual_access_passes\" t where t.\"provider\" = $1 and t.\"provider_order_id\" = $2 and t.\"user_id\" = $3 and t.\"status\" = $4 and t.\"expires_at\" > $5", ["stripe", orderId, userId, "active", now], "optional");
     if (error) throw new Error("entitlement_lookup_failed");
     return Boolean(data);
   }
 
   if (productType === "library_membership") {
-    const { data, error } = await supabase
-      .from("library_memberships")
-      .select("id")
-      .eq("provider", "stripe")
-      .eq("provider_order_id", orderId)
-      .eq("user_id", userId)
-      .eq("status", "active")
-      .gt("expires_at", now)
-      .maybeSingle();
+    const { data, error } = await pgRead("select t.\"id\" from public.\"library_memberships\" t where t.\"provider\" = $1 and t.\"provider_order_id\" = $2 and t.\"user_id\" = $3 and t.\"status\" = $4 and t.\"expires_at\" > $5", ["stripe", orderId, userId, "active", now], "optional");
     if (error) throw new Error("entitlement_lookup_failed");
     return Boolean(data);
   }
 
   const courseId = stringFrom(order.course_id);
   if (!courseId) return false;
-  const { data, error } = await supabase
-    .from("course_enrollments")
-    .select("id")
-    .eq("payment_order_id", orderId)
-    .eq("course_id", courseId)
-    .eq("etudiant_id", userId)
-    .eq("statut", "en_cours")
-    .maybeSingle();
+  const { data, error } = await pgRead("select t.\"id\" from public.\"course_enrollments\" t where t.\"payment_order_id\" = $1 and t.\"course_id\" = $2 and t.\"etudiant_id\" = $3 and t.\"statut\" = $4", [orderId, courseId, userId, "en_cours"], "optional");
   if (error) throw new Error("entitlement_lookup_failed");
   return Boolean(data);
 }

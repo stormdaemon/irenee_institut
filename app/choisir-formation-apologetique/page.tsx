@@ -18,7 +18,7 @@ const questions = [
   {
     question: "Quel budget prévoir pour une formation d'apologétique ?",
     answer:
-      "Les cursus en présentiel sur une ou deux années impliquent généralement des frais d'inscription, plus les déplacements et éventuels hébergements. Les formations en ligne réduisent fortement ces coûts. À l'Institut Saint Irénée, le pass annuel est en participation libre avec un prix conseillé de 99 euros, pour rester accessible à tous."
+      "Les cursus en présentiel sur une ou deux années impliquent généralement des frais d'inscription, plus les déplacements et éventuels hébergements. Les formations en ligne réduisent fortement ces coûts. À l'Institut Apostolos Saint Irénée, le pass annuel est en participation libre avec un prix conseillé de 99 euros, pour rester accessible à tous."
   },
   {
     question: "À quoi reconnaît-on une formation d'apologétique sérieuse ?",
@@ -75,7 +75,7 @@ export const metadata: Metadata = {
     canonical: "/choisir-formation-apologetique"
   },
   openGraph: {
-    title: "Choisir sa formation d'apologétique catholique | Institut Saint Irénée",
+    title: "Choisir sa formation d'apologétique catholique | Institut Apostolos Saint Irénée",
     description:
       "Présentiel ou en ligne, rythme, budget, programme : les critères objectifs pour choisir votre formation d'apologétique.",
     url: "/choisir-formation-apologetique"
@@ -170,7 +170,7 @@ export default function ChoisirFormationApologetiquePage() {
 
       <section className="section">
         <div className="container" style={{ maxWidth: 1040 }}>
-          <h2 className="section-title">Ce que propose l'Institut Saint Irénée</h2>
+          <h2 className="section-title">Ce que propose l'Institut Apostolos Saint Irénée</h2>
           <p className="subtitle">
             Notre parti pris est l'accessibilité sans rabais sur l'exigence : une formation entièrement en ligne,
             que vous suivez à votre rythme depuis chez vous, avec des modules progressifs, des évaluations

@@ -1,14 +1,14 @@
 import { getPool, query } from "../lib/db";
 import { getVisioSessionWindow, VISIO_SESSIONS } from "../lib/live-sessions";
 import { getDailyApiKey, getDailyRoomTimeBounds, updateDailyRoomTimeBounds } from "../lib/live";
-import { createServerClient } from "../lib/supabase";
+import { createServerContext } from "../lib/postgres";
 
 const apply = process.argv.includes("--apply");
 const targetDates = new Set(["2026-10-28", "2026-11-04"]);
 try {
   const database = await query("select current_database() as name");
   if (database.rows[0].name !== "irenee_staging") throw new Error("Unexpected database; refusing schedule correction.");
-  const client = createServerClient();
+  const client = createServerContext();
   if (!client) throw new Error("Database unavailable.");
   for (const announced of VISIO_SESSIONS.filter(item => targetDates.has(item.isoDate))) {
     const result = await query("select id,starts_at,ends_at,daily_room_name,status from live_sessions where id=$1", [announced.liveSessionId]);

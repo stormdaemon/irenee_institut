@@ -17,7 +17,6 @@ type BrowserSession = {
   user: BrowserUser;
 };
 
-import type { LocalServerClient } from "./local-server-client";
 
 let cachedSession: BrowserSession | null | undefined;
 let pendingSession: Promise<BrowserSession | null> | null = null;
@@ -69,41 +68,7 @@ async function loadSession(force = false) {
   return pendingSession;
 }
 
-class BrowserProfileQuery {
-  private filters: Record<string, unknown> = {};
-
-  constructor(private table: string) {}
-
-  eq(column: string, value: unknown) {
-    this.filters[column] = value;
-    return this;
-  }
-
-  select() {
-    return this;
-  }
-
-  async maybeSingle() {
-    if (this.table !== "profiles") {
-      return { data: null, error: { message: "Client navigateur limité aux profils." } };
-    }
-    const session = await loadSession();
-    if (!session) return { data: null, error: { message: "Session absente." } };
-    const response = await fetch("/api/auth/profile", { cache: "no-store", credentials: "same-origin" });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) return { data: null, error: { message: body?.error || "Profil indisponible." } };
-    if (this.filters.id && body.profile?.id !== this.filters.id) {
-      return { data: null, error: { message: "Accès refusé." } };
-    }
-    return { data: body.profile || null, error: null };
-  }
-}
-
-export function hasSupabaseEnv() {
-  return Boolean(process.env.DATABASE_URL);
-}
-
-export function createBrowserClient(): any {
+export function createBrowserClient() {
   if (!isBrowser()) return null;
 
   return {
@@ -117,7 +82,7 @@ export function createBrowserClient(): any {
         if (!error && data.session) announceSession(data.session);
         return { data, error };
       },
-      async getSession() {
+      async getSession(): Promise<AuthResponse<{ session: BrowserSession | null }>> {
         const session = await loadSession();
         return { data: { session }, error: null };
       },
@@ -175,17 +140,9 @@ export function createBrowserClient(): any {
         return { data, error };
       }
     },
-    from(table: string) {
-      return new BrowserProfileQuery(table);
+    async getProfile() {
+      const result = await authFetch<{ profile: import("./types").Profile }>("/api/auth/profile", { cache: "no-store" });
+      return { data: result.error ? null : result.data.profile, error: result.error };
     }
   };
-}
-
-export function createServerClient(): LocalServerClient | null {
-  if (isBrowser()) return null;
-  // Keep this module browser-safe: the PostgreSQL implementation is loaded only
-  // in the Node.js runtime.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { createLocalServerClient } = require("./local-server-client") as typeof import("./local-server-client");
-  return createLocalServerClient();
 }

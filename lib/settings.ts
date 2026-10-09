@@ -1,5 +1,6 @@
+import { pgRead } from "@/lib/postgres";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
-import type { createServerClient } from "@/lib/supabase";
+import type { createServerContext } from "@/lib/postgres";
 
 const encryptedSettingPrefix = "enc:v1:";
 const encryptionAlgorithm = "aes-256-gcm";
@@ -118,8 +119,8 @@ export function maskSecret(value: unknown) {
   return `${secret.slice(0, 6)}••••••${secret.slice(-6)}`;
 }
 
-export async function getSystemSettings(supabase: NonNullable<ReturnType<typeof createServerClient>>): Promise<SystemSettings> {
-  const { data, error } = await supabase.from("system_settings").select("*");
+export async function getSystemSettings(context: NonNullable<ReturnType<typeof createServerContext>>): Promise<SystemSettings> {
+  const { data, error } = await pgRead("select t.* from public.\"system_settings\" t", [], "many");
   if (error) throw new Error(error.message);
   return Object.fromEntries((data || []).map(item => [item.key, unprotectSettingValue(item.key, item.value)]));
 }

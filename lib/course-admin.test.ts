@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { afterEach, beforeEach, test } from "node:test";
+import { afterEach, beforeEach, test } from "bun:test";
 import { createCourse, updateCourse } from "./course-admin";
 import { parseCourseForm } from "./course-input";
 import { query } from "./db";

@@ -1,3 +1,4 @@
+import { pgUpdate } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { normalizeAvatarImage, storeAvatarImage } from "@/lib/avatar-storage";
@@ -10,10 +11,8 @@ const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 function hasValidMagic(bytes: Uint8Array, type: string) {
   if (type === "image/jpeg") return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
   if (type === "image/png") return bytes.slice(0, 8).every((value, index) => value === [137, 80, 78, 71, 13, 10, 26, 10][index]);
-  if (type === "image/webp") {
-    return new TextDecoder().decode(bytes.slice(0, 4)) === "RIFF" && new TextDecoder().decode(bytes.slice(8, 12)) === "WEBP";
-  }
-  return false;
+  // The caller has already restricted the MIME type to JPEG, PNG or WebP.
+  return new TextDecoder().decode(bytes.slice(0, 4)) === "RIFF" && new TextDecoder().decode(bytes.slice(8, 12)) === "WEBP";
 }
 
 export async function POST(request: Request) {
@@ -54,11 +53,11 @@ export async function POST(request: Request) {
     const normalized = await normalizeAvatarImage(fileBytes);
     await storeAvatarImage(storageDirectory, auth.user.id, normalized);
     const avatarUrl = `/api/avatars/${auth.user.id}?v=${Date.now()}`;
-    const { data, error } = await auth.supabase.from("profiles").update({
+    const { data, error } = await pgUpdate("profiles", {
       avatar_public_id: null,
       avatar_url: avatarUrl,
       updated_at: new Date().toISOString()
-    }).eq("id", auth.user.id).select().single();
+    }, "t.\"id\" = $1", [auth.user.id], { returning: "one" });
     if (error) throw new Error("profile_update_failed");
     return NextResponse.json({ ok: true, verified: true, data });
   } catch (error) {

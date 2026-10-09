@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Mentions légales",
-  description: "Consultez les mentions légales de l'Institut d'Apologétique Saint Irénée.",
+  description: "Consultez les mentions légales de l'Institut Apostolos Saint Irénée.",
   alternates: {
     canonical: "/mentions-legales"
   }
@@ -24,7 +24,7 @@ export default async function LegalNoticePage() {
           <p style={{ fontSize: "1.25rem", color: "#dce6f6", maxWidth: 760 }}>{page.intro}</p>
         </div>
       </section>
-      <section className="section" style={{ background: "white" }}>
+      <section className="section">
         <div className="container" style={{ maxWidth: 900 }}>
           <article className="card" style={{ padding: 34 }}>
             <div className="legal-content" dangerouslySetInnerHTML={{ __html: markdownToHtml(page.content, 1) }} />

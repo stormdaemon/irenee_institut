@@ -1,12 +1,13 @@
 "use client";
 
+
 import { BookOpen, CreditCard, Loader2, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cleanAnnualPassSignupPath } from "@/lib/routes";
 import { StripeCheckoutForm } from "@/components/StripeCheckoutForm";
-import { createBrowserClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/lib/browser-auth";
 
 type BuyCourseButtonProps = {
   defaultAmountCents?: number;
@@ -16,6 +17,7 @@ type BuyCourseButtonProps = {
 
 type CheckoutApiResponse = {
   alreadyActive?: boolean;
+  provider?: "stripe";
   clientSecret?: string;
   code?: string;
   error?: string;
@@ -36,6 +38,8 @@ export function BuyCourseButton({
   const [status, setStatus] = useState<"idle" | "checking" | "ready" | "loading" | "error">("idle");
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
   const [amount, setAmount] = useState(() => (defaultAmountCents / 100).toFixed(0));
   const [bookRequested, setBookRequested] = useState(false);
   const [bookTitle, setBookTitle] = useState("");
@@ -46,14 +50,14 @@ export function BuyCourseButton({
     setStatus("checking");
     setError("");
 
-    const supabase = createBrowserClient();
-    if (!supabase) {
+    const context = createBrowserClient();
+    if (!context) {
       setError("Paiement momentanement indisponible. Reessayez dans quelques instants.");
       setStatus("error");
       return;
     }
 
-    const { data } = await supabase.auth.getSession();
+    const { data } = await context.auth.getSession();
     if (!data.session) {
       window.location.href = cleanAnnualPassSignupPath;
       return;
@@ -140,7 +144,7 @@ export function BuyCourseButton({
     setStatus("ready");
   }
 
-  const disabled = status === "checking" || status === "loading";
+  const disabled = !hydrated || status === "checking" || status === "loading";
 
   return (
     <span className="buy-course">
@@ -154,7 +158,7 @@ export function BuyCourseButton({
           <div className="modal-card paypal-checkout-modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
             <div className="paypal-modal-header">
               <div>
-                <span className="badge"><CreditCard size={14} /> Stripe</span>
+                <span className="badge"><CreditCard size={14} /> Paiement sécurisé</span>
                 <h2 id={titleId} className="font-display">Pass annuel</h2>
               </div>
               <button className="modal-close" type="button" onClick={closeModal} aria-label="Fermer le paiement">
@@ -177,7 +181,7 @@ export function BuyCourseButton({
             <>
             <p className="paypal-checkout-intro">
               Le prix conseille est de 99 euros, mais vous choisissez librement le montant verse pour votre annee scolaire.
-              Le pass annuel donne acces a l'ensemble du cursus des que Stripe confirme le paiement.
+              Le pass annuel donne acces a l'ensemble du cursus dès confirmation du paiement.
             </p>
             <label className="paypal-amount-field">
               <span>Montant libre en euros</span>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { LucideIcon } from "lucide-react";
 import { BarChart3, BookOpen, ClipboardList, CreditCard, FileText, KeyRound, Radio, Settings, Users } from "lucide-react";
 import { requireAdminPage } from "@/lib/admin-auth";
@@ -32,12 +33,13 @@ export default async function AdminPage() {
   return (
     <section className="section">
       <div className="container">
+        <div className="apostolos-workspace-art"><Image src="/images/apostolos/vitrail/journal.webp" alt="" fill sizes="100vw"/><span>Transmettre un héritage vivant.</span></div>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
           <div>
-            <h1 className="title">Dashboard Administration</h1>
-            <p className="subtitle">{isDirector ? "Accès complet à la plateforme Institut Saint Irénée" : "Espace pédagogique formateur"}</p>
+            <h1 className="title">Votre atelier pédagogique</h1>
+            <p className="subtitle">{isDirector ? "Accès complet à la plateforme Institut Apostolos Saint Irénée" : "Espace pédagogique formateur"}</p>
           </div>
-          <Link href="/" className="btn btn-outline">Déconnexion</Link>
+          <Link href="/" className="btn btn-outline">Voir le site</Link>
         </div>
 
         <div className="card" style={{ padding: 28, margin: "24px 0 34px", display: "flex", gap: 18, alignItems: "center" }}>
@@ -84,7 +86,7 @@ export default async function AdminPage() {
           {isDirector ? (
           <section>
             <h2 className="font-display" style={{ color: "var(--navy)" }}>Activité plateforme</h2>
-            <div className="card table-wrap">
+            <div className="card table-wrap" tabIndex={0} role="region" aria-label="Activité de la plateforme">
               <table className="data-table">
                 <thead><tr><th>Utilisateur</th><th>Rôle</th><th>Inscription</th></tr></thead>
                 <tbody>

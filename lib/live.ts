@@ -1,8 +1,9 @@
-import type { createServerClient } from "@/lib/supabase";
+import { pgRead } from "@/lib/postgres";
+import type { createServerContext } from "@/lib/postgres";
 import { getSystemSettings } from "@/lib/settings";
 import { isActiveCourseEnrollment } from "@/lib/learning-security";
 
-type ServerClient = NonNullable<ReturnType<typeof createServerClient>>;
+type ServerClient = NonNullable<ReturnType<typeof createServerContext>>;
 
 const DAILY_API = "https://api.daily.co/v1";
 const DAILY_REQUEST_TIMEOUT_MS = 10_000;
@@ -104,8 +105,8 @@ export function canManageCourseLiveSessions(
 
 // The Daily API key lives only in public.system_settings (key='dailyApiKey') and
 // is read exclusively server-side. It must never be exposed to the client.
-export async function getDailyApiKey(supabase: ServerClient): Promise<string> {
-  const settings = await getSystemSettings(supabase);
+export async function getDailyApiKey(context: ServerClient): Promise<string> {
+  const settings = await getSystemSettings(context);
   return String(settings.dailyApiKey || "").trim();
 }
 
@@ -443,7 +444,7 @@ export function getAccessibleLiveCourseIds(
 // Reproduces the access gating used by /api/me: staff and active annual pass
 // holders see every session; otherwise a session tied to a course is reachable
 // only by students enrolled in that course.
-export async function getStudentLiveContext(supabase: ServerClient, userId: string, role: string): Promise<LiveAccessContext> {
+export async function getStudentLiveContext(context: ServerClient, userId: string, role: string): Promise<LiveAccessContext> {
   const staff = role === "directeur" || role === "formateur";
   if (staff) {
     return { verified: true, staff: true, annualPass: true, courseIds: new Set() };
@@ -451,19 +452,8 @@ export async function getStudentLiveContext(supabase: ServerClient, userId: stri
 
   const nowIso = new Date().toISOString();
   const [{ data: pass, error: passError }, { data: enrollments, error: enrollmentError }] = await Promise.all([
-    supabase
-      .from("annual_access_passes")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("status", "active")
-      .gt("expires_at", nowIso)
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("course_enrollments")
-      .select("course_id,statut,access_source,access_expires_at")
-      .eq("etudiant_id", userId)
-      .eq("statut", "en_cours")
+    pgRead("select t.\"id\" from public.\"annual_access_passes\" t where t.\"user_id\" = $1 and t.\"status\" = $2 and t.\"expires_at\" > $3 limit $4", [userId, "active", nowIso, 1], "optional"),
+    pgRead("select t.\"course_id\", t.\"statut\", t.\"access_source\", t.\"access_expires_at\" from public.\"course_enrollments\" t where t.\"etudiant_id\" = $1 and t.\"statut\" = $2", [userId, "en_cours"], "many")
   ]);
 
   if (passError || enrollmentError) {

@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { courseArtwork } from "@/lib/course-art";
 import {
   AlertTriangle,
   ArrowRight,
@@ -19,7 +21,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useParams } from "next/navigation";
 import { formatDuration } from "@/lib/data";
 import { buildCourseJourney } from "@/lib/course-experience";
-import { createBrowserClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/lib/browser-auth";
 import type { Course, ModuleProgress, Profile } from "@/lib/types";
 
 type StudentCourse = Course & {
@@ -62,10 +64,10 @@ export default function CoursePage() {
       setStatus("loading");
       setError("");
       try {
-        const supabase = createBrowserClient();
-        if (!supabase) throw new Error("Le service est momentanément indisponible. Réessayez dans quelques instants.");
+        const context = createBrowserClient();
+        if (!context) throw new Error("Le service est momentanément indisponible. Réessayez dans quelques instants.");
 
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        const { data: sessionData, error: sessionError } = await context.auth.getSession();
         if (sessionError || !sessionData.session) {
           if (!mounted) return;
           setError(sessionError?.message || "Connectez-vous pour accéder à ce cours.");
@@ -187,6 +189,7 @@ export default function CoursePage() {
       <div className="container course-dashboard-container">
         <Link className="course-back-link" href={isStaffPreview ? "/admin/courses" : "/espace-etudiant"}>← {isStaffPreview ? "Retour au studio" : "Mes formations"}</Link>
 
+        <div className="apostolos-workspace-art apostolos-course-panorama"><Image src={courseArtwork(course.slug).src} alt={courseArtwork(course.slug).alt} fill sizes="100vw"/></div>
         <header className="course-dashboard-hero">
           <div className="course-dashboard-copy">
             <span className="course-eyebrow">{isStaffPreview ? "Prévisualisation équipe" : `Bonjour ${firstName} · votre parcours`}</span>

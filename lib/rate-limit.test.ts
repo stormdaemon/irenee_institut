@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHmac, randomUUID } from "node:crypto";
-import { beforeEach, test } from "node:test";
+import { beforeEach, test } from "bun:test";
 import { checkRateLimit, checkRateLimitHierarchy } from "./rate-limit";
 import { query } from "./db";
 

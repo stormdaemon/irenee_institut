@@ -5,7 +5,7 @@ import { SESSION_TTL_SECONDS, verifyAccessToken } from "@/lib/local-auth";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() || "";
+  const token = /^Bearer\s+(\S+)$/i.exec(request.headers.get("authorization") || "")?.[1] || "";
   if (!token) return NextResponse.json({ ok: false, error: "Connexion requise." }, { status: 401 });
 
   const { expiresAt, user, error } = await verifyAccessToken(token);

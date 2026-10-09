@@ -1,3 +1,4 @@
+import { pgInsert, pgRead } from "@/lib/postgres";
 import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/api-auth";
@@ -27,14 +28,9 @@ export async function GET(request: Request) {
   const auth = await authorizeRequest(request, ["directeur", "formateur"]);
   if (!auth.ok) return auth.response;
 
-  let sessionsQuery = auth.supabase
-    .from("live_sessions")
-    .select("*")
-    .order("starts_at", { ascending: false });
-  if (auth.profile.role === "formateur") {
-    sessionsQuery = sessionsQuery.eq("created_by", auth.user.id);
-  }
-  const { data, error } = await sessionsQuery;
+  const { data, error } = await pgRead(
+    'select * from public.live_sessions where ($1::boolean or created_by=$2) order by starts_at desc',
+    [auth.profile.role !== "formateur", auth.user.id]);
 
   if (error) {
     console.error("admin_live_list_failed", { userId: auth.user.id });
@@ -90,11 +86,7 @@ export async function POST(request: Request) {
 
   // Resolve and authorize the course before any external Daily side effect.
   if (courseId) {
-    const { data: course, error: courseError } = await auth.supabase
-      .from("courses")
-      .select("id,auteur_id")
-      .eq("id", courseId)
-      .maybeSingle();
+    const { data: course, error: courseError } = await pgRead("select t.\"id\", t.\"auteur_id\" from public.\"courses\" t where t.\"id\" = $1", [courseId], "optional");
     if (courseError) {
       console.error("admin_live_course_lookup_failed", { userId: auth.user.id });
       return json({ ok: false, error: "Le cours associé ne peut pas être vérifié." }, 503);
@@ -127,7 +119,7 @@ export async function POST(request: Request) {
   // Create the Daily room server-side using the key stored in system_settings.
   let dailyRoom: { name: string; url: string };
   try {
-    const apiKey = await getDailyApiKey(auth.supabase);
+    const apiKey = await getDailyApiKey(auth.context);
     if (!apiKey) {
       return json({ ok: false, error: "La visioconférence n'est pas configurée." }, 503);
     }
@@ -142,9 +134,7 @@ export async function POST(request: Request) {
     return json({ ok: false, error: "La salle de visioconférence n'a pas pu être créée." }, 502);
   }
 
-  const { data, error } = await auth.supabase
-    .from("live_sessions")
-    .insert({
+  const { data, error } = await pgInsert("live_sessions", {
       titre,
       description,
       starts_at: startsAt,
@@ -154,14 +144,12 @@ export async function POST(request: Request) {
       daily_room_name: dailyRoom.name,
       daily_room_url: dailyRoom.url,
       status: "scheduled"
-    })
-    .select()
-    .single();
+    }, { returning: "one" });
 
   if (error) {
     console.error("admin_live_persist_failed", { roomName: dailyRoom.name, userId: auth.user.id });
     try {
-      const apiKey = await getDailyApiKey(auth.supabase);
+      const apiKey = await getDailyApiKey(auth.context);
       if (apiKey) await closeDailyRoom(apiKey, dailyRoom.name, Math.floor(Date.now() / 1000) + 5);
     } catch {
       await recordSecurityEvent({

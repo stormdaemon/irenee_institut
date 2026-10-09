@@ -66,8 +66,9 @@ export default function AdminLegalPage() {
           ))}
         </div>
         <div className="card" style={{ padding: 30 }}>
-          <label>{legalPages[active].title}</label>
+          <label htmlFor="legal-content">{legalPages[active].title}</label>
           <textarea
+            id="legal-content"
             className="input"
             rows={24}
             value={values[active]}

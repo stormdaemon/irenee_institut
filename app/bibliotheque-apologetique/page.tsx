@@ -7,7 +7,7 @@ import { LibraryMembershipButton } from "@/components/LibraryMembershipButton";
 export const metadata: Metadata = {
   title: "Bibliothèque d'école apologétique",
   description:
-    "Adhérez à la bibliothèque d'école apologétique de l'Institut d'Apologétique Saint Irénée et demandez le livre de votre choix depuis votre espace étudiant.",
+    "Adhérez à la bibliothèque d'école apologétique de l'Institut Apostolos Saint Irénée et demandez le livre de votre choix depuis votre espace étudiant.",
   alternates: {
     canonical: "/bibliotheque-apologetique"
   }
@@ -16,23 +16,22 @@ export const metadata: Metadata = {
 export default function LibraryPage() {
   return (
     <>
-      <section className="page-hero library-hero">
-        <div className="container library-hero-grid">
-          <div>
-            <span className="hero-eyebrow">Un service réservé aux étudiants</span>
-            <h1 className="font-display">Bibliothèque d'école apologétique</h1>
+      <section className="apostolos-wrap apostolos-hero apostolos-library-hero">
+        <div className="apostolos-hero-copy">
+            <span className="apostolos-label">Un service réservé aux étudiants</span>
+            <h1>Un livre.<br /><em>Une porte ouverte.</em></h1>
             <p>
-              Constituez votre parcours de lecture avec l'Institut d'Apologétique Saint Irénée.
+              Constituez votre parcours de lecture avec l'Institut Apostolos Saint Irénée.
               L'adhésion annuelle ouvre la possibilité de demander le livre apologétique de votre choix.
             </p>
-            <div className="hero-actions">
+            <div className="apostolos-actions">
               <LibraryMembershipButton />
-              <Link className="btn btn-outline" href="/espace-etudiant">Ouvrir mon espace etudiant</Link>
+              <Link className="btn btn-outline" href="/espace-etudiant">Mon espace étudiant</Link>
             </div>
           </div>
-          <div className="library-hero-medallion">
-            <Image src="/images/irenee-feature-medallion-library.png" alt="" fill sizes="280px" priority />
-          </div>
+        <div className="apostolos-hero-image">
+          <Image src="/images/apostolos/vitrail/ecriture.webp" alt="Livres ouverts et lumière d’étude" fill sizes="(max-width: 800px) 100vw, 48vw" priority />
+          <span className="apostolos-image-caption">LIRE • COMPRENDRE • TRANSMETTRE</span>
         </div>
       </section>
 
@@ -45,17 +44,17 @@ export default function LibraryPage() {
           <div className="grid-3">
             <article className="soft-card library-step">
               <ShieldCheck size={34} />
-              <h3>1. Compte etudiant</h3>
+              <h3>1. Votre espace</h3>
               <p className="muted">Connectez-vous ou créez votre compte pour rattacher l'adhésion à votre espace personnel.</p>
             </article>
             <article className="soft-card library-step">
               <Library size={34} />
-              <h3>2. Adhésion à 15 EUR</h3>
+              <h3>2. Une année, 15 €</h3>
               <p className="muted">Réglez l'adhésion annuelle par paiement sécurisé. Le tarif est fixe et clairement affiché avant validation.</p>
             </article>
             <article className="soft-card library-step">
               <BookOpen size={34} />
-              <h3>3. Demande de livre</h3>
+              <h3>3. Votre prochain livre</h3>
               <p className="muted">Depuis votre espace étudiant, saisissez le titre souhaité et suivez l'état de votre demande.</p>
             </article>
           </div>

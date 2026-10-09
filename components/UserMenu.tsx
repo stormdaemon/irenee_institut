@@ -1,16 +1,16 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
 import { BookOpen, Camera, ChevronDown, ClipboardList, LayoutDashboard, LogOut, Settings, UserCircle } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createBrowserClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/lib/browser-auth";
 import { cloudinaryAvatarUrl } from "@/lib/cloudinary";
 import { cleanAnnualPassSignupPath } from "@/lib/routes";
 import type { Profile } from "@/lib/types";
 import { AvatarUploader } from "@/components/AvatarUploader";
 
-type SupabaseBrowserClient = NonNullable<ReturnType<typeof createBrowserClient>>;
+type BrowserAuthClient = NonNullable<ReturnType<typeof createBrowserClient>>;
 
 function initials(profile: Profile) {
   return `${profile.prenom?.[0] || ""}${profile.nom?.[0] || ""}` || "II";
@@ -31,11 +31,12 @@ function avatarSrc(profile: Profile | null) {
 
 type UserMenuProps = {
   onNavigate?: () => void;
+  loggedOutLabel?: string;
 };
 
 const annualPassSignupHref = cleanAnnualPassSignupPath;
 
-export function UserMenu({ onNavigate }: UserMenuProps) {
+export function UserMenu({ onNavigate, loggedOutLabel = "Se connecter" }: UserMenuProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [open, setOpen] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
@@ -59,13 +60,13 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
 
     if (!client) return;
 
-    async function loadProfile(supabase: SupabaseBrowserClient) {
+    async function loadProfile(context: BrowserAuthClient) {
       const resetProfile = async () => {
-        await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+        await context.auth.signOut({ scope: "local" }).catch(() => undefined);
         setProfile(null);
       };
 
-      const { data, error } = await supabase.auth.getUser().catch(() => ({ data: { user: null }, error: new Error("Session invalide") }));
+      const { data, error } = await context.auth.getUser().catch(() => ({ data: { user: null }, error: new Error("Session invalide") }));
       if (!data.user) {
         setProfile(null);
         return;
@@ -75,7 +76,7 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
         return;
       }
 
-      const { data: profileData } = await supabase.from("profiles").select("*").eq("id", data.user.id).maybeSingle();
+      const { data: profileData } = await context.getProfile();
       setProfile((profileData as Profile | null) || {
         id: data.user.id,
         email: data.user.email || "",
@@ -95,8 +96,8 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
 
   async function signOut() {
     onNavigate?.();
-    const supabase = createBrowserClient();
-    await supabase?.auth.signOut();
+    const context = createBrowserClient();
+    await context?.auth.signOut();
     window.location.href = "/";
   }
 
@@ -108,8 +109,8 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
   if (!profile) {
     return (
       <>
-        <Link href={loginHref} className="btn btn-outline" prefetch={false} onClick={onNavigate}>Se connecter</Link>
-        <Link href={annualPassSignupHref} className="btn btn-primary" prefetch={false} onClick={onNavigate}>S'inscrire</Link>
+        <Link href={loginHref} className="btn btn-outline" prefetch={false} onClick={onNavigate}>{loggedOutLabel}</Link>
+
       </>
     );
   }
@@ -118,13 +119,10 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
 
   return (
     <div className="user-menu" ref={menuRef}>
-      <button className="user-trigger" type="button" onClick={() => setOpen(!open)}>
+      <button className="user-trigger" type="button" aria-expanded={open} aria-label="Menu du compte" onClick={() => setOpen(!open)}>
         <span className="avatar-wrap">
           <span className="avatar">
             {src ? <Image src={src} alt={`${profile.prenom} ${profile.nom}`} fill sizes="36px" style={{ objectFit: "cover" }} /> : initials(profile)}
-          </span>
-          <span className="avatar-camera" onClick={(event) => { event.stopPropagation(); setAvatarOpen(true); }}>
-            <Camera size={14} />
           </span>
         </span>
         <span className="user-copy">
@@ -145,6 +143,7 @@ export function UserMenu({ onNavigate }: UserMenuProps) {
           <Link href={isStaff ? "/admin/homework" : "/devoirs"} prefetch={false} onClick={closeAfterNavigate}><ClipboardList size={16} /> Devoirs</Link>
           {isStaff && <Link href="/admin" prefetch={false} onClick={closeAfterNavigate}><LayoutDashboard size={16} /> Administration</Link>}
           <Link href="/parametres" prefetch={false} onClick={closeAfterNavigate}><Settings size={16} /> Paramètres</Link>
+          <button type="button" onClick={() => { setOpen(false); setAvatarOpen(true); }}><Camera size={16} /> Changer ma photo</button>
           <button type="button" onClick={signOut}><LogOut size={16} /> Déconnexion</button>
         </div>
       )}

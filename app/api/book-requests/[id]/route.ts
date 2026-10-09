@@ -1,3 +1,4 @@
+import { pgUpdate } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/api-auth";
 import { readJsonBodyWithLimit, RequestBodyError } from "@/lib/request-body";
@@ -21,28 +22,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ ok: false, error: "Statut de demande invalide." }, { status: 400 });
   }
 
-  const { data, error } = await auth.supabase
-    .from("book_requests")
-    .update({
+  const { data, error } = await pgUpdate("book_requests", {
       status,
       reviewed_at: status === "en_attente_direction" ? null : new Date().toISOString(),
       reviewed_by: status === "en_attente_direction" ? null : auth.user.id,
       updated_at: new Date().toISOString()
-    })
-    .eq("id", id)
-    .select()
-    .single();
+    }, "t.\"id\" = $1", [id], { returning: "one" });
 
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
 
   if (data.paypal_order_id) {
-    await auth.supabase
-      .from("paypal_orders")
-      .update({
+    await pgUpdate("paypal_orders", {
         book_request_status: status,
         updated_at: new Date().toISOString()
-      })
-      .eq("order_id", data.paypal_order_id);
+      }, "t.\"order_id\" = $1", [data.paypal_order_id], { returning: "none" });
   }
 
   return NextResponse.json({ ok: true, data });

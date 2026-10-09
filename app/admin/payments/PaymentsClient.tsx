@@ -68,7 +68,7 @@ export function PaymentsClient({
   return (
     <>
       <ActionNotice status={status} success="Mise a jour enregistree." error={error} />
-      <div className="card table-wrap">
+      <div className="card table-wrap" tabIndex={0} role="region" aria-label="Inscriptions et paiements">
         <table className="data-table">
           <thead><tr><th>Inscrit</th><th>Formation</th><th>Tarif</th><th>Paiement</th><th>Montant</th><th>Statut</th><th>Actions</th></tr></thead>
           <tbody>
@@ -91,7 +91,7 @@ export function PaymentsClient({
       </div>
 
       <h2 className="font-display" style={{ color: "var(--navy)", marginTop: 38 }}>Demandes de livre d'apologetique</h2>
-      <div className="card table-wrap">
+      <div className="card table-wrap" tabIndex={0} role="region" aria-label="Demandes de livres">
         <table className="data-table">
           <thead><tr><th>Etudiant</th><th>Formation</th><th>Livre souhaite</th><th>Commande paiement</th><th>Statut</th><th>Actions direction</th></tr></thead>
           <tbody>

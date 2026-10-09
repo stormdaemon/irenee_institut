@@ -1,12 +1,13 @@
+import { resolve } from "node:path";
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "bun:test";
 import sharp from "sharp";
 import { avatarFilePath, normalizeAvatarImage } from "./avatar-storage";
 
 const userId = "00000000-0000-4000-8000-000000000123";
 
 test("avatar paths stay inside the configured absolute storage directory", () => {
-  assert.equal(avatarFilePath("/var/lib/irenee/avatars", userId), `/var/lib/irenee/avatars/${userId}.webp`);
+  assert.equal(avatarFilePath("/var/lib/irenee/avatars", userId), resolve("/var/lib/irenee/avatars", `${userId}.webp`));
   assert.throws(() => avatarFilePath("../avatars", userId), /absolu/);
   assert.throws(() => avatarFilePath("/var/lib/irenee/avatars", "../../etc/passwd"), /identifiant/);
 });

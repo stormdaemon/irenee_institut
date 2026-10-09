@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import test from "node:test";
+import { test } from "bun:test";
 import { POST as paypalWebhook } from "@/app/paypal_checkout_valid/route";
 import { handleStripeWebhookRequest } from "@/lib/stripe-webhook";
 import { RequestBodyTooLargeError, readTextBodyWithLimit } from "./webhook-security";
@@ -48,12 +48,12 @@ test("payment webhooks never persist provider payloads", () => {
 test("provider calls happen only after local header checks and signature authentication", () => {
   const stripe = readFileSync(join(process.cwd(), "lib/stripe-webhook.ts"), "utf8");
   const paypal = readFileSync(join(process.cwd(), "app/paypal_checkout_valid/route.ts"), "utf8");
-  assert.ok(stripe.indexOf("validateStripeWebhookHeader(") < stripe.indexOf("getSystemSettings(supabase)"));
+  assert.ok(stripe.indexOf("validateStripeWebhookHeader(") < stripe.indexOf("getSystemSettings(context)"));
   assert.ok(stripe.indexOf("verifyStripeWebhookSignature({") < stripe.indexOf("await resolveSessionSummary(config, event)"));
   assert.ok(paypal.indexOf("validatePayPalWebhookHeaders(request.headers)") < paypal.indexOf("verifyPayPalWebhookSignature({"));
   assert.ok(paypal.indexOf("verifyPayPalWebhookSignature({") < paypal.indexOf("capturePayPalOrder({"));
-  assert.ok(paypal.indexOf('.select("provider,status")') < paypal.indexOf("capturePayPalOrder({"));
-  assert.ok(stripe.indexOf('.eq("provider", "stripe")') < stripe.indexOf("await resolveSessionSummary(config, event)"));
+  assert.ok(paypal.indexOf('public.\\"paypal_orders\\"') < paypal.indexOf("capturePayPalOrder({"));
+  assert.ok(stripe.indexOf('["stripe", relatedSessionId]') < stripe.indexOf("await resolveSessionSummary(config, event)"));
 });
 
 test("payment validation, reversal, and manual decisions emit security audit events", () => {
@@ -72,7 +72,7 @@ test("oversized webhook requests return 413 before provider or database processi
   const stripe = await handleStripeWebhookRequest({
     lite: false,
     request: new Request("https://irenee.test/stripe_webhook", { body: oversized, method: "POST" }),
-    supabase: new Proxy({}, {
+    context: new Proxy({}, {
       get() {
         throw new Error("Stripe oversized payload reached the database.");
       }

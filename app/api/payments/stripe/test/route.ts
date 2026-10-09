@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   try {
-    const settings = await getSystemSettings(auth.supabase);
+    const settings = await getSystemSettings(auth.context);
     const config = getStripeConfig(settings);
     if (!config.secretKey) {
       return NextResponse.json({ ok: false, error: "La cle secrete Stripe est manquante." }, { status: 400 });

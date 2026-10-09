@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       body,
       productType: "library_membership",
       requestId,
-      supabase: auth.supabase,
+      context: auth.context,
       user: auth.user
     });
     return checkoutSuccessResponse(result);

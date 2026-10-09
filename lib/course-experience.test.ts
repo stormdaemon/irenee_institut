@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "bun:test";
 import { buildCourseJourney } from "./course-experience";
 
 test("course preview keeps every module reachable without changing completed/current semantics", () => {

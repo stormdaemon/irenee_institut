@@ -1,6 +1,7 @@
 import { createHash, createHmac, randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { Pool } from "pg";
+import { siteUrl } from "../lib/seo";
 
 export const E2E_DIRECTOR_EMAIL = "qa-director@irenee.test";
 
@@ -28,7 +29,7 @@ function createSessionToken(userId: string, email: string) {
     email,
     exp: expiresAt,
     iat: now,
-    iss: "https://irenee-institut.org",
+    iss: siteUrl,
     jti: sessionId,
     nbf: now - 5,
     role: "authenticated",

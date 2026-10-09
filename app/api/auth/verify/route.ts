@@ -1,3 +1,4 @@
+import { pgRead } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import { setSessionCookie } from "@/lib/auth-cookie";
 import { runRegistrationAutomation } from "@/lib/google-apps-script";
@@ -6,7 +7,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { readJsonBodyWithLimit, RequestBodyError } from "@/lib/request-body";
 import { assertSameOrigin, getTrustedClientIp, RequestSecurityError, safeInternalPath } from "@/lib/request-security";
 import { recordSecurityEvent } from "@/lib/security-audit";
-import { createServerClient } from "@/lib/supabase";
+import { createServerContext } from "@/lib/postgres";
 
 export const runtime = "nodejs";
 
@@ -49,9 +50,9 @@ export async function POST(request: Request) {
     }, { status: 400 });
   }
 
-  const supabase = createServerClient();
-  const { data: profile } = supabase
-    ? await supabase.from("profiles").select("*").eq("id", result.user.id).maybeSingle()
+  const context = createServerContext();
+  const { data: profile } = context
+    ? await pgRead<{id:string;email:string}>("select t.* from public.\"profiles\" t where t.\"id\" = $1", [result.user.id], "optional")
     : { data: null };
   if (profile) await runRegistrationAutomation(profile).catch(() => undefined);
   await recordSecurityEvent({ actorUserId: result.user.id, eventType: "auth.email.verified", request });

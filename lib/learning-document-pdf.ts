@@ -1,3 +1,4 @@
+import { siteUrl } from "@/lib/seo";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { degrees, PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
@@ -30,7 +31,7 @@ function centeredX(font: PDFFont, text: string, size: number) {
   return (PAGE_WIDTH - font.widthOfTextAtSize(text, size)) / 2;
 }
 
-function drawCentered(page: PDFPage, font: PDFFont, value: unknown, y: number, size: number, color = rgb(0.06, 0.17, 0.33)) {
+function drawCentered(page: PDFPage, font: PDFFont, value: unknown, y: number, size: number, color = rgb(0.098, 0.247, 0.204)) {
   const text = pdfText(value);
   page.drawText(text, { x: centeredX(font, text, size), y, size, font, color });
 }
@@ -61,7 +62,7 @@ function drawCenteredLines(page: PDFPage, font: PDFFont, value: unknown, y: numb
 }
 
 function drawLaurelBranch(page: PDFPage, x: number, y: number, mirror = false) {
-  const gold = rgb(0.69, 0.48, 0.2);
+  const gold = rgb(0.639, 0.294, 0.18);
   const direction = mirror ? -1 : 1;
   page.drawLine({ start: { x, y }, end: { x: x + direction * 74, y: y + 56 }, color: gold, thickness: 2 });
 
@@ -79,27 +80,27 @@ export async function renderLearningDocumentPdf(document: LearningDocument) {
   const regular = await pdf.embedFont(StandardFonts.TimesRoman);
   const bold = await pdf.embedFont(StandardFonts.TimesRomanBold);
   const italic = await pdf.embedFont(StandardFonts.TimesRomanItalic);
-  const logo = await pdf.embedPng(await readFile(path.join(process.cwd(), "public", "images", "logo_without_text_pdf.png")));
+  const logo = await pdf.embedPng(await readFile(path.join(process.cwd(), "public", "images", "apostolos", "mark.png")));
 
-  page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(0.03, 0.11, 0.23) });
-  page.drawRectangle({ x: 24, y: 24, width: PAGE_WIDTH - 48, height: PAGE_HEIGHT - 48, color: rgb(0.97, 0.89, 0.69) });
-  page.drawRectangle({ x: 39, y: 39, width: PAGE_WIDTH - 78, height: PAGE_HEIGHT - 78, borderColor: rgb(0.69, 0.48, 0.2), borderWidth: 3 });
-  page.drawRectangle({ x: 50, y: 50, width: PAGE_WIDTH - 100, height: PAGE_HEIGHT - 100, borderColor: rgb(0.1, 0.24, 0.41), borderWidth: 1 });
-  page.drawLine({ start: { x: 64, y: 498 }, end: { x: PAGE_WIDTH - 64, y: 498 }, color: rgb(0.69, 0.48, 0.2), thickness: 1 });
-  page.drawLine({ start: { x: 64, y: 96 }, end: { x: PAGE_WIDTH - 64, y: 96 }, color: rgb(0.69, 0.48, 0.2), thickness: 1 });
+  page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT, color: rgb(0.098, 0.247, 0.204) });
+  page.drawRectangle({ x: 24, y: 24, width: PAGE_WIDTH - 48, height: PAGE_HEIGHT - 48, color: rgb(0.969, 0.965, 0.933) });
+  page.drawRectangle({ x: 39, y: 39, width: PAGE_WIDTH - 78, height: PAGE_HEIGHT - 78, borderColor: rgb(0.639, 0.294, 0.18), borderWidth: 3 });
+  page.drawRectangle({ x: 50, y: 50, width: PAGE_WIDTH - 100, height: PAGE_HEIGHT - 100, borderColor: rgb(0.192, 0.349, 0.263), borderWidth: 1 });
+  page.drawLine({ start: { x: 64, y: 498 }, end: { x: PAGE_WIDTH - 64, y: 498 }, color: rgb(0.639, 0.294, 0.18), thickness: 1 });
+  page.drawLine({ start: { x: 64, y: 96 }, end: { x: PAGE_WIDTH - 64, y: 96 }, color: rgb(0.639, 0.294, 0.18), thickness: 1 });
 
   page.drawImage(logo, { x: PAGE_WIDTH / 2 - 53, y: 466, width: 106, height: 106 });
 
-  drawCentered(page, regular, "INSTITUT D'APOLOGETIQUE SAINT IRENEE", 448, 14, rgb(0.59, 0.4, 0.13));
+  drawCentered(page, regular, "INSTITUT APOSTOLOS SAINT IRENEE", 448, 14, rgb(0.59, 0.4, 0.13));
   drawCentered(page, bold, learningDocumentTitle(document), 395, document.document_kind === "final_certificate" ? 32 : 29);
   drawCentered(page, regular, "est decerne a", 357, 16, rgb(0.44, 0.31, 0.13));
   drawCentered(page, italic, document.recipient_name, 306, 37);
-  page.drawLine({ start: { x: 215, y: 289 }, end: { x: PAGE_WIDTH - 215, y: 289 }, color: rgb(0.69, 0.48, 0.2), thickness: 1.5 });
+  page.drawLine({ start: { x: 215, y: 289 }, end: { x: PAGE_WIDTH - 215, y: 289 }, color: rgb(0.639, 0.294, 0.18), thickness: 1.5 });
   drawCenteredLines(page, regular, learningDocumentAchievement(document), 248, 16, 660, 21);
   drawCentered(page, regular, ANNUAL_PASS_NAME, 185, 12, rgb(0.42, 0.29, 0.12));
   drawCentered(page, regular, `Delivre le ${learningDocumentIssuedAt(document)}`, 142, 13, rgb(0.22, 0.15, 0.06));
   drawCentered(page, regular, "Document pedagogique automatise - identite declaree, non verifiee par l'Institut", 119, 8, rgb(0.38, 0.27, 0.12));
-  drawCentered(page, regular, "Verification : irenee-institut.org/verifier-document", 106, 8, rgb(0.38, 0.27, 0.12));
+  drawCentered(page, regular, `Verification : ${new URL(siteUrl).host}/verifier-document`, 106, 8, rgb(0.38, 0.27, 0.12));
 
   page.drawLine({ start: { x: 80, y: 74 }, end: { x: 205, y: 74 }, color: rgb(0.43, 0.3, 0.13), thickness: 1 });
   page.drawText("Direction de l'Institut", { x: 88, y: 58, size: 10, font: regular, color: rgb(0.38, 0.27, 0.12) });
@@ -110,7 +111,7 @@ export async function renderLearningDocumentPdf(document: LearningDocument) {
   page.drawCircle({ x: PAGE_WIDTH / 2, y: 74, size: 20, borderColor: rgb(0.85, 0.58, 0.39), borderWidth: 1 });
   drawLaurelBranch(page, PAGE_WIDTH / 2 - 29, 56, true);
   drawLaurelBranch(page, PAGE_WIDTH / 2 + 29, 56);
-  drawCentered(page, regular, "SAINT", 76, 8, rgb(0.96, 0.83, 0.64));
+  drawCentered(page, regular, "APOSTOLOS", 76, 6, rgb(0.96, 0.83, 0.64));
   drawCentered(page, regular, "IRENEE", 65, 8, rgb(0.96, 0.83, 0.64));
 
   return pdf.save();

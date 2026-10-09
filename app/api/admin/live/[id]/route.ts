@@ -1,3 +1,4 @@
+import { pgRead, pgUpdate } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/api-auth";
 import {
@@ -43,14 +44,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return json({ ok: false, error: message }, status);
   }
 
-  let lookupQuery = auth.supabase
-    .from("live_sessions")
-    .select("id,titre,description,starts_at,ends_at,course_id,created_by,daily_room_name,daily_room_url,status")
-    .eq("id", id);
-  if (auth.profile.role === "formateur") {
-    lookupQuery = lookupQuery.eq("created_by", auth.user.id);
-  }
-  const { data: currentData, error: lookupError } = await lookupQuery.maybeSingle();
+  const { data: currentData, error: lookupError } = await pgRead(
+    'select * from public.live_sessions where id=$1 and ($2::boolean or created_by=$3)',
+    [id, auth.profile.role !== "formateur", auth.user.id], "optional");
   if (lookupError) {
     console.error("admin_live_lookup_failed", { sessionId: id, userId: auth.user.id });
     return json({ ok: false, error: "La séance ne peut pas être chargée." }, 503);
@@ -131,7 +127,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const terminalTransition = current.status !== nextStatus && (nextStatus === "ended" || nextStatus === "cancelled");
   if (current.daily_room_name && (terminalTransition || scheduleChanged)) {
     try {
-      const apiKey = await getDailyApiKey(auth.supabase);
+      const apiKey = await getDailyApiKey(auth.context);
       if (!apiKey) return json({ ok: false, error: "La visioconférence n'est pas configurée." }, 503);
       if (terminalTransition) {
         await closeDailyRoom(apiKey, current.daily_room_name, Math.floor(Date.now() / 1000) + 5);
@@ -149,14 +145,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   update.updated_at = new Date().toISOString();
-  let updateQuery = auth.supabase
-    .from("live_sessions")
-    .update(update)
-    .eq("id", id);
-  if (auth.profile.role === "formateur") {
-    updateQuery = updateQuery.eq("created_by", auth.user.id);
-  }
-  const { data, error } = await updateQuery.select().single();
+  const { data, error } = await pgUpdate("live_sessions", update,
+    't.id=$1 and ($2::boolean or t.created_by=$3)',
+    [id, auth.profile.role !== "formateur", auth.user.id], { returning: "one" });
 
   if (error) {
     console.error("admin_live_update_failed", { sessionId: id, userId: auth.user.id });

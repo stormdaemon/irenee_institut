@@ -6,7 +6,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { translateAuthError, type AuthErrorCopy } from "@/lib/auth-errors";
 import { safeInternalPath } from "@/lib/request-security";
 import { annualPassCheckoutPath, cleanAnnualPassSignupPath } from "@/lib/routes";
-import { createBrowserClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/lib/browser-auth";
 
 type FieldErrors = Partial<Record<"email" | "password", string>>;
 
@@ -41,10 +41,10 @@ export default function LoginPage() {
     let cancelled = false;
 
     async function continueExistingSession() {
-      const supabase = createBrowserClient();
-      if (!supabase) return;
+      const context = createBrowserClient();
+      if (!context) return;
 
-      const { data } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+      const { data } = await context.auth.getSession().catch(() => ({ data: { session: null } }));
       if (!data.session) return;
 
       const meResponse = await fetch("/api/me", { cache: "no-store", credentials: "same-origin" }).catch(() => null);
@@ -90,8 +90,8 @@ export default function LoginPage() {
     }
 
     setFieldErrors({});
-    const supabase = createBrowserClient();
-    if (!supabase) {
+    const context = createBrowserClient();
+    if (!context) {
       setNotice({
         title: "Connexion indisponible",
         description: "La connexion est momentanément indisponible. Réessayez dans quelques instants.",
@@ -101,9 +101,9 @@ export default function LoginPage() {
       return;
     }
 
-    await supabase.auth.signOut();
+    await context.auth.signOut();
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await context.auth.signInWithPassword({
       email,
       password
     });
@@ -131,7 +131,7 @@ export default function LoginPage() {
 
     if (!meResponse.ok) {
       const meResult = await meResponse.json().catch(() => null);
-      await supabase.auth.signOut();
+      await context.auth.signOut();
       setNotice({
         title: "Compte incomplet",
         description: meResult?.error || "Votre espace n'a pas pu être chargé.",

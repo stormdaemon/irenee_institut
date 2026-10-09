@@ -1,4 +1,4 @@
-import test from "node:test";
+import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -139,7 +139,7 @@ test("course overview exposes semantic progress and objectives", () => {
 
 test("module reader keeps save failures inline and always releases its busy state", () => {
   const page = source("app/cours/[slug]/modules/[moduleId]/page.tsx");
-  const markComplete = page.match(/async function markComplete\(\) \{([\s\S]*?)\n  \}\n\n  if \(status === "loading"\)/)?.[1] || "";
+  const markComplete = page.slice(page.indexOf("async function markComplete()"), page.indexOf('if (status === "loading")', page.indexOf("async function markComplete()")));
 
   assert.match(page, /const \[saving, setSaving\] = useState\(false\)/);
   assert.match(page, /const \[saveError, setSaveError\] = useState\(""\)/);
@@ -215,25 +215,18 @@ test("course editor quiz layout never overrides student answer alignment", () =>
   assert.doesNotMatch(css, /(?<!\.course-quiz-builder )\.course-quiz-option\s*\{\s*display:\s*grid;\s*grid-template-columns:\s*118px/);
 });
 
-test("private workspaces do not render donation and network distractions", () => {
-  const chrome = source("components/DeferredClientChrome.tsx");
-
-  assert.match(chrome, /function isPrivateWorkspacePath/);
-  assert.match(chrome, /pathname\?\.startsWith\("\/cours"\)/);
-  assert.match(chrome, /!privateWorkspace && <FloatingNetworkMenu \/>/);
-  assert.match(chrome, /!privateWorkspace && <DonationPrompt \/>/);
-  assert.match(chrome, /<OnboardingGate \/>/);
+test("private workspaces have no donation, network or radio distractions", () => {
+ for(const path of ["components/DeferredClientChrome.tsx","app/layout.tsx"]){
+  assert.doesNotMatch(source(path),/DonationPrompt|FloatingNetworkMenu|RadioPlayer/);
+ }
+ assert.match(source("components/DeferredClientChrome.tsx"),/<OnboardingGate/);
 });
-
-test("course workspaces replace marketing chrome with focused navigation", () => {
-  const header = source("components/Header.tsx");
-  const radio = source("components/RadioPlayer.tsx");
-  const footer = source("components/Footer.tsx");
-
-  assert.match(header, /isCourseReader/);
-  assert.match(header, /course-workspace-header/);
-  assert.match(header, /Espace de cours/);
-  assert.match(header, /Atelier des cours/);
-  assert.match(radio, /if \(isCourseWorkspace\) return null/);
-  assert.match(footer, /if \(isCourseWorkspace\) return null/);
+test("course and administration workspaces expose focused return navigation", () => {
+ const header=source("components/Header.tsx"),footer=source("components/Footer.tsx");
+ assert.match(header,/path.startsWith\("\/admin"\)/);
+ assert.match(header,/path.startsWith\("\/cours\/"\)/);
+ assert.match(header,/apostolos-back/);
+ assert.match(header,/Mon espace/);
+ assert.match(footer,/return null/);
+ assert.match(footer,/path.startsWith\("\/cours\/"\)/);
 });

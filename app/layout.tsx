@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./apostolos.css";
+import "./imagery.css";
+import "./nocturne.css";
+import "./vitrail.css";
+import { ApostolosMotion } from "@/components/ApostolosMotion";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { RadioPlayer } from "@/components/RadioPlayer";
 import { DeferredClientChrome } from "@/components/DeferredClientChrome";
 import { JsonLd } from "@/components/JsonLd";
 import { organizationJsonLd, siteDescription, siteName, siteUrl, websiteJsonLd } from "@/lib/seo";
@@ -10,12 +14,12 @@ import { organizationJsonLd, siteDescription, siteName, siteUrl, websiteJsonLd }
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Institut d'Apologétique Saint Irénée | Formation catholique en ligne",
+    default: "Institut Apostolos Saint Irénée | Formation catholique en ligne",
     template: `%s | ${siteName}`
   },
   description: siteDescription,
   openGraph: {
-    title: "Institut d'Apologétique Saint Irénée",
+    title: "Institut Apostolos Saint Irénée",
     description: siteDescription,
     url: siteUrl,
     siteName,
@@ -26,13 +30,13 @@ export const metadata: Metadata = {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "Institut d'Apologétique Saint Irénée - Formation catholique en ligne"
+        alt: "Institut Apostolos Saint Irénée - Formation catholique en ligne"
       }
     ]
   },
   twitter: {
     card: "summary_large_image",
-    title: "Institut d'Apologétique Saint Irénée",
+    title: "Institut Apostolos Saint Irénée",
     description: siteDescription,
     images: ["/twitter-image.png"]
   },
@@ -50,10 +54,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <JsonLd data={organizationJsonLd} />
         <JsonLd data={websiteJsonLd} />
         <div className="site-chrome">
-          <RadioPlayer />
           <Header />
         </div>
         <DeferredClientChrome />
+        <ApostolosMotion />
         <main id="main-content" tabIndex={-1}>{children}</main>
         <Footer />
       </body>

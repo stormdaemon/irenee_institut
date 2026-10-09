@@ -1,0 +1,67 @@
+{
+  "mode": "built-in image_gen",
+  "reference": "Maquette 02 choisie par l’utilisateur et Ludivine le 8 octobre 2026",
+  "fonts": [
+    {
+      "name": "Bebas Neue",
+      "source": "https://github.com/google/fonts/tree/main/ofl/bebasneue"
+    },
+    {
+      "name": "Barlow Condensed",
+      "source": "https://github.com/google/fonts/tree/main/ofl/barlowcondensed"
+    }
+  ],
+  "assets": [
+    {
+      "file": "public/images/apostolos/vitrail/hero.webp",
+      "prompt": "Extract and reconstruct ONLY the top cathedral background of the provided selected website mockup as a standalone production background image. Match its composition, architecture, dramatic darkness and blue/amber stained glass EXACTLY: giant central-right lancet window with the Lamb, black nave and benches left, small rear-view seated silhouette lower-left, shafts of blue light far right. Crop corresponds to top 0–49 percent of supplied image, from top through the cathedral benches, ending BEFORE the annual-pass strip. Output landscape 1536x1000 approximately, entire source-width. REMOVE ALL UI TEXT, brand logo, menus, headings, buttons and inscriptions overlaid on columns, reconstruct the background naturally. Keep left 48 percent very dark and quiet for live HTML text. Do not add new composition, no border, no watermark. This is a faithful extraction/clean plate, not a redesign.",
+      "transparent": false
+    },
+    {
+      "file": "public/images/apostolos/vitrail/emblem.webp",
+      "prompt": "Extract and faithfully recreate ONLY the circular stained-glass cross emblem in the TOP LEFT of this selected website mockup. Exact blue, amber and fine leaded-gold glass, round outer brass ring, inner Christian cross. Front view, centered, circle fills 90 percent of a square canvas, clean genuinely transparent background outside medallion. No letters, no wordmark, no extra object, no shadow outside shape. Production crisp small-size readable emblem matching reference.",
+      "transparent": true
+    },
+    {
+      "file": "public/images/apostolos/vitrail/button.webp",
+      "prompt": "Extract and faithfully recreate ONLY a single EMPTY blue glass button from this website mockup, matching the 'Explorer les formations' button. Wide rectangle aspect4.5:1, shallow chamfered corners, thin cool pale-blue bevel, deep dark navy stained translucent glass with subtle blue inner edge illumination. Straight edges, rich material but clean central dark flat area for readable HTML label. Absolutely NO text, NO arrows, NO symbols. Transparent outside tightly bounded shape, shape fills canvas with at most 2 percent margin. Standalone reusable UI button texture, front orthographic view. Match reference, avoid gold ornament and big outer glow.",
+      "transparent": true
+    },
+    {
+      "file": "public/images/apostolos/vitrail/return-band.webp",
+      "prompt": "Extract and faithfully recreate the ANNUAL PASS BANNER from this chosen website mockup as a clean image background. Very wide short strip approximately8:1, navy cobalt stained-glass mosaic, thin golden rectangular ornamental perimeter with diagonal leading. Large round illustrated golden KEY medallion aligned far left, circle occupies first18 percent of width, right end small gold star compass flourish and curved glass leads. Rest dark quiet readable navy for HTML text. REMOVE ALL text and remove the entire blue CTA button, fill behind with matching dark blue glass. Front flat image, no background outside, no mockup perspective. Match exact reference motif/material/proportions; no extra text.",
+      "transparent": false
+    },
+    {
+      "file": "public/images/apostolos/vitrail/apologetique.webp",
+      "prompt": "Faithfully extract/recreate ONLY the FIRST COURSE ARTWORK in lower section of reference: Christian scholar/saint with dark hair and beard, dark robe, holding a book on left half, golden halo and a cathedral and blue leaded glass behind him. Intricately realistic cobalt amber and ruby stained glass with black lead lines. Square image, fills edges, no borders outside artwork. NO text, NO UI labels, NO circles/arrows. Keep bottom quarter darker fading into near black so live HTML course title can be overlaid. Preserve reference visual style and subject composition.",
+      "transparent": false
+    },
+    {
+      "file": "public/images/apostolos/vitrail/ecriture.webp",
+      "prompt": "Faithfully extract/recreate ONLY the SECOND COURSE ARTWORK in lower section of reference: luminous white dove descending in a golden halo upper center, hands opening a large bible below, cobalt and amber stained glass and black lead lines. Square image, fills edges, no borders outside artwork. NO readable text, NO UI labels, NO circles/arrows. Book may have small indistinct manuscript strokes. Keep bottom quarter darker fading into near black so live HTML course title can be overlaid. Preserve exact reference material and composition.",
+      "transparent": false
+    },
+    {
+      "file": "public/images/apostolos/vitrail/philosophie.webp",
+      "prompt": "Faithfully extract/recreate ONLY the THIRD COURSE ARTWORK in lower section of reference: thoughtful bearded seated classical philosopher leaning his face on one hand, dark draped robe, grand classical architectural columns on right, blue amber stained glass behind. Real stained-glass texture black leading, square image fills edges. NO text, NO UI labels, NO circles/arrows. Keep bottom quarter darker fading into near black so live HTML title can be overlaid. Match reference material and subject framing.",
+      "transparent": false
+    },
+    {
+      "file": "public/images/apostolos/vitrail/journal.webp",
+      "prompt": "Extract and reconstruct ONLY the bottom LE JOURNAL scenic band of this chosen website mockup as clean background art. Very wide low landscape approx5.6:1: left third near-black blue stone/wood for live text; central third photoreal warmly illuminated open old book on wooden table with a candle behind; right third exquisite cobalt amber leaded-glass narrow ornamental panel with botanical motifs and a deep dark area at far right. Thin blue/gold decorative perimeter matching source. REMOVE ALL UI text/headings/buttons/tiny inscriptions. Faithfully preserve positioning, darkness and intricate image material, no new people or objects. Output a production banner background, not a full website.",
+      "transparent": false
+    },
+    {
+      "file": "public/images/apostolos/vitrail/frame.webp",
+      "prompt": "Production UI asset based on selected mockup: a SQUARE thin elegant stained-glass BLUE AND GOLD RECTANGULAR FRAME, black lead, tiny gold corner starbursts, cobalt panes only in edge border. Border occupies outer 5 percent only. All central 90 percent completely transparent with genuine alpha; all outside transparent. Frame aligned to canvas edges, no blank margins. Flat front orthographic view. Design must match precise thin blue gold corners of bottom Journal band in reference, NOT bulky medieval ornament, NO text, NO pictures, NO button, NO bevelled billboard. This will be 9-sliced as a responsive border-image around panels.",
+      "transparent": true
+    },
+    {
+      "file": "public/images/apostolos/vitrail/texture.webp",
+      "prompt": "Production material texture extracted conceptually from selected mockup: seamless tileable very dark near-black blue stone with subtle translucent leaded cobalt glass facets ONLY at extreme edges, 95 percent dark almost black fine tactile surface; faint texture not distracting. No scenes, no objects, no borders, no letters, no light spots in center. Square texture used behind readable website admin panels, match dark blue cathedral columns and understated Journal left surface in reference. Highly restrained illumination, blackened blue material.",
+      "transparent": false
+    }
+  ],
+  "processing": "Export WebP, redimensionnement, découpe des marges de production du bouton et des bandeaux. Sources originales conservées. Aucun texte d’interface dans les images."
+}

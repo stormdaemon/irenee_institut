@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import test from "node:test";
+import { test } from "bun:test";
 import { ContactInputError, parseContactInput } from "@/lib/contact";
 import { POST as submitContact } from "@/app/api/contact/route";
 

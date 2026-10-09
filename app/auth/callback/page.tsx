@@ -5,7 +5,7 @@ import { AlertTriangle, Loader2, Lock, ShieldCheck } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { translateAuthError, type AuthErrorCopy } from "@/lib/auth-errors";
 import { safeInternalPath } from "@/lib/request-security";
-import { createBrowserClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/lib/browser-auth";
 
 export default function AuthCallbackPage() {
   const [notice, setNotice] = useState<AuthErrorCopy | null>(null);
@@ -52,8 +52,8 @@ export default function AuthCallbackPage() {
       return;
     }
 
-    const supabase = createBrowserClient();
-    if (!supabase) {
+    const context = createBrowserClient();
+    if (!context) {
       setNotice({
         title: "Activation indisponible",
         description: "Le service est momentanément indisponible. Demandez un nouveau lien avant de réessayer.",
@@ -66,7 +66,7 @@ export default function AuthCallbackPage() {
     setPasswordError("");
     setNotice(null);
     setStatus("submitting");
-    const { error } = await supabase.auth.exchangeCodeForSession(
+    const { error } = await context.auth.exchangeCodeForSession(
       codeRef.current,
       password,
       passwordConfirmation
@@ -83,7 +83,7 @@ export default function AuthCallbackPage() {
       return;
     }
 
-    const { data, error: sessionError } = await supabase.auth.getSession();
+    const { data, error: sessionError } = await context.auth.getSession();
     if (sessionError || !data.session) {
       setNotice(translateAuthError(sessionError?.message, "Le compte est activé, mais la connexion n'a pas pu être finalisée."));
       setStatus("error");
@@ -93,7 +93,7 @@ export default function AuthCallbackPage() {
     const meResponse = await fetch("/api/me", { cache: "no-store", credentials: "same-origin" });
     if (!meResponse.ok) {
       const meResult = await meResponse.json().catch(() => null);
-      await supabase.auth.signOut();
+      await context.auth.signOut();
       setNotice({
         title: "Compte activé, espace indisponible",
         description: meResult?.error || "Votre espace n'a pas pu être chargé.",

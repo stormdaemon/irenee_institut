@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { DocumentVerificationForm } from "@/components/DocumentVerificationForm";
 
 export const metadata: Metadata = {
-  description: "Vérifiez une référence de document pédagogique émise par l'Institut Saint Irénée.",
+  description: "Vérifiez une référence de document pédagogique émise par l'Institut Apostolos Saint Irénée.",
   title: "Vérifier un document"
 };
 

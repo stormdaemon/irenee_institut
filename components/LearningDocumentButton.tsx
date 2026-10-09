@@ -2,7 +2,7 @@
 
 import { Download, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { createBrowserClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/lib/browser-auth";
 
 export function LearningDocumentButton({ documentId, label = "Télécharger" }: { documentId: string; label?: string }) {
   const [busy, setBusy] = useState(false);
@@ -11,8 +11,8 @@ export function LearningDocumentButton({ documentId, label = "Télécharger" }: 
   async function download() {
     setBusy(true);
     setError("");
-    const supabase = createBrowserClient();
-    const { data } = await supabase?.auth.getSession() || { data: { session: null } };
+    const context = createBrowserClient();
+    const { data } = await context?.auth.getSession() || { data: { session: null } };
     if (!data.session) {
       setError("Reconnectez-vous pour télécharger ce document.");
       setBusy(false);

@@ -502,7 +502,9 @@ for (const viewport of viewports) {
       await expect(page.getByRole("heading", { level: 1, name: course.titre })).toBeVisible();
       const progressCopy = page.locator(".course-progress-summary > div:not(.course-progress-dial)");
       await expect(progressCopy.locator("strong")).toHaveText("0 sur 2");
-      await expect(progressCopy.locator("strong")).toHaveCSS("color", "rgb(16, 43, 70)");
+      await expect(progressCopy.locator("strong")).toHaveCSS("color", "rgb(200, 228, 255)");
+      await expect(page.locator(".course-progress-summary > small")).toHaveCSS("color", "rgb(176, 185, 208)");
+      await expect(page.locator(".course-progress-dial strong")).toHaveCSS("font-family", /Barlow Condensed/);
       await waitForStableUi(page);
       await assertNoHorizontalOverflow(page);
       await assertAccessibleMain(page, testInfo);
@@ -539,7 +541,7 @@ for (const viewport of viewports) {
         };
       });
       expect(normalizedLegacyText).toMatchObject({
-        color: "rgb(23, 32, 51)",
+        color: "rgb(217, 222, 235)",
         fontSize: viewport.width <= 640 ? "17px" : "18px",
         whiteSpace: "normal"
       });
@@ -547,7 +549,7 @@ for (const viewport of viewports) {
         const style = getComputedStyle(element);
         return { color: style.color, decoration: style.textDecorationLine, fontWeight: style.fontWeight };
       });
-      expect(normalizedLink).toMatchObject({ color: "rgb(122, 23, 23)", decoration: "underline" });
+      expect(normalizedLink).toMatchObject({ color: "rgb(196, 227, 255)", decoration: "underline" });
       if (viewport.width === 320) {
         const clippedCells = await contentFrame.locator(".module-responsive-table td").evaluateAll(cells => cells
           .filter(cell => cell.scrollWidth > cell.clientWidth + 1)
@@ -850,7 +852,7 @@ test.describe("critical mobile workspace states", () => {
 
     const quiz = page.locator(".course-quiz-card");
     await expect(quiz).toBeVisible();
-    await expect(quiz.locator(".course-quiz-question")).toHaveCSS("background-color", "rgb(251, 248, 241)");
+    await expect(quiz.locator(".course-quiz-question")).toHaveCSS("background-color", "rgb(8, 18, 29)");
     await expect(quiz.locator(".course-quiz-question")).toHaveCSS("box-shadow", "none");
     await assertAccessibleMain(page, testInfo);
     await assertComfortableMobileTargets(page);
@@ -874,6 +876,8 @@ test.describe("critical mobile workspace states", () => {
     const fallback = page.locator(".module-video-unavailable");
     await expect(page.getByRole("heading", { name: "Vidéo temporairement indisponible" })).toBeVisible();
     await expect(page.frameLocator("iframe[title^='Contenu du module']").getByText("Une lecture confortable")).toBeVisible();
+    await fallback.scrollIntoViewIfNeeded();
+    await expect(fallback).toHaveCSS("background-color", "rgb(33, 43, 53)");
     await assertAccessibleMain(page, testInfo);
     await expect(fallback).toHaveScreenshot("module-reader-video-fallback-mobile.png");
     assertNoRuntimeErrors(page);
@@ -978,7 +982,11 @@ test("reader preferences persist and locked modules are not actionable", async (
   await page.getByRole("button", { name: "Augmenter la taille du texte" }).click();
   await expect(page.getByRole("button", { name: "Augmenter la taille du texte" })).toHaveAttribute("aria-pressed", "true");
   await page.reload();
-  await page.locator(".reader-preferences > summary").click();
+  // Chromium may restore an open native <details> after a reload.
+  const preferencesPanel = page.locator(".reader-preferences");
+  await expect(preferencesPanel).toBeVisible();
+  if (await preferencesPanel.getAttribute("open") === null) await preferencesPanel.locator("summary").click();
+  await expect(preferencesPanel).toHaveAttribute("open", "");
   await expect(page.getByRole("button", { name: "Augmenter la taille du texte" })).toHaveAttribute("aria-pressed", "true");
   assertNoRuntimeErrors(page);
 });
@@ -1038,6 +1046,8 @@ test.describe("reader journey functional regressions", () => {
       await expect(page.getByRole("status").filter({ hasText: "Mode aperçu équipe" })).toContainText(
         "Aucune progression ni attestation ne sera créée."
       );
+      await expect(page.locator(".module-preview-notice")).toHaveCSS("background-color", "rgb(28, 31, 48)");
+      await expect(page.locator(".module-preview-notice span")).toHaveCSS("color", "rgb(199, 212, 224)");
       await expect(page.getByRole("region", { name: "Fin de la prévisualisation" })).toBeVisible();
 
       const desktopPlan = page.locator(".module-plan-sidebar .module-course-plan");
@@ -1182,6 +1192,9 @@ test.describe("reader mobile plan stress", () => {
     });
     await page.goto(`/cours/${course.slug}/modules/${stressModules[12].id}`);
     await expect(page.getByRole("heading", { level: 1, name: stressModules[12].titre })).toBeVisible();
+    await expect(page.frameLocator(".module-html-frame").locator("main.module-content")).toBeVisible();
+    await waitForStableUi(page);
+    await assertStableCourseFrame(page);
 
     const documentHeightBefore = await page.evaluate(() => document.documentElement.scrollHeight);
     const plan = page.locator(".module-mobile-plan");
@@ -1288,6 +1301,7 @@ for (const viewport of stickyToolbarViewports) {
       await mockApplicationApis(page);
       await page.goto(`/admin/courses?course=${course.slug}`);
       await expect(page.getByLabel("Cours actif")).toHaveValue(course.id);
+      await expect(page.getByLabel("Titre du cours *")).toHaveValue(course.titre);
 
       if (viewport.width <= 390) {
         await openProgrammeByTouch(page);

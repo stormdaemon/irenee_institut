@@ -1,3 +1,4 @@
+import { siteUrl } from "@/lib/seo";
 import { query } from "@/lib/db";
 import type { ContactInput } from "@/lib/contact";
 import { safeInternalPath } from "@/lib/request-security";
@@ -61,7 +62,7 @@ export async function sendEmailVerification(input: {
   nextPath?: string;
 }) {
   const nextPath = safeInternalPath(input.nextPath, "/espace-etudiant");
-  const confirmationUrl = new URL("/auth/callback", "https://irenee-institut.org");
+  const confirmationUrl = new URL("/auth/callback", siteUrl);
   confirmationUrl.searchParams.set("next", nextPath);
   // Keep the one-time credential out of HTTP requests, reverse-proxy access
   // logs and referrer headers. The callback erases the fragment immediately.
@@ -72,9 +73,9 @@ export async function sendEmailVerification(input: {
 
   return postAppsScript({
     campaign: {
-      body: `Bonjour ${displayName},\n\nConfirmez votre adresse email pour activer votre compte Institut Saint Irénée :\n${confirmationUrl.toString()}\n\nCe lien expire dans 24 heures.`,
-      htmlBody: `<p>Bonjour <strong>${safeName}</strong>,</p><p>Confirmez votre adresse email pour activer votre compte Institut Saint Irénée.</p><p><a href="${safeUrl}">Confirmer mon adresse email</a></p><p>Ce lien expire dans 24 heures. Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.</p>`,
-      subject: "Confirmez votre compte Institut Saint Irénée",
+      body: `Bonjour ${displayName},\n\nConfirmez votre adresse email pour activer votre compte Institut Apostolos Saint Irénée :\n${confirmationUrl.toString()}\n\nCe lien expire dans 24 heures.`,
+      htmlBody: `<p>Bonjour <strong>${safeName}</strong>,</p><p>Confirmez votre adresse email pour activer votre compte Institut Apostolos Saint Irénée.</p><p><a href="${safeUrl}">Confirmer mon adresse email</a></p><p>Ce lien expire dans 24 heures. Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.</p>`,
+      subject: "Confirmez votre compte Institut Apostolos Saint Irénée",
       to: input.email
     }
   });
@@ -87,7 +88,7 @@ export async function sendPasswordResetEmail(input: {
   prenom?: string | null;
   token: string;
 }) {
-  const resetUrl = new URL("/auth/password-reset", "https://irenee-institut.org");
+  const resetUrl = new URL("/auth/password-reset", siteUrl);
   resetUrl.searchParams.set("next", safeInternalPath(input.nextPath, "/espace-etudiant"));
   // Fragments are not included in HTTP requests, reverse-proxy access logs or
   // referrer headers. The client removes this value from history immediately.
@@ -98,9 +99,9 @@ export async function sendPasswordResetEmail(input: {
 
   return postAppsScript({
     campaign: {
-      body: `Bonjour ${displayName},\n\nUne réinitialisation du mot de passe de votre compte Institut Saint Irénée a été demandée :\n${resetUrl.toString()}\n\nCe lien à usage unique expire dans 30 minutes. Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe reste inchangé.`,
-      htmlBody: `<p>Bonjour <strong>${safeName}</strong>,</p><p>Une réinitialisation du mot de passe de votre compte Institut Saint Irénée a été demandée.</p><p><a href="${safeUrl}">Choisir un nouveau mot de passe</a></p><p>Ce lien à usage unique expire dans 30 minutes. Si vous n'êtes pas à l'origine de cette demande, ignorez ce message&nbsp;: votre mot de passe reste inchangé.</p>`,
-      subject: "Réinitialiser votre mot de passe Institut Saint Irénée",
+      body: `Bonjour ${displayName},\n\nUne réinitialisation du mot de passe de votre compte Institut Apostolos Saint Irénée a été demandée :\n${resetUrl.toString()}\n\nCe lien à usage unique expire dans 30 minutes. Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe reste inchangé.`,
+      htmlBody: `<p>Bonjour <strong>${safeName}</strong>,</p><p>Une réinitialisation du mot de passe de votre compte Institut Apostolos Saint Irénée a été demandée.</p><p><a href="${safeUrl}">Choisir un nouveau mot de passe</a></p><p>Ce lien à usage unique expire dans 30 minutes. Si vous n'êtes pas à l'origine de cette demande, ignorez ce message&nbsp;: votre mot de passe reste inchangé.</p>`,
+      subject: "Réinitialiser votre mot de passe Institut Apostolos Saint Irénée",
       to: input.email
     }
   });
@@ -115,7 +116,7 @@ export async function sendContactMessage(input: ContactInput) {
   return postAppsScript({
     campaign: {
       body: [
-        `Nouveau message envoyé depuis irenee-institut.org`,
+        `Nouveau message envoyé depuis Apostolos`,
         "",
         `Nom : ${fullName}`,
         `Email : ${input.email}`,
@@ -124,7 +125,7 @@ export async function sendContactMessage(input: ContactInput) {
         "",
         input.message
       ].join("\n"),
-      htmlBody: `<p><strong>Nouveau message envoyé depuis irenee-institut.org</strong></p><p><strong>Nom :</strong> ${escapeHtml(fullName)}<br><strong>Email :</strong> ${escapeHtml(input.email)}<br><strong>Téléphone :</strong> ${escapeHtml(phone)}<br><strong>Sujet :</strong> ${escapeHtml(input.sujet)}</p><p>${safeMessage}</p>`,
+      htmlBody: `<p><strong>Nouveau message envoyé depuis Apostolos</strong></p><p><strong>Nom :</strong> ${escapeHtml(fullName)}<br><strong>Email :</strong> ${escapeHtml(input.email)}<br><strong>Téléphone :</strong> ${escapeHtml(phone)}<br><strong>Sujet :</strong> ${escapeHtml(input.sujet)}</p><p>${safeMessage}</p>`,
       subject: `Contact site — ${input.sujet}`,
       to: recipient
     }
@@ -134,11 +135,11 @@ export async function sendContactMessage(input: ContactInput) {
 function welcomeRegistrationFor(profile: RegistrationProfile) {
   return {
     contactEmail: "contact@irenee-institut.org",
-    dashboardUrl: "https://irenee-institut.org/espace-etudiant",
+    dashboardUrl: `${siteUrl}/espace-etudiant`,
     email: profile.email,
     nom: profile.nom || "",
     prenom: profile.prenom || "",
-    programUrl: "https://irenee-institut.org/formations"
+    programUrl: `${siteUrl}/formations`
   };
 }
 
@@ -146,16 +147,16 @@ function welcomeCampaignFor(profile: RegistrationProfile) {
   const firstName = profile.prenom || "";
   const lastName = profile.nom || "";
   const fullName = `${firstName} ${lastName}`.trim() || "cher étudiant";
-  const logoUrl = "https://irenee-institut.org/_next/image?url=%2Fimages%2Flogo_without_text.png&w=96&q=75";
-  const dashboardUrl = "https://irenee-institut.org/espace-etudiant";
-  const programUrl = "https://irenee-institut.org/formations";
+  const logoUrl = `${siteUrl}/images/apostolos/wordmark.png`;
+  const dashboardUrl = `${siteUrl}/espace-etudiant`;
+  const programUrl = `${siteUrl}/formations`;
   const contactEmail = "contact@irenee-institut.org";
 
   return {
     body: [
       `Bonjour ${fullName},`,
       "",
-      "Bienvenue à l’Institut d’Apologétique Saint Irénée.",
+      "Bienvenue à l’Institut Apostolos Saint Irénée.",
       "",
       "Votre inscription a bien été prise en compte.",
       "",
@@ -171,7 +172,7 @@ function welcomeCampaignFor(profile: RegistrationProfile) {
       "",
       "Que cette formation vous aide à rendre compte de la crédibilité de la foi catholique.",
       "",
-      "Institut d’Apologétique Saint Irénée"
+      "Institut Apostolos Saint Irénée"
     ].join("\n"),
     htmlBody: `
 <!doctype html>
@@ -183,8 +184,8 @@ function welcomeCampaignFor(profile: RegistrationProfile) {
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:680px;background:#081724;border:1px solid #c8a24a;border-radius:14px;overflow:hidden;">
             <tr>
               <td align="center" style="padding:26px 32px 8px 32px;background:#07121e;">
-                <img src="${logoUrl}" alt="Institut Saint Irénée" width="96" height="96" style="display:block;width:96px;height:96px;margin:0 auto 12px auto;border:0;outline:none;text-decoration:none;">
-                <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:bold;color:#ffffff;line-height:1.2;">Institut Saint Irénée</div>
+                <img src="${logoUrl}" alt="Institut Apostolos Saint Irénée" width="96" height="96" style="display:block;width:96px;height:96px;margin:0 auto 12px auto;border:0;outline:none;text-decoration:none;">
+                <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:bold;color:#ffffff;line-height:1.2;">Institut Apostolos Saint Irénée</div>
                 <div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#d9b85f;margin-top:6px;">Institut d’Apologétique</div>
               </td>
             </tr>
@@ -201,7 +202,7 @@ function welcomeCampaignFor(profile: RegistrationProfile) {
             <tr>
               <td style="padding:30px 32px 10px 32px;">
                 <p style="margin:0 0 18px 0;font-size:16px;line-height:1.7;color:#f7f1df;">Bonjour <strong style="color:#f1d27a;">${escapeHtml(fullName)}</strong>,</p>
-                <p style="margin:0 0 18px 0;font-size:16px;line-height:1.7;color:#f7f1df;">Votre inscription à l’Institut d’Apologétique Saint Irénée a bien été prise en compte.</p>
+                <p style="margin:0 0 18px 0;font-size:16px;line-height:1.7;color:#f7f1df;">Votre inscription à l’Institut Apostolos Saint Irénée a bien été prise en compte.</p>
                 <p style="margin:0 0 22px 0;font-size:16px;line-height:1.7;color:#f7f1df;">Vous rejoignez un parcours de formation conçu pour approfondir votre foi catholique et apprendre à la défendre avec rigueur, clarté et bienveillance.</p>
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:24px 0;background:#0b1d2c;border:1px solid rgba(200,162,74,0.55);border-radius:12px;">
                   <tr>
@@ -232,7 +233,7 @@ function welcomeCampaignFor(profile: RegistrationProfile) {
               <td style="padding:22px 32px 30px 32px;">
                 <div style="height:1px;background:linear-gradient(90deg,transparent,#c8a24a,transparent);margin-bottom:20px;"></div>
                 <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.6;color:#ffffff;">Que cette formation vous aide à rendre compte de la foi avec intelligence, charité et courage.</p>
-                <p style="margin:18px 0 0 0;font-size:14px;line-height:1.6;color:#d8d0bd;">Institut d’Apologétique Saint Irénée</p>
+                <p style="margin:18px 0 0 0;font-size:14px;line-height:1.6;color:#d8d0bd;">Institut Apostolos Saint Irénée</p>
               </td>
             </tr>
           </table>
@@ -241,7 +242,7 @@ function welcomeCampaignFor(profile: RegistrationProfile) {
     </table>
   </body>
 </html>`,
-    subject: "Bienvenue à l’Institut Saint Irénée",
+    subject: "Bienvenue à l’Institut Apostolos Saint Irénée",
     to: profile.email
   };
 }
@@ -263,11 +264,11 @@ function registrationNotificationCampaign(profile: RegistrationProfile) {
 
   return {
     body: [
-      "Une nouvelle inscription vient d'être effectuée sur irenee-institut.org.",
+      "Une nouvelle inscription vient d'être effectuée sur Apostolos.",
       "",
       ...rows.map(([label, value]) => `${label} : ${value}`)
     ].join("\n"),
-    htmlBody: `<p style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#172033;"><strong>Nouvelle inscription sur Institut Saint Irénée</strong></p>`
+    htmlBody: `<p style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#172033;"><strong>Nouvelle inscription sur Institut Apostolos Saint Irénée</strong></p>`
       + `<table cellpadding="8" cellspacing="0" style="border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#172033;">`
       + rows.map(([label, value]) => `<tr><td style="border:1px solid #dcd6c4;background:#f6f2e8;font-weight:bold;white-space:nowrap;">${escapeHtml(label)}</td><td style="border:1px solid #dcd6c4;">${escapeHtml(value)}</td></tr>`).join("")
       + `</table>`,
@@ -290,6 +291,8 @@ export async function runRegistrationAutomation(profile: RegistrationProfile) {
   const warnings: string[] = [];
 
   try {
+    await query(`insert into public.registration_notification_outbox (user_id) values ($1)
+      on conflict (user_id) do nothing`, [profile.id]);
     await postAppsScript({ campaign: registrationNotificationCampaign(profile) });
     await query(
       `update public.registration_notification_outbox

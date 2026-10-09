@@ -1,3 +1,4 @@
+import { siteUrl } from "@/lib/seo";
 // Planning éditorial des séances en visio hebdomadaires de septembre 2026.
 // Données statiques : ces dates sont annoncées publiquement sur la page d'accueil.
 // L'accès effectif aux salles se gère via /espace-etudiant (cf. NextLiveSession).
@@ -52,7 +53,7 @@ export const VISIO_SESSIONS: VisioSession[] = [
     description:
       "Sam ouvre l'année avec les nouveaux inscrits : tour de table de la promotion, objectifs de la formation et déroulé des séances hebdomadaires.",
     image: SAMUEL_PHOTO_URL,
-    imageAlt: "Samuel Armanios, directeur de l'Institut Saint-Irénée",
+    imageAlt: "Samuel Armanios, directeur de l'Institut Apostolos Saint Irénée",
     imagePosition: "52% 16%",
     kind: "person",
     liveSessionId: "992a69ad-702c-4453-b137-fccf8775445c"
@@ -64,7 +65,7 @@ export const VISIO_SESSIONS: VisioSession[] = [
     description:
       "Théo fait découvrir l'espace étudiant : accès aux cours, bibliothèque apologétique et ouverture des séances en visio directement depuis le site.",
     image: "/images/theo-lafont.jpg",
-    imageAlt: "Théo Lafont, directeur du développement de l'Institut Saint-Irénée",
+    imageAlt: "Théo Lafont, directeur du développement de l'Institut Apostolos Saint Irénée",
     imagePosition: "50% 18%",
     kind: "person",
     liveSessionId: "396922a5-0080-4e89-87cf-33b3b8d10641"
@@ -229,8 +230,8 @@ export function getUpcomingVisioSessions(now = Date.now(), sessions = VISIO_SESS
 export function buildVisioWhatsAppShareUrl(session: VisioSession): string {
   const message = [
     `📅 ${session.title}`,
-    `${formatVisioWhen(session)} — Institut Saint-Irénée (visio)`,
-    "https://irenee-institut.org/#agenda"
+    `${formatVisioWhen(session)} — Institut Apostolos Saint Irénée (visio)`,
+    `${siteUrl}/#agenda`
   ].join("\n");
   return `https://wa.me/?text=${encodeURIComponent(message)}`;
 }

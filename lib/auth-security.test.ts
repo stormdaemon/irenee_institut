@@ -1,6 +1,7 @@
+import { siteUrl } from "./seo";
 import assert from "node:assert/strict";
 import { randomInt, randomUUID } from "node:crypto";
-import { afterEach, beforeEach, test } from "node:test";
+import { afterEach, beforeEach, test } from "bun:test";
 import { decodeJwt } from "jose";
 import { authenticateRequest } from "./api-auth";
 import { POST as changePasswordRoute } from "../app/api/auth/password/route";
@@ -61,7 +62,7 @@ test("email verification gates login and creates a server-revocable session", as
   const verified = await verifyEmailToken(signup.verificationToken!, "a-long-correct-password");
   assert.ok(verified.session?.access_token);
   const claims = decodeJwt(verified.session!.access_token);
-  assert.equal(claims.iss, "https://irenee-institut.org");
+  assert.equal(claims.iss, siteUrl);
   assert.equal(claims.aud, "irenee-web");
   assert.equal(typeof claims.jti, "string");
 
@@ -192,7 +193,7 @@ test("verification resend route returns indistinguishable responses and only ema
   let deliveredCode = "";
   process.env.GOOGLE_APPS_SCRIPT_URL = "https://script.google.test/verification";
   process.env.GOOGLE_APPS_SCRIPT_WEBHOOK_SECRET = "test-mail-secret";
-  globalThis.fetch = async (_input, init) => {
+  globalThis.fetch = Object.assign(async (_input: URL | RequestInfo, init?: RequestInit) => {
     const payload = JSON.parse(String(init?.body || "{}"));
     const plainBody = String(payload.campaign?.body || "");
     const confirmationUrl = plainBody.match(/https:\/\/[^\s]+/)?.[0] || "";
@@ -202,7 +203,7 @@ test("verification resend route returns indistinguishable responses and only ema
     assert.doesNotMatch(confirmationUrl, /[?&]code=/);
     assert.match(plainBody, /Prénom stocké Nom stocké/);
     return Response.json({ ok: true });
-  };
+  }, {preconnect: globalThis.fetch.preconnect});
 
   const requestFor = (targetEmail: string) => new Request("https://irenee.test/api/auth/verification/resend", {
     body: JSON.stringify({ email: targetEmail, next: "/espace-etudiant" }),

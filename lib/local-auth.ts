@@ -1,3 +1,4 @@
+import { siteUrl } from "@/lib/seo";
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
@@ -36,7 +37,7 @@ export const SESSION_COOKIE_NAME = "irenee_session";
 export const SECURE_SESSION_COOKIE_NAME = "__Host-irenee_session";
 export const SESSION_TTL_SECONDS = 60 * 60 * 12;
 export const EMAIL_VERIFICATION_TTL_SECONDS = 60 * 60 * 24;
-const TOKEN_ISSUER = "https://irenee-institut.org";
+const TOKEN_ISSUER = siteUrl;
 const TOKEN_AUDIENCE = "irenee-web";
 const MAX_ACTIVE_SESSIONS = 5;
 const DUMMY_PASSWORD_HASH = "$2b$12$NllQiFd5CDUC9iNKKjvfbOiT3u38gYunck/8gPzXz3xJ74pSBjd5.";

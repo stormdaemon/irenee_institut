@@ -1,3 +1,4 @@
+import { pgInsert, pgRead, pgUpdate } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import { getSystemSettings } from "@/lib/settings";
 import {
@@ -16,14 +17,14 @@ import {
   settlePaidStripeSession,
   stripeCheckoutFailureStatus
 } from "@/lib/stripe-settlement";
-import type { createServerClient } from "@/lib/supabase";
+import type { createServerContext } from "@/lib/postgres";
 import { RequestBodyTooLargeError, readTextBodyWithLimit } from "@/lib/webhook-security";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { extractStripeReversal, validateStripeWebhookHeader } from "@/lib/payment-reversals";
 import { getTrustedClientIp } from "@/lib/request-security";
 import { recordSecurityEvent } from "@/lib/security-audit";
 
-type ServerClient = NonNullable<ReturnType<typeof createServerClient>>;
+type ServerClient = NonNullable<ReturnType<typeof createServerContext>>;
 
 const checkoutCompletionEvents = new Set([
   "checkout.session.async_payment_succeeded",
@@ -48,13 +49,13 @@ function isCheckoutFailureEvent(type: string) {
 }
 
 async function logStripeWebhook(
-  supabase: ServerClient,
+  context: ServerClient,
   status: string,
   summary: Partial<StripeCheckoutSessionSummary>
 ) {
   const eventId = stringFrom(summary.eventId).slice(0, 255);
   if (!eventId) return;
-  await supabase.from("payment_events").upsert({
+  await pgInsert("payment_events", {
     provider: "stripe",
     provider_event_id: eventId,
     event_name: stringFrom(summary.eventType).slice(0, 200) || "stripe_webhook",
@@ -62,7 +63,7 @@ async function logStripeWebhook(
     amount_total: Number.isSafeInteger(summary.amountTotal) && Number(summary.amountTotal) > 0 ? summary.amountTotal : null,
     currency: stringFrom(summary.currency) || STRIPE_CURRENCY,
     status
-  }, { onConflict: "provider,provider_event_id" });
+  }, { conflict: ["provider","provider_event_id"] });
 }
 
 async function resolveSessionSummary(config: StripeConfig, event: unknown) {
@@ -86,11 +87,11 @@ async function resolveSessionSummary(config: StripeConfig, event: unknown) {
 export async function handleStripeWebhookRequest({
   lite,
   request,
-  supabase
+  context
 }: {
   lite: boolean;
   request: Request;
-  supabase: ServerClient;
+  context: ServerClient;
 }) {
   let rawBody: string;
   try {
@@ -125,7 +126,7 @@ export async function handleStripeWebhookRequest({
       });
     }
 
-    const settings = await getSystemSettings(supabase);
+    const settings = await getSystemSettings(context);
     const config = getStripeConfig(settings);
     const secret = lite ? config.liteWebhookSecret : config.webhookSecret;
 
@@ -153,17 +154,7 @@ export async function handleStripeWebhookRequest({
 
     const reversal = extractStripeReversal(event);
     if (reversal) {
-      const { data, error } = await supabase.rpc("process_payment_reversal", {
-        p_amount_total: reversal.amountTotal,
-        p_capture_id: reversal.captureId,
-        p_currency: reversal.currency,
-        p_event_name: reversal.eventName,
-        p_kind: reversal.kind,
-        p_object_id: reversal.objectId,
-        p_order_id: reversal.orderId,
-        p_provider: "stripe",
-        p_provider_event_id: reversal.eventId
-      });
+      const { data, error } = await pgRead("select public.process_payment_reversal($1,$2,$3,$4,$5,$6,$7,$8,$9) as result", ["stripe", reversal.eventId, reversal.eventName, reversal.kind, reversal.objectId, reversal.orderId, reversal.captureId, reversal.amountTotal, reversal.currency], "scalar");
       if (error) throw new Error("payment_reversal_failed");
       if (!(data as { ok?: boolean } | null)?.ok) {
         return NextResponse.json({ ok: false, error: "La commande Stripe liée au litige est introuvable." }, { status: 409 });
@@ -176,43 +167,38 @@ export async function handleStripeWebhookRequest({
       return NextResponse.json({ ok: false, error: "Identifiant d'événement Stripe manquant." }, { status: 400 });
     }
     if (!isCheckoutCompletionEvent(initial.eventType) && !isCheckoutFailureEvent(initial.eventType)) {
-      await logStripeWebhook(supabase, "ignored", initial).catch(() => undefined);
+      await logStripeWebhook(context, "ignored", initial).catch(() => undefined);
       return NextResponse.json({ ok: true, ignored: initial.eventType || "unknown" });
     }
 
     if (!initial.sessionId && initial.relatedObject?.type === "checkout.session") {
       const relatedSessionId = stringFrom(initial.relatedObject.id);
       const { data: expectedOrder, error: orderError } = relatedSessionId
-        ? await supabase
-          .from("paypal_orders")
-          .select("order_id")
-          .eq("provider", "stripe")
-          .eq("order_id", relatedSessionId)
-          .maybeSingle()
+        ? await pgRead("select t.\"order_id\" from public.\"paypal_orders\" t where t.\"provider\" = $1 and t.\"order_id\" = $2", ["stripe", relatedSessionId], "optional")
         : { data: null, error: null };
       if (orderError) throw new Error("order_lookup_failed");
       if (!expectedOrder) {
-        await logStripeWebhook(supabase, "order_not_found", { ...initial, sessionId: relatedSessionId }).catch(() => undefined);
+        await logStripeWebhook(context, "order_not_found", { ...initial, sessionId: relatedSessionId }).catch(() => undefined);
         return NextResponse.json({ ok: false, error: "Commande Stripe inconnue." }, { status: 409 });
       }
     }
 
     const summary = await resolveSessionSummary(config, event);
     if (!summary.sessionId) {
-      await logStripeWebhook(supabase, "missing_checkout_session", summary).catch(() => undefined);
+      await logStripeWebhook(context, "missing_checkout_session", summary).catch(() => undefined);
       return NextResponse.json({ ok: true, missingSession: true });
     }
 
     if (isCheckoutFailureEvent(summary.eventType)) {
-      const order = await findStripeOrder({ sessionId: summary.sessionId, supabase });
+      const order = await findStripeOrder({ sessionId: summary.sessionId, context });
       if (!order) {
-        await logStripeWebhook(supabase, "order_not_found", summary).catch(() => undefined);
+        await logStripeWebhook(context, "order_not_found", summary).catch(() => undefined);
         return NextResponse.json({ ok: false, error: "Commande Stripe inconnue." }, { status: 409 });
       }
 
       if (isSettledStripeOrderStatus(order.status)) {
         const currentStatus = stringFrom(order.status).toLowerCase();
-        await logStripeWebhook(supabase, `ignored_after_${currentStatus}`, summary);
+        await logStripeWebhook(context, `ignored_after_${currentStatus}`, summary);
         return NextResponse.json({ ok: true, ignored: summary.eventType, status: currentStatus });
       }
 
@@ -222,61 +208,47 @@ export async function handleStripeWebhookRequest({
         ? { status: "expired", updated_at: new Date().toISOString() }
         : { status: "failed", updated_at: new Date().toISOString() };
       const previousStatus = stringFrom(order.status).toLowerCase();
-      const { data: updatedOrder, error: updateError } = await supabase
-        .from("paypal_orders")
-        .update(failureUpdate)
-        .eq("provider", "stripe")
-        .eq("order_id", summary.sessionId)
-        .eq("status", previousStatus)
-        .select("status")
-        .maybeSingle();
+      const { data: updatedOrder, error: updateError } = await pgUpdate("paypal_orders", failureUpdate, "t.\"provider\" = $1 and t.\"order_id\" = $2 and t.\"status\" = $3", ["stripe", summary.sessionId, previousStatus], { returning: "optional", columns: "status" });
       if (updateError) throw new Error("order_status_update_failed");
       if (!updatedOrder) {
-        const latestOrder = await findStripeOrder({ sessionId: summary.sessionId, supabase });
+        const latestOrder = await findStripeOrder({ sessionId: summary.sessionId, context });
         const latestStatus = stringFrom(latestOrder?.status).toLowerCase() || "changed";
-        await logStripeWebhook(supabase, `ignored_after_${latestStatus}`, summary);
+        await logStripeWebhook(context, `ignored_after_${latestStatus}`, summary);
         return NextResponse.json({ ok: true, ignored: summary.eventType, status: latestStatus });
       }
 
-      await logStripeWebhook(supabase, failureStatus, summary);
+      await logStripeWebhook(context, failureStatus, summary);
       return NextResponse.json({ ok: true, failed: true, status: failureStatus });
     }
 
     if (summary.paymentStatus !== "paid") {
-      const order = await findStripeOrder({ sessionId: summary.sessionId, supabase });
+      const order = await findStripeOrder({ sessionId: summary.sessionId, context });
       if (!order) {
-        await logStripeWebhook(supabase, "order_not_found", summary).catch(() => undefined);
+        await logStripeWebhook(context, "order_not_found", summary).catch(() => undefined);
         return NextResponse.json({ ok: false, error: "Commande Stripe inconnue." }, { status: 409 });
       }
       if (isSettledStripeOrderStatus(order.status)) {
         const currentStatus = stringFrom(order.status).toLowerCase();
-        await logStripeWebhook(supabase, `ignored_after_${currentStatus}`, summary);
+        await logStripeWebhook(context, `ignored_after_${currentStatus}`, summary);
         return NextResponse.json({ ok: true, ignored: summary.eventType, status: currentStatus });
       }
       const previousStatus = stringFrom(order.status).toLowerCase();
-      const { data: updatedOrder, error: updateError } = await supabase
-        .from("paypal_orders")
-        .update({
+      const { data: updatedOrder, error: updateError } = await pgUpdate("paypal_orders", {
           status: summary.paymentStatus || summary.status || "pending",
           updated_at: new Date().toISOString()
-        })
-        .eq("provider", "stripe")
-        .eq("order_id", summary.sessionId)
-        .eq("status", previousStatus)
-        .select("status")
-        .maybeSingle();
+        }, "t.\"provider\" = $1 and t.\"order_id\" = $2 and t.\"status\" = $3", ["stripe", summary.sessionId, previousStatus], { returning: "optional", columns: "status" });
       if (updateError) throw new Error("order_status_update_failed");
       if (!updatedOrder) {
-        await logStripeWebhook(supabase, "ignored_after_status_change", summary);
+        await logStripeWebhook(context, "ignored_after_status_change", summary);
         return NextResponse.json({ ok: true, ignored: summary.eventType, status: "changed" });
       }
-      await logStripeWebhook(supabase, summary.paymentStatus || "not_paid", summary).catch(() => undefined);
+      await logStripeWebhook(context, summary.paymentStatus || "not_paid", summary).catch(() => undefined);
       return NextResponse.json({ ok: true, pending: true });
     }
 
-    const result = await settlePaidStripeSession({ summary, supabase });
+    const result = await settlePaidStripeSession({ summary, context });
     if (!result.ok) {
-      await logStripeWebhook(supabase, result.reason, summary).catch(() => undefined);
+      await logStripeWebhook(context, result.reason, summary).catch(() => undefined);
       if (result.reason === "payment_reversed") {
         return NextResponse.json({ ok: true, ignored: summary.eventType, status: result.reason });
       }
@@ -287,12 +259,12 @@ export async function handleStripeWebhookRequest({
     }
     // Keep the provider event receipt separately from the order settlement
     // row, which a later browser reconciliation can update.
-    await logStripeWebhook(supabase, "validated", summary);
+    await logStripeWebhook(context, "validated", summary);
     return NextResponse.json({ ok: true, validated: true, data: result.data || null });
   } catch (error) {
     if (authenticated) {
       const summary = extractStripeCheckoutSessionSummary(event);
-      await logStripeWebhook(supabase, "processing_error", summary).catch(() => undefined);
+      await logStripeWebhook(context, "processing_error", summary).catch(() => undefined);
       await recordSecurityEvent({ eventType: "payment.webhook.processing_error", metadata: { reason: "stripe" }, request });
     }
     return NextResponse.json({

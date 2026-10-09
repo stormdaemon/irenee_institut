@@ -1,3 +1,5 @@
+import { siteUrl } from "@/lib/seo";
+import { pgInsert, pgRead } from "@/lib/postgres";
 import { ANNUAL_PASS_NAME, ANNUAL_PASS_PRODUCT_ID, ANNUAL_PASS_SLUG } from "@/lib/curriculum";
 import {
   LIBRARY_MEMBERSHIP_AMOUNT_CENTS,
@@ -5,7 +7,8 @@ import {
   LIBRARY_MEMBERSHIP_PRODUCT_ID,
   LIBRARY_MEMBERSHIP_SLUG
 } from "@/lib/library";
-import type { LocalServerClient, LocalServerUser } from "@/lib/local-server-client";
+import type { ServerContext } from "@/lib/postgres";
+import type { LocalUser } from "@/lib/local-auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getSystemSettings } from "@/lib/settings";
 import {
@@ -124,7 +127,7 @@ function cleanProfileName(value: unknown) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, 120);
 }
 
-function fallbackProfile(user: LocalServerUser): Profile {
+function fallbackProfile(user: LocalUser): Profile {
   const metadata = user.user_metadata || {};
   const email = String(user.email || "").trim().toLowerCase();
   if (!email) {
@@ -141,23 +144,19 @@ function fallbackProfile(user: LocalServerUser): Profile {
   };
 }
 
-async function getOrRepairProfile(supabase: LocalServerClient, user: LocalServerUser) {
-  const profileResult = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+async function getOrRepairProfile(context: ServerContext, user: LocalUser) {
+  const profileResult = await pgRead("select t.* from public.\"profiles\" t where t.\"id\" = $1", [user.id], "optional");
   if (profileResult.error) {
     throw new CheckoutServiceError("PROFILE_LOOKUP", 503, "profile");
   }
   if (profileResult.data) return profileResult.data as Profile;
 
   const repair = fallbackProfile(user);
-  const created = await supabase
-    .from("profiles")
-    .insert({ ...repair, updated_at: new Date().toISOString() })
-    .select("*")
-    .single();
+  const created = await pgInsert("profiles", { ...repair, updated_at: new Date().toISOString() }, { returning: "one" });
   if (!created.error && created.data) return created.data as Profile;
 
   // A concurrent request may have repaired the same profile first.
-  const concurrent = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+  const concurrent = await pgRead("select t.* from public.\"profiles\" t where t.\"id\" = $1", [user.id], "optional");
   if (!concurrent.error && concurrent.data) return concurrent.data as Profile;
   throw new CheckoutServiceError("PROFILE_MISSING", 503, "profile");
 }
@@ -211,19 +210,14 @@ async function enforceRateLimit(productType: CheckoutProductType, userId: string
 }
 
 async function hasActiveEntitlement(
-  supabase: LocalServerClient,
+  context: ServerContext,
   userId: string,
   productType: CheckoutProductType
 ) {
   const table = productType === "annual_pass" ? "annual_access_passes" : "library_memberships";
-  const result = await supabase
-    .from(table)
-    .select("id")
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .gt("expires_at", new Date().toISOString())
-    .limit(1)
-    .maybeSingle();
+  const result = await pgRead(`select id from public.${table}
+    where user_id=$1 and status='active' and expires_at>$2 limit 1`,
+    [userId, new Date().toISOString()], "optional");
 
   if (result.error) {
     throw new CheckoutServiceError("ENTITLEMENT_LOOKUP", 503, "entitlement");
@@ -231,15 +225,16 @@ async function hasActiveEntitlement(
   return Boolean(result.data);
 }
 
-async function stripeConfig(supabase: LocalServerClient) {
+async function stripeConfig(context: ServerContext) {
   try {
-    const config = getStripeConfig(await getSystemSettings(supabase));
+    const settings = await getSystemSettings(context);
+    const config = getStripeConfig(settings);
     // Le formulaire affiché sur le site a besoin de la clé publiable ; sans
     // elle, mieux vaut refuser que présenter un paiement inutilisable.
     if (!config.secretKey || !config.publishableKey) {
       throw new CheckoutServiceError("STRIPE_CONFIG", 503, "stripe_config");
     }
-    return config;
+    return { provider: "stripe" as const, config };
   } catch (error) {
     if (error instanceof CheckoutServiceError) throw error;
     throw new CheckoutServiceError("STRIPE_CONFIG", 503, "stripe_config");
@@ -250,28 +245,29 @@ export async function createCheckoutForUser({
   body,
   productType,
   requestId,
-  supabase,
+  context,
   user
 }: {
   body: Record<string, unknown>;
   productType: CheckoutProductType;
   requestId: string;
-  supabase: LocalServerClient;
-  user: LocalServerUser;
+  context: ServerContext;
+  user: LocalUser;
 }): Promise<CheckoutResult> {
   await enforceRateLimit(productType, user.id);
   const input = normalizeInput(productType, body);
-  const profile = await getOrRepairProfile(supabase, user);
+  const profile = await getOrRepairProfile(context, user);
 
   if (productType === "library_membership" && profile.role !== "etudiant") {
     throw new CheckoutServiceError("ROLE_FORBIDDEN", 403, "profile");
   }
-  if (await hasActiveEntitlement(supabase, user.id, productType)) {
+  if (await hasActiveEntitlement(context, user.id, productType)) {
     return { alreadyActive: true, ok: true, redirectUrl: "/espace-etudiant" };
   }
 
-  const config = await stripeConfig(supabase);
+  const selected = await stripeConfig(context);
   const isLibrary = productType === "library_membership";
+  const config = selected.config;
   let session: Record<string, unknown>;
   try {
     session = await createStripeCheckoutSession({
@@ -286,7 +282,7 @@ export async function createCheckoutForUser({
           slug: isLibrary ? LIBRARY_MEMBERSHIP_SLUG : ANNUAL_PASS_SLUG,
           titre: isLibrary ? LIBRARY_MEMBERSHIP_NAME : ANNUAL_PASS_NAME
         },
-        origin: "https://irenee-institut.org",
+        origin: siteUrl,
         productType,
         profile,
         returnPath: isLibrary
@@ -305,7 +301,7 @@ export async function createCheckoutForUser({
     throw new CheckoutServiceError("STRIPE_API", 502, "stripe_api");
   }
 
-  const order = await supabase.from("paypal_orders").upsert({
+  const order = await pgInsert("paypal_orders", {
     amount_total: input.amountCents,
     book_requested: input.bookRequested,
     book_request_status: input.bookRequested ? "en_attente_direction" : "none",
@@ -318,7 +314,7 @@ export async function createCheckoutForUser({
     status: String(session.status || "open").toLowerCase(),
     updated_at: new Date().toISOString(),
     user_id: user.id
-  }, { onConflict: "order_id" });
+  }, { conflict: ["order_id"] });
 
   if (order.error) {
     throw new CheckoutServiceError("ORDER_PERSISTENCE", 503, "order_persistence");

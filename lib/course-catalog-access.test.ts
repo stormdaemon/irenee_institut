@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "bun:test";
 import { courseCatalogAccess } from "./course-catalog-access";
 
 test("staff course cards open the reader without an annual pass", () => {

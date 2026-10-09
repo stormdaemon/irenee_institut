@@ -1,9 +1,10 @@
+import { pgRead, pgUpdate } from "@/lib/postgres";
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { renderLearningDocumentPdf } from "@/lib/learning-document-pdf";
 import { learningDocumentFilename, type LearningDocument } from "@/lib/learning-documents";
 import { getSystemSettings } from "@/lib/settings";
-import { createServerClient } from "@/lib/supabase";
+import { createServerContext } from "@/lib/postgres";
 
 export const runtime = "nodejs";
 
@@ -23,24 +24,19 @@ function sameSecret(received: string, expected: string) {
   return left.length === right.length && timingSafeEqual(left, right);
 }
 
-async function authenticate(request: Request, supabase: NonNullable<ReturnType<typeof createServerClient>>) {
+async function authenticate(request: Request, context: NonNullable<ReturnType<typeof createServerContext>>) {
   const received = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() || "";
-  const settings = await getSystemSettings(supabase);
+  const settings = await getSystemSettings(context);
   const expected = String(settings.googleAppsScriptMailSecret || process.env.GOOGLE_APPS_SCRIPT_MAIL_SECRET || "").trim();
   return sameSecret(received, expected);
 }
 
 export async function GET(request: Request) {
-  const supabase = createServerClient();
-  if (!supabase) return NextResponse.json({ ok: false, error: "Service indisponible." }, { status: 501 });
-  if (!await authenticate(request, supabase)) return NextResponse.json({ ok: false, error: "Accès refusé." }, { status: 401 });
+  const context = createServerContext();
+  if (!context) return NextResponse.json({ ok: false, error: "Service indisponible." }, { status: 501 });
+  if (!await authenticate(request, context)) return NextResponse.json({ ok: false, error: "Accès refusé." }, { status: 401 });
 
-  const { data, error } = await supabase
-    .from("learning_documents")
-    .select("*, profiles(email)")
-    .eq("delivery_status", "queued")
-    .order("issued_at", { ascending: true })
-    .limit(20);
+  const { data, error } = await pgRead("select t.*, (select to_jsonb(nested) from (select r.\"email\" from public.\"profiles\" r where r.\"id\" = t.\"user_id\" limit 1) nested) as \"profiles\" from public.\"learning_documents\" t where t.\"delivery_status\" = $1 order by t.\"issued_at\" asc limit $2", ["queued", 20], "many");
 
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
 
@@ -54,7 +50,7 @@ export async function GET(request: Request) {
       attachmentMimeType: "application/pdf",
       documentId: document.id,
       filename: learningDocumentFilename(document),
-      htmlBody: `<p>Bonjour ${escapeHtml(document.recipient_name)},</p><p>Votre ${isCertificate ? "certificat nominatif d'apologétique" : "parchemin de connaissance"} délivré par l'Institut d'apologétique saint Irénée est joint à cet email.</p><p>Vous pouvez également le retrouver dans votre espace étudiant.</p>`,
+      htmlBody: `<p>Bonjour ${escapeHtml(document.recipient_name)},</p><p>Votre ${isCertificate ? "certificat nominatif d'apologétique" : "parchemin de connaissance"} délivré par l'Institut Apostolos Saint Irénée est joint à cet email.</p><p>Vous pouvez également le retrouver dans votre espace étudiant.</p>`,
       subject: isCertificate ? "Votre certificat nominatif d'apologétique" : "Votre parchemin de connaissance",
       to: String(email || "")
     };
@@ -64,27 +60,22 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const supabase = createServerClient();
-  if (!supabase) return NextResponse.json({ ok: false, error: "Service indisponible." }, { status: 501 });
-  if (!await authenticate(request, supabase)) return NextResponse.json({ ok: false, error: "Accès refusé." }, { status: 401 });
+  const context = createServerContext();
+  if (!context) return NextResponse.json({ ok: false, error: "Service indisponible." }, { status: 501 });
+  if (!await authenticate(request, context)) return NextResponse.json({ ok: false, error: "Accès refusé." }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));
   const documentId = String(body.documentId || "").trim();
   if (!documentId) return NextResponse.json({ ok: false, error: "documentId requis." }, { status: 400 });
 
   const sent = body.ok === true;
-  const { data, error } = await supabase
-    .from("learning_documents")
-    .update({
+  const { data, error } = await pgUpdate("learning_documents", {
       delivery_error: sent ? null : String(body.error || "Envoi Google Apps Script impossible."),
       delivery_status: sent ? "sent" : "queued",
       email_provider_id: body.providerId ? String(body.providerId) : null,
       emailed_at: sent ? new Date().toISOString() : null,
       updated_at: new Date().toISOString()
-    })
-    .eq("id", documentId)
-    .select("id, delivery_status")
-    .single();
+    }, "t.\"id\" = $1", [documentId], { returning: "one", columns: "id, delivery_status" });
 
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true, data });

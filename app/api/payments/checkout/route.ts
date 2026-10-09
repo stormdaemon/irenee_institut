@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       body,
       productType: "annual_pass",
       requestId,
-      supabase: auth.supabase,
+      context: auth.context,
       user: auth.user
     });
     return checkoutSuccessResponse(result);

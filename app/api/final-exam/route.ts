@@ -1,3 +1,4 @@
+import { pgInsert, pgRead } from "@/lib/postgres";
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { FINAL_EXAM_PASS_SCORE, FINAL_EXAM_QUESTIONS } from "@/lib/curriculum";
@@ -25,27 +26,27 @@ function attemptLimitResponse(retryAfterSeconds: number, reason: "cooldown" | "d
 async function getContext(request: Request) {
   const auth = await authenticateRequest(request);
   if (!auth.ok) return { response: auth.response };
-  const { supabase, user } = auth;
+  const { context, user } = auth;
 
   const now = new Date().toISOString();
   const [{ data: annualPass }, { data: courseRows, error: courseError }, { data: completedRows, error: completedError }] = await Promise.all([
-    supabase.from("annual_access_passes").select("*").eq("user_id", user.id).eq("status", "active").gt("expires_at", now).order("expires_at", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("courses").select("id").eq("statut", "publie"),
-    supabase.from("module_progress").select("module_id").eq("etudiant_id", user.id).eq("complete", true)
+    pgRead("select t.* from public.\"annual_access_passes\" t where t.\"user_id\" = $1 and t.\"status\" = $2 and t.\"expires_at\" > $3 order by t.\"expires_at\" desc limit $4", [user.id, "active", now, 1], "optional"),
+    pgRead("select t.\"id\" from public.\"courses\" t where t.\"statut\" = $1", ["publie"], "many"),
+    pgRead("select t.\"module_id\" from public.\"module_progress\" t where t.\"etudiant_id\" = $1 and t.\"complete\" = $2", [user.id, true], "many")
   ]);
   if (courseError) return { error: courseError.message, status: 400 as const };
   if (completedError) return { error: completedError.message, status: 400 as const };
 
   const courseIds = (courseRows || []).map(row => row.id);
   const { data: moduleRows, error: moduleError } = courseIds.length
-    ? await supabase.from("course_modules").select("id").in("course_id", courseIds)
+    ? await pgRead("select t.\"id\" from public.\"course_modules\" t where t.\"course_id\" = any($1)", [courseIds], "many")
     : { data: [], error: null };
   if (moduleError) return { error: moduleError.message, status: 400 as const };
 
   const completedIds = new Set((completedRows || []).map(row => row.module_id));
   const modules = moduleRows || [];
   const curriculumCompleted = modules.length > 0 && modules.every(module => completedIds.has(module.id));
-  return { annualPass, curriculumCompleted, supabase, userId: user.id };
+  return { annualPass, curriculumCompleted, context, userId: user.id };
 }
 
 export async function GET(request: Request) {
@@ -53,12 +54,7 @@ export async function GET(request: Request) {
   if ("response" in context) return context.response;
   if ("error" in context) return NextResponse.json({ ok: false, error: context.error }, { status: context.status });
 
-  const { data: certificate } = await context.supabase
-    .from("learning_documents")
-    .select("id, document_number, issued_at")
-    .eq("user_id", context.userId)
-    .eq("document_kind", "final_certificate")
-    .maybeSingle();
+  const { data: certificate } = await pgRead("select t.\"id\", t.\"document_number\", t.\"issued_at\" from public.\"learning_documents\" t where t.\"user_id\" = $1 and t.\"document_kind\" = $2", [context.userId, "final_certificate"], "optional");
 
   return NextResponse.json({
     ok: true,
@@ -80,24 +76,9 @@ export async function POST(request: Request) {
 
   const now = Date.now();
   const [{ data: existingCertificate }, { data: latestAttempt, error: latestAttemptError }, recentAttemptsResult] = await Promise.all([
-    context.supabase
-      .from("learning_documents")
-      .select("id, document_number, issued_at")
-      .eq("user_id", context.userId)
-      .eq("document_kind", "final_certificate")
-      .maybeSingle(),
-    context.supabase
-      .from("final_exam_attempts")
-      .select("score,passed,created_at")
-      .eq("user_id", context.userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    context.supabase
-      .from("final_exam_attempts")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", context.userId)
-      .gt("created_at", new Date(now - ONE_DAY_MS).toISOString())
+    pgRead("select t.\"id\", t.\"document_number\", t.\"issued_at\" from public.\"learning_documents\" t where t.\"user_id\" = $1 and t.\"document_kind\" = $2", [context.userId, "final_certificate"], "optional"),
+    pgRead("select t.\"score\", t.\"passed\", t.\"created_at\" from public.\"final_exam_attempts\" t where t.\"user_id\" = $1 order by t.\"created_at\" desc limit $2", [context.userId, 1], "optional"),
+    pgRead("select count(*)::int as count from public.\"final_exam_attempts\" t where t.\"user_id\" = $1 and t.\"created_at\" > $2", [context.userId, new Date(now - ONE_DAY_MS).toISOString()], "count")
   ]);
   if (latestAttemptError || recentAttemptsResult.error) {
     return NextResponse.json({ ok: false, error: "L'historique des tentatives est indisponible." }, { status: 500 });
@@ -106,7 +87,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, certificate: existingCertificate, passed: true, score: Number(latestAttempt?.score || FINAL_EXAM_PASS_SCORE) });
   }
   if (latestAttempt?.passed) {
-    const restoredCertificate = await issueLearningDocument(context.supabase, {
+    const restoredCertificate = await issueLearningDocument(context.context, {
       documentKind: "final_certificate",
       userId: context.userId
     });
@@ -149,16 +130,16 @@ export async function POST(request: Request) {
   const score = Math.round((correct / FINAL_EXAM_QUESTIONS.length) * 100);
   const passed = score >= FINAL_EXAM_PASS_SCORE;
 
-  const { error } = await context.supabase.from("final_exam_attempts").insert({
+  const { error } = await pgInsert("final_exam_attempts", {
     answers,
     passed,
     score,
     user_id: context.userId
-  });
+  }, {  });
   if (error) return NextResponse.json({ ok: false, error: "La tentative n'a pas pu être enregistrée." }, { status: 500 });
 
   const certificate = passed
-    ? await issueLearningDocument(context.supabase, { documentKind: "final_certificate", userId: context.userId })
+    ? await issueLearningDocument(context.context, { documentKind: "final_certificate", userId: context.userId })
     : null;
 
   return NextResponse.json({ ok: true, certificate, passed, score });

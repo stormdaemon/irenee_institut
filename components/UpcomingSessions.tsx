@@ -59,7 +59,7 @@ function ShareSessionButton({ session }: { session: VisioSession }) {
   );
 }
 
-export function UpcomingSessions({ sessions }: { sessions: VisioSession[] }) {
+export function UpcomingSessions({ sessions, unavailable = false }: { sessions: VisioSession[]; unavailable?: boolean }) {
   const firstSession = sessions[0];
 
   return (
@@ -67,14 +67,14 @@ export function UpcomingSessions({ sessions }: { sessions: VisioSession[] }) {
       <div className="container">
         <div className="visio-head">
           <span className="hero-eyebrow">
-            <Radio size={16} /> En direct &middot; chaque mercredi à 20h30
+            <Radio size={16} /> ÉTUDIER ENSEMBLE
           </span>
           <h2 className="visio-title font-display">Prochaines rencontres en visioconférence</h2>
           <p className="visio-lead">
-            Chaque mercredi soir, la promotion se retrouve en direct depuis le site pour travailler,
+            Retrouvez les séances annoncées par l’Institut pour travailler,
             échanger et lire ensemble les Pères de l&apos;Église. Découvrez les prochaines rencontres annoncées.
           </p>
-          <p className="visio-lead">Les rencontres de cet agenda sont accessibles avec un compte gratuit. Pour suivre l&apos;ensemble des cours à votre rythme, découvrez le pass annuel : 99 € conseillés, participation libre.</p>
+          <p className="visio-lead">Les rencontres sont accessibles aux étudiants disposant d’un accès actif aux cours. Pour suivre l&apos;ensemble des cours à votre rythme, découvrez le pass annuel : 99 € conseillés, participation libre.</p>
           <p className="visio-contact-note">
             <Phone size={17} />
             <span>Pour toute autre question, appelez le <a href="tel:+33171681538">01.71.68.15.38</a>.</span>
@@ -129,7 +129,7 @@ export function UpcomingSessions({ sessions }: { sessions: VisioSession[] }) {
               );
             })}
           </ol>
-        </div> : <p className="visio-lead">Les prochaines dates seront annoncées ici. Les cours restent accessibles dans l&apos;espace étudiant.</p>}
+        </div> : <p className="visio-lead">{unavailable ? "L’agenda est momentanément indisponible. Réessayez dans quelques instants." : "Les prochaines dates seront annoncées ici. Les cours restent accessibles dans l’espace étudiant."}</p>}
 
         <div className="visio-actions">
           <Link className="btn btn-gold" href={firstSession ? `/direct/${firstSession.liveSessionId}` : "/espace-etudiant"}>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { BookOpen, CheckCircle2, Clock3, Library, Loader2, XCircle } from "lucide-react";
 import { useState } from "react";
-import { createBrowserClient } from "@/lib/supabase";
+import { createBrowserClient } from "@/lib/browser-auth";
 import type { BookRequest, LibraryMembership } from "@/lib/types";
 
 function statusLabel(status: BookRequest["status"]) {
@@ -35,8 +35,8 @@ export function LibraryPanel({
     setStatus("saving");
     setError("");
 
-    const supabase = createBrowserClient();
-    const { data } = await supabase?.auth.getSession() || { data: { session: null } };
+    const context = createBrowserClient();
+    const { data } = await context?.auth.getSession() || { data: { session: null } };
     if (!data.session) {
       setError("Reconnectez-vous avant d'envoyer votre demande.");
       setStatus("error");

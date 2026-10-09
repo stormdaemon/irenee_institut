@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Programme de formation en apologétique catholique",
   description:
-    "Consultez le programme d'apologétique catholique de l'Institut Saint Irénée : fondements, Bible, histoire, science, philosophie, objections et dialogue.",
+    "Consultez le programme d'apologétique catholique de l'Institut Apostolos Saint Irénée : fondements, Bible, histoire, science, philosophie, objections et dialogue.",
   alternates: {
     canonical: "/programme-apologetique"
   },
@@ -76,7 +76,7 @@ export default async function ProgrammeApologetiquePage() {
         <div className="container" style={{ maxWidth: 1040 }}>
           <h2 className="section-title">Comment est construit le programme ?</h2>
           <p className="subtitle">
-            Le programme de l'Institut Saint Irénée part des bases de l'apologétique chrétienne avant d'aborder les
+            Le programme de l'Institut Apostolos Saint Irénée part des bases de l'apologétique chrétienne avant d'aborder les
             questions bibliques, historiques, philosophiques et culturelles. Cette progression permet d'éviter les
             réponses dispersées : chaque objection est replacée dans son domaine, ses sources et ses limites.
           </p>

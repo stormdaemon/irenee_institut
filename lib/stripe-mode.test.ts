@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "bun:test";
 import { isExpectedStripeEventMode } from "./stripe";
 
 test("Stripe mode must agree with the server key before grants or reversals", () => {

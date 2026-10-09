@@ -17,6 +17,6 @@ test.describe("anonymous catalog", () => {
 
     await expect(page.getByRole("button", { name: "Obtenir le pass annuel" })).toBeVisible();
     await expect(page.getByText("Accès équipe actif", { exact: true })).toHaveCount(0);
-    await expect(page.locator('a[href="/formations?checkout=annual-pass"]').first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Obtenir le pass annuel" })).toBeEnabled();
   });
 });
